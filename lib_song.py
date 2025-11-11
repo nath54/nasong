@@ -193,9 +193,12 @@ class Song:
         audio_data: NDArray[np.float32] = self.render()
 
         #
+        prepared_audio_signal: NDArray[np.int16] = lw.WavUtils.prepare_signal(audio_data=audio_data)
+
+        #
         lw.WavUtils.save_wav_file(
             filename=self.config.output_filename,
             sample_rate=self.config.sample_rate,
-            audio_data=audio_data
+            audio_data=prepared_audio_signal
         )
 

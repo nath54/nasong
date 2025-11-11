@@ -27,7 +27,7 @@ class WavUtils:
         ### This scaling is necessary because wavfile.write expects integer data ###
         ### for standard PCM audio formats.                                      ###
         #
-        audio_data: np.ndarray = (raw_signal * max_amplitude_16bit).astype(np.int16)
+        return (audio_data * max_amplitude_16bit).astype(np.int16)
 
     #
     @staticmethod
