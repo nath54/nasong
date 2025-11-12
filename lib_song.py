@@ -7,10 +7,6 @@ import numpy as np
 from numpy.typing import NDArray
 #
 from tqdm import tqdm
-import threading
-import concurrent.futures
-import multiprocessing
-import os
 #
 import lib_config as lc
 import lib_value as lv
@@ -29,7 +25,7 @@ class Song:
 
         #
         self.config: lc.Config = config
-        self.value_of_time: lv.Value = value_of_time
+        self.value_of_time: Callable[[lv.Value], lv.Value] = value_of_time
 
     #
     def render_single_thread(
@@ -40,9 +36,8 @@ class Song:
         audio_data: NDArray[np.float32]
     ) -> None:
 
-
         #
-        steps: int = 2048
+        steps: int = 2048 * 10
 
         #
         for i in tqdm(range(from_sample, to_sample, steps)):
@@ -51,20 +46,9 @@ class Song:
             #
             audio_data[i:min(to_sample, i+steps)] = audio_value.getitem_np(indexes_buffer=idx_buffer)
 
-        #
-        # idx_buffer = np.arange(from_sample, to_sample, 1, dtype=np.float32)
-        #
-        # audio_data[:] = audio_value.getitem_np(indexes_buffer=idx_buffer)
-
-        # #
-        # for i in tqdm(range(from_sample, to_sample)):
-        #     #
-        #     audio_data[i] = audio_value.__getitem__(index=i)
-
-
 
     #
-    def render(self, threads: int = -1) -> NDArray[np.float32]:
+    def render(self) -> NDArray[np.float32]:
 
         #
         time_val: lv.Value = lv.BasicScaling(
