@@ -2,8 +2,7 @@
 ### Import Modules. ###
 #
 from typing import Callable
-#
-import os
+
 import argparse
 #
 import lib_import as li
@@ -16,7 +15,7 @@ import lib_value as lv
 def main(
     sound_file: str,
     output_filename: str = "output.wav",
-    sample_rate: float = 44100,
+    sample_rate: int = 44100,
 ) -> None:
 
     """

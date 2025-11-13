@@ -4,7 +4,7 @@
 import numpy as np
 from numpy.typing import NDArray
 #
-from scipy.io import wavfile
+from scipy.io import wavfile  # type: ignore
 
 
 #
@@ -51,7 +51,7 @@ class WavUtils:
             #
             ### wavfile.write automatically handles the data type (np.int16 in this case). ###
             #
-            wavfile.write(filename, sample_rate, audio_data)
+            wavfile.write(filename, sample_rate, audio_data)  # type: ignore
             #
             print(f"✅ Successfully saved audio to '{filename}'")
         #
