@@ -15,19 +15,20 @@ class SynthLead(lv.Value):
     Synthesizer lead sound with vibrato and filter sweep.
 
     "Truthness" / "Good Listening" Analysis:
-      - "Truthness": The *model* is "truthful" (Osc + Filter + Env + LFO).
-        However, the *implementation* of the oscillator and filter is not.
-      - "Good Listening": **VERY POOR**.
-      - **Reason 1 (Aliasing):** The sawtooth wave is "naive"
-        (using `phase % (2 * math.pi)`). This creates infinite
-        harmonics and will produce *massive* aliasing, which
-        sounds like harsh, inharmonic, "digital" noise.
-      - **Reason 2 (Fake Filter):** The "Low-pass filter sweep" is
-        **NOT a filter**. It is just a gain control / crossfade.
-        It will not remove high frequencies and will not sound
-        like a real filter sweep.
+        - "Truthness": The *model* is "truthful" (Osc + Filter + Env + LFO).
+            However, the *implementation* of the oscillator and filter is not.
+        - "Good Listening": **VERY POOR**.
+        - **Reason 1 (Aliasing):** The sawtooth wave is "naive"
+            (using `phase % (2 * math.pi)`). This creates infinite
+            harmonics and will produce *massive* aliasing, which
+            sounds like harsh, inharmonic, "digital" noise.
+        - **Reason 2 (Fake Filter):** The "Low-pass filter sweep" is
+            **NOT a filter**. It is just a gain control / crossfade.
+            It will not remove high frequencies and will not sound
+            like a real filter sweep.
     """
 
+    #
     def __init__(
         self,
         time: lv.Value,
@@ -145,14 +146,14 @@ class SynthLead(lv.Value):
 
         #
         decay_progress: NDArray[np.float32] = (relative_t - self.attack) / self.decay
-        decay_val: NDArray[np.float32] = 1.0 - (1.0 - self.sustain_level) * decay_progress
+        decay_val: NDArray[np.float32] = (1.0 - (1.0 - self.sustain_level) * decay_progress).astype(dtype=np.float32)
 
         #
         sustain_val: NDArray[np.float32] = np.full_like(relative_t, self.sustain_level)
 
         #
         release_progress: NDArray[np.float32] = (relative_t - self.release_start) / self.release
-        release_val: NDArray[np.float32] = self.sustain_level * (1.0 - release_progress)
+        release_val: NDArray[np.float32] = (self.sustain_level * (1.0 - release_progress)).astype(dtype=np.float32)
 
         #
         env: NDArray[np.float32] = np.where(
@@ -179,7 +180,7 @@ class SynthLead(lv.Value):
         #
         ### Naive sawtooth wave (vectorized, will alias). ###
         #
-        phase: NDArray[np.float32] = self.pi2 * self.frequency * vibrato * relative_t
+        phase: NDArray[np.float32] = (self.pi2 * self.frequency * vibrato * relative_t).astype(dtype=np.float32)
         normalized_phase: NDArray[np.float32] = np.mod(phase, self.pi2)
         sawtooth: NDArray[np.float32] = 2 * (normalized_phase / self.pi2) - 1
 
@@ -190,7 +191,7 @@ class SynthLead(lv.Value):
         filtered: NDArray[np.float32] = (sawtooth * cutoff + sawtooth * (1 - cutoff) * 0.1).astype(dtype=np.float32)
 
         #
-        return env * filtered * 0.3 * mask
+        return (env * filtered * 0.3 * mask).astype(dtype=np.float32)
 
 
 #
@@ -200,16 +201,16 @@ class SynthBass(lv.Value):
     Deep synthesizer bass.
 
     "Truthness" / "Good Listening" Analysis:
-      - "Truthness": **EXCELLENT**. This is a "truthful" model of a
-        classic bass patch: a square wave mixed with a sine-wave
-        sub-oscillator (one octave lower).
-      - "Good Listening": **VERY POOR**.
-      - **Reason (Aliasing):** The square wave is "naive"
-        (using `math.sin(phase) > 0`). This creates infinite
-        harmonics and will alias *massively*, sounding harsh,
-        brittle, and "digital," not "fat."
-      - The sub-oscillator (pure `sin`) is "good listening" and
-        will not alias.
+        - "Truthness": **EXCELLENT**. This is a "truthful" model of a
+            classic bass patch: a square wave mixed with a sine-wave
+            sub-oscillator (one octave lower).
+        - "Good Listening": **VERY POOR**.
+        - **Reason (Aliasing):** The square wave is "naive"
+            (using `math.sin(phase) > 0`). This creates infinite
+            harmonics and will alias *massively*, sounding harsh,
+            brittle, and "digital," not "fat."
+        - The sub-oscillator (pure `sin`) is "good listening" and
+            will not alias.
     """
 
     #
@@ -317,15 +318,15 @@ class SynthPad(lv.Value):
     Atmospheric synthesizer pad.
 
     "Truthness" / "Good Listening" Analysis:
-      - "Truthness": **EXCELLENT**. This is a "truthful" and classic
-        model of a "supersaw" or "chorus" pad. It uses a slow
-        Attack-Sustain-Release envelope and three detuned oscillators
-        to create a wide, shimmering, atmospheric sound.
-      - "Good Listening": **EXCELLENT**.
-      - **Reason:** This class is built *only* from sine waves (`math.sin`).
-        Pure sine waves do not produce aliasing artifacts (unless
-        their fundamental frequency is set too high by the user).
-        This is a "realistic" and "good listening" implementation.
+        - "Truthness": **EXCELLENT**. This is a "truthful" and classic
+            model of a "supersaw" or "chorus" pad. It uses a slow
+            Attack-Sustain-Release envelope and three detuned oscillators
+            to create a wide, shimmering, atmospheric sound.
+        - "Good Listening": **EXCELLENT**.
+        - **Reason:** This class is built *only* from sine waves (`math.sin`).
+            Pure sine waves do not produce aliasing artifacts (unless
+            their fundamental frequency is set too high by the user).
+            This is a "realistic" and "good listening" implementation.
     """
 
     #

@@ -1078,17 +1078,17 @@ class Triangle(Value):
     A Value that generates a "naive" triangle wave.
 
     "Truthness" / "Good Listening" Analysis:
-      - "Truthness": This is a mathematically correct, "naive" triangle
-        wave. It is "truthful" in that sense.
-      - "Good Listening": This implementation is **POOR** for "good listening"
-        when used for audio-rate oscillators (e.g., frequencies > 20 Hz).
-      - **Reason:** It produces strong aliasing (unwanted, inharmonic
-        frequencies) because it has infinite sharp corners (harmonics)
-        that are not band-limited. This aliasing sounds like a harsh,
-        "digital" noise.
-      - **Good Use:** This implementation is perfectly "realistic" and "good"
-        for LFO (Low-Frequency Oscillator) use, where aliasing is not
-        in the audible range.
+        - "Truthness": This is a mathematically correct, "naive" triangle
+            wave. It is "truthful" in that sense.
+        - "Good Listening": This implementation is **POOR** for "good listening"
+            when used for audio-rate oscillators (e.g., frequencies > 20 Hz).
+        - **Reason:** It produces strong aliasing (unwanted, inharmonic
+            frequencies) because it has infinite sharp corners (harmonics)
+            that are not band-limited. This aliasing sounds like a harsh,
+            "digital" noise.
+        - **Good Use:** This implementation is perfectly "realistic" and "good"
+            for LFO (Low-Frequency Oscillator) use, where aliasing is not
+            in the audible range.
     """
 
     #
@@ -1176,13 +1176,13 @@ class Square(Value):
     A Value that generates a "naive" square wave with a variable duty cycle.
 
     "Truthness" / "Good Listening" Analysis:
-      - "Truthness": This is a mathematically correct, "naive" square wave.
-      - "Good Listening": This implementation is **VERY POOR** for
-        "good listening" at audio rates.
-      - **Reason:** It produces extremely strong aliasing due to the
-        instantaneous vertical "jumps" (discontinuities) in the waveform.
-        This will sound very harsh and noisy.
-      - **Good Use:** This is perfect for LFOs, triggers, or gates.
+        - "Truthness": This is a mathematically correct, "naive" square wave.
+        - "Good Listening": This implementation is **VERY POOR** for
+            "good listening" at audio rates.
+        - **Reason:** It produces extremely strong aliasing due to the
+            instantaneous vertical "jumps" (discontinuities) in the waveform.
+            This will sound very harsh and noisy.
+        - **Good Use:** This is perfect for LFOs, triggers, or gates.
     """
 
     #
@@ -1273,13 +1273,13 @@ class Sawtooth(Value):
     A Value that generates a "naive" sawtooth wave.
 
     "Truthness" / "Good Listening" Analysis:
-      - "Truthness": This is a mathematically correct, "naive" sawtooth wave.
-      - "Good Listening": This implementation is **VERY POOR** for
-        "good listening" at audio rates.
-      - **Reason:** Like the square wave, this has an instantaneous
-        discontinuity (the "drop") which causes massive aliasing.
-      - **Good Use:** Excellent for LFOs.
-    """
+        - "Truthness": This is a mathematically correct, "naive" sawtooth wave.
+        - "Good Listening": This implementation is **VERY POOR** for
+            "good listening" at audio rates.
+        - **Reason:** Like the square wave, this has an instantaneous
+            discontinuity (the "drop") which causes massive aliasing.
+        - **Good Use:** Excellent for LFOs.
+        """
 
     #
     def __init__(
@@ -1299,11 +1299,10 @@ class Sawtooth(Value):
             frequency: The frequency multiplier.
             amplitude: The amplitude (gain).
             delta: The phase offset.
-            direction: A Value (e.g., Constant(1) or Constant(-1))
-                       that determines the slope.
-                       >= 0 gives a rising sawtooth.
-                       < 0 gives a falling sawtooth.
-        """
+            direction: A Value (e.g., Constant(1) or Constant(-1)) that determines the slope.
+                        >= 0 gives a rising sawtooth.
+                        < 0 gives a falling sawtooth.
+            """
 
         #
         super().__init__()
@@ -1370,8 +1369,8 @@ class Sawtooth(Value):
         #
         ### Sawtooth wave: linear rise from -1 to 1 (or fall). ###
         #
-        rising_sawtooth: NDArray[np.float32] = 2.0 * normalized_phase - 1.0
-        falling_sawtooth: NDArray[np.float32] = 1.0 - 2.0 * normalized_phase
+        rising_sawtooth: NDArray[np.float32] = (2.0 * normalized_phase - 1.0).astype(dtype=np.float32)
+        falling_sawtooth: NDArray[np.float32] = (1.0 - 2.0 * normalized_phase).astype(dtype=np.float32)
         sawtooth_value: NDArray[np.float32] = np.where(dir_v >= 0, rising_sawtooth, falling_sawtooth)
 
         #
