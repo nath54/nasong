@@ -52,10 +52,10 @@ class ADSR_Piano(lv.Value):
         self.total_cycle_time: float = note_duration + release
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        t: float = self.time.__getitem__(index=index)
+        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
         #
         t_mod: float = t % self.total_cycle_time
 
@@ -93,12 +93,12 @@ class ADSR_Piano(lv.Value):
             return 0.0
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
         ### Get the time buffer and apply the looping modulo operator. ###
         #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer)
+        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
         #
         t_mod: NDArray[np.float32] = np.mod(t, self.total_cycle_time)
 
@@ -192,10 +192,10 @@ class ADSR2(lv.Value):
         self.release_end: float = self.note_duration + self.release_time
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        t: float = self.time.__getitem__(index=index)
+        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
         relative_time: float = t - self.note_start
 
         #
@@ -238,10 +238,10 @@ class ADSR2(lv.Value):
             return self.sustain_level * (1.0 - release_progress)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer)
+        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
         #
         relative_time: NDArray[np.float32] = t - self.note_start
 
@@ -335,12 +335,12 @@ class Distortion(lv.Value):
         self.drive: float = drive
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
         ### Apply gain (drive). ###
         #
-        x: float = self.value.__getitem__(index=index) * self.drive
+        x: float = self.value.__getitem__(index=index, sample_rate=sample_rate) * self.drive
 
         #
         ### Soft clipping using tanh. ###
@@ -348,13 +348,13 @@ class Distortion(lv.Value):
         return math.tanh(x) * 0.5
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
         ### Get the input signal buffer and apply gain (drive). ###
         #
         x: NDArray[np.float32] = (
-            self.value.getitem_np(indexes_buffer=indexes_buffer) * self.drive
+            self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate) * self.drive
         )
 
         #
@@ -411,10 +411,10 @@ class Vibrato(lv.Value):
         self.pi2: float = 2 * math.pi
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        t: float = self.time.__getitem__(index=index)
+        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
 
         #
         ### Calculate the LFO value (a sine wave oscillating between -1 and 1). ###
@@ -427,12 +427,12 @@ class Vibrato(lv.Value):
         return self.base_frequency * (1.0 + self.vibrato_depth * modulation)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
         ### Get the time buffer. ###
         #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer)
+        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
 
         #
         ### Calculate the LFO value (a sine wave oscillating between -1 and 1). ###

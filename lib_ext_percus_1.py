@@ -85,10 +85,10 @@ class KickDrum(lv.Value):
         self.amplitude: float = amplitude
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        t: float = self.time.__getitem__(index=index)
+        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
         relative_time: float = t - self.trigger_time
 
         #
@@ -122,12 +122,12 @@ class KickDrum(lv.Value):
         return self.amplitude * env * (tone + click)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
         ### Get time and relative time. ###
         #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer)
+        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
         relative_time: NDArray[np.float32] = t - self.trigger_time
 
         #
@@ -198,10 +198,10 @@ class KickDrum2(lv.Value):
         self.start_time: float = start_time
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        t: float = self.time.__getitem__(index=index)
+        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
         relative_t: float = t - self.start_time
 
         #
@@ -233,10 +233,10 @@ class KickDrum2(lv.Value):
         return amp_env * (kick + click) * 0.6
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer)
+        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
         relative_t: NDArray[np.float32] = t - self.start_time
 
         #
@@ -316,10 +316,10 @@ class Snare(lv.Value):
         self.amplitude: float = amplitude
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        t: float = self.time.__getitem__(index=index)
+        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
         relative_time: float = t - self.trigger_time
 
         #
@@ -345,10 +345,10 @@ class Snare(lv.Value):
         return self.amplitude * env * (tone + noise * 0.8)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer)
+        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
         relative_time: NDArray[np.float32] = t - self.trigger_time
 
         #
@@ -409,10 +409,10 @@ class SnareDrum(lv.Value):
         self.start_time: float = start_time
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        t: float = self.time.__getitem__(index=index)
+        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
         relative_t: float = t - self.start_time
 
         #
@@ -440,10 +440,10 @@ class SnareDrum(lv.Value):
         return amp_env * (tone + noise) * 0.4
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer)
+        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
         relative_t: NDArray[np.float32] = t - self.start_time
 
         #
@@ -520,10 +520,10 @@ class HiHat(lv.Value):
         self.cymbal_freqs: List[float] = [8000.0, 9000.0, 10000.0, 11000.0, 12000.0]
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        t: float = self.time.__getitem__(index=index)
+        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
         relative_t: float = t - self.start_time
 
         #
@@ -554,10 +554,10 @@ class HiHat(lv.Value):
         return amp_env * noise * 0.15
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer)
+        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
         relative_t: NDArray[np.float32] = t - self.start_time
 
         #
@@ -655,10 +655,10 @@ class CrashCymbal(lv.Value):
         ).astype(np.float32)
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        t: float = self.time.__getitem__(index=index)
+        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
         #
         relative_t: float = t - self.start_time
 
@@ -690,10 +690,10 @@ class CrashCymbal(lv.Value):
         return amp_env * noise * 0.25
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer)
+        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
         #
         relative_t: NDArray[np.float32] = t - self.start_time
 

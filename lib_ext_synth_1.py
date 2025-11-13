@@ -63,10 +63,10 @@ class SynthLead(lv.Value):
         self.vibrato_depth: float = 0.02
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        t: float = self.time.__getitem__(index=index)
+        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
         relative_t: float = t - self.start_time
 
         #
@@ -124,10 +124,10 @@ class SynthLead(lv.Value):
         return env * filtered * 0.3
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer)
+        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
         relative_t: NDArray[np.float32] = t - self.start_time
 
         #
@@ -233,10 +233,10 @@ class SynthBass(lv.Value):
         self.pi2: float = 2 * math.pi
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        t: float = self.time.__getitem__(index=index)
+        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
         relative_t: float = t - self.start_time
 
         #
@@ -272,10 +272,10 @@ class SynthBass(lv.Value):
         return env * (square * 0.6 + sub) * 0.35
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer)
+        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
         relative_t: NDArray[np.float32] = t - self.start_time
 
         #
@@ -362,10 +362,10 @@ class SynthPad(lv.Value):
         self.detune2: float = 0.997
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        t: float = self.time.__getitem__(index=index)
+        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
         relative_t: float = t - self.start_time
 
         #
@@ -402,10 +402,10 @@ class SynthPad(lv.Value):
         return env * (osc1 + osc2 + osc3) / 3 * 0.2
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer)
+        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
         relative_t: NDArray[np.float32] = t - self.start_time
 
         #

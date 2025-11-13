@@ -6,7 +6,7 @@ from typing import Callable
 import numpy as np
 from numpy.typing import NDArray
 #
-from tqdm import tqdm
+# from tqdm import tqdm
 #
 import lib_config as lc
 import lib_value as lv
@@ -36,16 +36,25 @@ class Song:
         audio_data: NDArray[np.float32]
     ) -> None:
 
-        #
-        steps: int = 2048 * 10
+        """
+        I had a lot of doubts concerning this function, because I was wondering about rendering the most efficiently possible (by chunking & parallelisation), and also wanted to be able to easily visualize the rendering progress.
+        But, in another hand, I also wanted to introduce effects like echo, reverb, delay, or others that need to have the full audio data (and especially the previously rendered audio steps) to calculate the next step.
+        """
 
         #
-        for i in tqdm(range(from_sample, to_sample, steps)):
-            #
-            idx_buffer: NDArray[np.float32] = np.arange(i, min(to_sample, i+steps), 1, dtype=np.float32)
-            #
-            audio_data[i:min(to_sample, i+steps)] = audio_value.getitem_np(indexes_buffer=idx_buffer)
+        idx_buffer: NDArray[np.float32] = np.arange(from_sample, to_sample, 1, dtype=np.float32)
+        #
+        audio_data[from_sample: to_sample] = audio_value.getitem_np(indexes_buffer=idx_buffer, sample_rate=self.config.sample_rate)
 
+        #
+        # steps: int = 2048 * 10
+
+        # #
+        # for i in tqdm(range(from_sample, to_sample, steps)):
+        #     #
+        #     idx_buffer: NDArray[np.float32] = np.arange(i, min(to_sample, i+steps), 1, dtype=np.float32)
+        #     #
+        #     audio_data[i:min(to_sample, i+steps)] = audio_value.getitem_np(indexes_buffer=idx_buffer, sample_rate=self.config.sample_rate)
 
     #
     def render(self) -> NDArray[np.float32]:

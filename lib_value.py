@@ -33,7 +33,7 @@ class Value:
         pass
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         """
         Get the value at a single sample index.
@@ -52,7 +52,7 @@ class Value:
         return 0
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         """
         Get the values for an array of sample indexes (vectorized).
@@ -61,10 +61,10 @@ class Value:
 
         For the implementation of the base Value class:
 
-          - The base implementation is a slow, non-optimized placeholder
+            - The base implementation is a slow, non-optimized placeholder
             that iterates and calls __getitem__.
 
-          - Subclasses should override this
+            - Subclasses should override this
             with a fast, vectorized NumPy implementation.
 
         Args:
@@ -83,7 +83,7 @@ class Value:
         #
         for idx, i in enumerate(indexes_buffer):
             #
-            default[idx] = self.__getitem__(index=int(i))
+            default[idx] = self.__getitem__(index=int(i), sample_rate=sample_rate)
 
         #
         return default
@@ -108,13 +108,13 @@ class Constant(Value):
         self.value: float | int = value
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
         return self.value
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
         return np.full_like(indexes_buffer, fill_value=self.value, dtype=np.float32)
@@ -132,13 +132,13 @@ class Identity(Value):
         super().__init__()
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
         return float(index)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
         return indexes_buffer
@@ -163,18 +163,18 @@ class RandomInt(Value):
         self.max_range: Value = max_range
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
         return float(
             random.randint(
-                a=int(self.min_range.__getitem__(index=index)),
-                b=int(self.max_range.__getitem__(index=index))
+                a=int(self.min_range.__getitem__(index=index, sample_rate=sample_rate)),
+                b=int(self.max_range.__getitem__(index=index, sample_rate=sample_rate))
             )
         )
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
         """
         Returns a vectorized array of random integers (as floats).
         """
@@ -182,8 +182,8 @@ class RandomInt(Value):
         #
         ### Get the vectorized min and max boundaries. ###
         #
-        min_vals: NDArray[np.float32] = self.min_range.getitem_np(indexes_buffer=indexes_buffer)
-        max_vals: NDArray[np.float32] = self.max_range.getitem_np(indexes_buffer=indexes_buffer)
+        min_vals: NDArray[np.float32] = self.min_range.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        max_vals: NDArray[np.float32] = self.max_range.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
 
         #
         ### Vectorized version using numpy's random generator. ###
@@ -231,16 +231,16 @@ class RandomFloat(Value):
         self.max_range: Value = max_range
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
         return random.uniform(
-            a=float(self.min_range.__getitem__(index=index)),
-            b=float(self.max_range.__getitem__(index=index))
+            a=float(self.min_range.__getitem__(index=index, sample_rate=sample_rate)),
+            b=float(self.max_range.__getitem__(index=index, sample_rate=sample_rate))
         )
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
         """
         Returns a vectorized array of random floats.
         This is a performance-critical override.
@@ -249,8 +249,8 @@ class RandomFloat(Value):
         #
         ### Get the vectorized min and max boundaries. ###
         #
-        min_vals: NDArray[np.float32] = self.min_range.getitem_np(indexes_buffer=indexes_buffer)
-        max_vals: NDArray[np.float32] = self.max_range.getitem_np(indexes_buffer=indexes_buffer)
+        min_vals: NDArray[np.float32] = self.min_range.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        max_vals: NDArray[np.float32] = self.max_range.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
 
         #
         ### Use numpy's vectorized uniform random number generator. ###
@@ -277,10 +277,10 @@ class RandomChoice(Value):
         self.choices: list[Value] = choices
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        return random.choice(self.choices).__getitem__(index=index)
+        return random.choice(self.choices).__getitem__(index=index, sample_rate=sample_rate)
 
 
 #
@@ -354,26 +354,26 @@ class Polynom(Value):
         self.terms: list[Value] = terms
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        X_val: float = self.X.__getitem__(index=index)
+        X_val: float = self.X.__getitem__(index=index, sample_rate=sample_rate)
 
         #
         return sum([
-            X_val**i * self.terms[i].__getitem__(index=index)
+            X_val**i * self.terms[i].__getitem__(index=index, sample_rate=sample_rate)
             for i in range(len(self.terms))
         ])
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        X_val: NDArray[np.float32] = self.X.getitem_np(indexes_buffer=indexes_buffer)
+        X_val: NDArray[np.float32] = self.X.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
 
         #
         return np.sum([
-            np.multiply( np.pow(X_val, i), self.terms[i].getitem_np(indexes_buffer=indexes_buffer) )
+            np.multiply( np.pow(X_val, i), self.terms[i].getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate) )
             for i in range(len(self.terms))
         ])
 
@@ -395,23 +395,23 @@ class BasicScaling(Value):
         self.sum_scale: Value = sum_scale
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        v: float = self.value.__getitem__(index=index)
-        m: float = self.mult_scale.__getitem__(index=index)
-        s: float = self.sum_scale.__getitem__(index=index)
+        v: float = self.value.__getitem__(index=index, sample_rate=sample_rate)
+        m: float = self.mult_scale.__getitem__(index=index, sample_rate=sample_rate)
+        s: float = self.sum_scale.__getitem__(index=index, sample_rate=sample_rate)
 
         #
         return v * m + s
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        v: NDArray[np.float32] = self.value.getitem_np(indexes_buffer=indexes_buffer)
-        m: NDArray[np.float32] = self.mult_scale.getitem_np(indexes_buffer=indexes_buffer)
-        s: NDArray[np.float32] = self.sum_scale.getitem_np(indexes_buffer=indexes_buffer)
+        v: NDArray[np.float32] = self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        m: NDArray[np.float32] = self.mult_scale.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        s: NDArray[np.float32] = self.sum_scale.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
 
         #
         return np.multiply(v, m) + s
@@ -435,16 +435,16 @@ class Abs(Value):
         self.value: Value = value
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        return abs(self.value.__getitem__(index=index))
+        return abs(self.value.__getitem__(index=index, sample_rate=sample_rate))
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        return np.abs(self.value.getitem_np(indexes_buffer=indexes_buffer))
+        return np.abs(self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate))
 
 
 #
@@ -472,25 +472,25 @@ class Clamp(Value):
         self.max_value: Value = max_value
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
         return max(
-            self.min_value.__getitem__(index=index),
+            self.min_value.__getitem__(index=index, sample_rate=sample_rate),
             min(
-                self.max_value.__getitem__(index=index),
-                self.value.__getitem__(index=index)
+                self.max_value.__getitem__(index=index, sample_rate=sample_rate),
+                self.value.__getitem__(index=index, sample_rate=sample_rate)
             )
         )
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
         return np.clip(
-            self.value.getitem_np(indexes_buffer=indexes_buffer),
-            self.min_value.getitem_np(indexes_buffer=indexes_buffer),
-            self.max_value.getitem_np(indexes_buffer=indexes_buffer)
+            self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate),
+            self.min_value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate),
+            self.max_value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
         )
 
 
@@ -518,21 +518,21 @@ class LowPass(Value):
         self.max_value: Value = max_value
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
         return min(
-            self.max_value.__getitem__(index=index),
-            self.value.__getitem__(index=index)
+            self.max_value.__getitem__(index=index, sample_rate=sample_rate),
+            self.value.__getitem__(index=index, sample_rate=sample_rate)
         )
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
         return np.minimum(
-            self.max_value.getitem_np(indexes_buffer=indexes_buffer),
-            self.value.getitem_np(indexes_buffer=indexes_buffer)
+            self.max_value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate),
+            self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
         )
 
 
@@ -560,21 +560,21 @@ class HighPass(Value):
         self.min_value: Value = min_value
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
         return max(
-            self.min_value.__getitem__(index=index),
-            self.value.__getitem__(index=index)
+            self.min_value.__getitem__(index=index, sample_rate=sample_rate),
+            self.value.__getitem__(index=index, sample_rate=sample_rate)
         )
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
         return np.maximum(
-            self.min_value.getitem_np(indexes_buffer=indexes_buffer),
-            self.value.getitem_np(indexes_buffer=indexes_buffer)
+            self.min_value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate),
+            self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
         )
 
 
@@ -606,33 +606,33 @@ class MaskTreshold(Value):
         self.mask_value: Value = mask_value
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        mask_v: float = self.mask.__getitem__(index=index)
+        mask_v: float = self.mask.__getitem__(index=index, sample_rate=sample_rate)
 
         #
-        if mask_v >= self.treshold_to_mask.__getitem__(index=index):
+        if mask_v >= self.treshold_to_mask.__getitem__(index=index, sample_rate=sample_rate):
 
             #
-            return self.mask_value.__getitem__(index=index)
+            return self.mask_value.__getitem__(index=index, sample_rate=sample_rate)
 
         #
         else:
 
             #
-            return self.value.__getitem__(index=index)
+            return self.value.__getitem__(index=index, sample_rate=sample_rate)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        base_value: NDArray[np.float32] = self.value.getitem_np(indexes_buffer=indexes_buffer)
-        masked_value: NDArray[np.float32] = self.mask_value.getitem_np(indexes_buffer=indexes_buffer)
+        base_value: NDArray[np.float32] = self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        masked_value: NDArray[np.float32] = self.mask_value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
 
         #
-        mask_v: NDArray[np.float32] = self.mask.getitem_np(indexes_buffer=indexes_buffer)
-        treshold_v: NDArray[np.float32] = self.treshold_to_mask.getitem_np(indexes_buffer=indexes_buffer)
+        mask_v: NDArray[np.float32] = self.mask.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        treshold_v: NDArray[np.float32] = self.treshold_to_mask.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
 
         #
         return np.where(mask_v < treshold_v, base_value, masked_value)
@@ -666,31 +666,31 @@ class TimeInterval(Value):
         self.max_sample_idx: Value = max_sample_idx
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        if index < self.min_sample_idx.__getitem__(index=index):
+        if index < self.min_sample_idx.__getitem__(index=index, sample_rate=sample_rate):
             #
-            return self.value_outside.__getitem__(index=index)
+            return self.value_outside.__getitem__(index=index, sample_rate=sample_rate)
 
         #
-        elif index > self.max_sample_idx.__getitem__(index=index):
+        elif index > self.max_sample_idx.__getitem__(index=index, sample_rate=sample_rate):
             #
-            return self.value_outside.__getitem__(index=index)
+            return self.value_outside.__getitem__(index=index, sample_rate=sample_rate)
 
         #
-        return self.value_inside.__getitem__(index=index)
+        return self.value_inside.__getitem__(index=index, sample_rate=sample_rate)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        inside_values: NDArray[np.float32] = self.value_inside.getitem_np(indexes_buffer=indexes_buffer)
-        outside_values: NDArray[np.float32] = self.value_outside.getitem_np(indexes_buffer=indexes_buffer)
+        inside_values: NDArray[np.float32] = self.value_inside.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        outside_values: NDArray[np.float32] = self.value_outside.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
 
         #
-        min_idx: NDArray[np.float32] = self.min_sample_idx.getitem_np(indexes_buffer=indexes_buffer)
-        max_idx: NDArray[np.float32] = self.max_sample_idx.getitem_np(indexes_buffer=indexes_buffer)
+        min_idx: NDArray[np.float32] = self.min_sample_idx.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        max_idx: NDArray[np.float32] = self.max_sample_idx.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
 
         #
         ### Create mask for values inside the interval. ###
@@ -720,16 +720,16 @@ class Min(Value):
         self.values: list[Value] = input_args_to_values(values=values)
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        return min([v.__getitem__(index=index) for v in self.values])
+        return min([v.__getitem__(index=index, sample_rate=sample_rate) for v in self.values])
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        arrays = [v.getitem_np(indexes_buffer=indexes_buffer) for v in self.values]
+        arrays = [v.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate) for v in self.values]
         #
         return np.minimum.reduce(arrays)
 
@@ -749,16 +749,16 @@ class Max(Value):
         self.values: list[Value] = input_args_to_values(values=values)
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        return max([v.__getitem__(index=index) for v in self.values])
+        return max([v.__getitem__(index=index, sample_rate=sample_rate) for v in self.values])
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        arrays = [v.getitem_np(indexes_buffer=indexes_buffer) for v in self.values]
+        arrays = [v.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate) for v in self.values]
         #
         return np.maximum.reduce(arrays)
 
@@ -778,16 +778,16 @@ class Sum(Value):
         self.values: list[Value] = input_args_to_values(values=values)
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        return sum([v.__getitem__(index=index) for v in self.values])
+        return sum([v.__getitem__(index=index, sample_rate=sample_rate) for v in self.values])
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        arrays = [v.getitem_np(indexes_buffer=indexes_buffer) for v in self.values]
+        arrays = [v.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate) for v in self.values]
         #
         return np.sum(arrays, axis=0)
 
@@ -810,7 +810,7 @@ class PonderedSum(Value):
         self.values: list[tuple[Value, Value]] = values
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
         result: float = 0
@@ -819,13 +819,13 @@ class PonderedSum(Value):
         for pond, val in self.values:
 
             #
-            result += pond.__getitem__(index=index) * val.__getitem__(index=index)
+            result += pond.__getitem__(index=index, sample_rate=sample_rate) * val.__getitem__(index=index, sample_rate=sample_rate)
 
         #
         return result
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
         result: NDArray[np.float32] = np.zeros_like(indexes_buffer, dtype=np.float32)
@@ -834,7 +834,7 @@ class PonderedSum(Value):
         for pond, val in self.values:
 
             #
-            result += pond.getitem_np(indexes_buffer=indexes_buffer) * val.getitem_np(indexes_buffer=indexes_buffer)
+            result += pond.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate) * val.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
 
         #
         return result
@@ -855,7 +855,7 @@ class Product(Value):
         self.values: list[Value] = input_args_to_values(values=values)
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
         result: float = 1
@@ -864,13 +864,13 @@ class Product(Value):
         for v in self.values:
 
             #
-            result *= v.__getitem__(index=index)
+            result *= v.__getitem__(index=index, sample_rate=sample_rate)
 
         #
         return result
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
         result: NDArray[np.float32] = np.ones_like(indexes_buffer, dtype=np.float32)
@@ -879,7 +879,7 @@ class Product(Value):
         for v in self.values:
 
             #
-            result = np.multiply(result, v.getitem_np(indexes_buffer=indexes_buffer))
+            result = np.multiply(result, v.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate))
 
         #
         return result
@@ -909,21 +909,21 @@ class Pow(Value):
         self.base: Value = base
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        base_v: float = self.base.__getitem__(index=index)
-        exp_v: float = self.exponent.__getitem__(index=index)
+        base_v: float = self.base.__getitem__(index=index, sample_rate=sample_rate)
+        exp_v: float = self.exponent.__getitem__(index=index, sample_rate=sample_rate)
 
         #
         return base_v ** exp_v
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        base_v: NDArray[np.float32] = self.base.getitem_np(indexes_buffer=indexes_buffer)
-        exp_v: NDArray[np.float32] = self.exponent.getitem_np(indexes_buffer=indexes_buffer)
+        base_v: NDArray[np.float32] = self.base.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        exp_v: NDArray[np.float32] = self.exponent.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
 
         #
         return np.power(base_v, exp_v)
@@ -949,21 +949,21 @@ class Log(Value):
         self.base: Value = base
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        base_v: float = self.base.__getitem__(index=index)
-        val_v: float = self.value.__getitem__(index=index)
+        base_v: float = self.base.__getitem__(index=index, sample_rate=sample_rate)
+        val_v: float = self.value.__getitem__(index=index, sample_rate=sample_rate)
 
         #
         return math.log(x=val_v, base=base_v)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        base_v: NDArray[np.float32] = self.base.getitem_np(indexes_buffer=indexes_buffer)
-        val_v: NDArray[np.float32] = self.value.getitem_np(indexes_buffer=indexes_buffer)
+        base_v: NDArray[np.float32] = self.base.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        val_v: NDArray[np.float32] = self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
 
         #
         return (np.log(val_v) / np.log(base_v)).astype(dtype=np.float32)
@@ -996,25 +996,25 @@ class Sin(Value):
         self.delta: Value = delta
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        val_v: float = self.value.__getitem__(index=index)
-        fre_v: float = self.frequency.__getitem__(index=index)
-        amp_v: float = self.amplitude.__getitem__(index=index)
-        del_v: float = self.delta.__getitem__(index=index)
+        val_v: float = self.value.__getitem__(index=index, sample_rate=sample_rate)
+        fre_v: float = self.frequency.__getitem__(index=index, sample_rate=sample_rate)
+        amp_v: float = self.amplitude.__getitem__(index=index, sample_rate=sample_rate)
+        del_v: float = self.delta.__getitem__(index=index, sample_rate=sample_rate)
 
         #
         return amp_v * math.sin( val_v * fre_v + del_v )
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        val_v: NDArray[np.float32] = self.value.getitem_np(indexes_buffer=indexes_buffer)
-        fre_v: NDArray[np.float32] = self.frequency.getitem_np(indexes_buffer=indexes_buffer)
-        amp_v: NDArray[np.float32] = self.amplitude.getitem_np(indexes_buffer=indexes_buffer)
-        del_v: NDArray[np.float32] = self.delta.getitem_np(indexes_buffer=indexes_buffer)
+        val_v: NDArray[np.float32] = self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        fre_v: NDArray[np.float32] = self.frequency.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        amp_v: NDArray[np.float32] = self.amplitude.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        del_v: NDArray[np.float32] = self.delta.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
 
         #
         return np.multiply( amp_v, np.sin( np.multiply(val_v, fre_v) + del_v ) )
@@ -1047,25 +1047,25 @@ class Cos(Value):
         self.delta: Value = delta
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        val_v: float = self.value.__getitem__(index=index)
-        fre_v: float = self.frequency.__getitem__(index=index)
-        amp_v: float = self.amplitude.__getitem__(index=index)
-        del_v: float = self.delta.__getitem__(index=index)
+        val_v: float = self.value.__getitem__(index=index, sample_rate=sample_rate)
+        fre_v: float = self.frequency.__getitem__(index=index, sample_rate=sample_rate)
+        amp_v: float = self.amplitude.__getitem__(index=index, sample_rate=sample_rate)
+        del_v: float = self.delta.__getitem__(index=index, sample_rate=sample_rate)
 
         #
         return amp_v * math.cos( val_v * fre_v + del_v )
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        val_v: NDArray[np.float32] = self.value.getitem_np(indexes_buffer=indexes_buffer)
-        fre_v: NDArray[np.float32] = self.frequency.getitem_np(indexes_buffer=indexes_buffer)
-        amp_v: NDArray[np.float32] = self.amplitude.getitem_np(indexes_buffer=indexes_buffer)
-        del_v: NDArray[np.float32] = self.delta.getitem_np(indexes_buffer=indexes_buffer)
+        val_v: NDArray[np.float32] = self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        fre_v: NDArray[np.float32] = self.frequency.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        amp_v: NDArray[np.float32] = self.amplitude.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        del_v: NDArray[np.float32] = self.delta.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
 
         #
         return np.multiply( amp_v, np.cos( np.multiply(val_v, fre_v) + del_v ) )
@@ -1120,13 +1120,13 @@ class Triangle(Value):
         self.delta: Value = delta
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        val_v: float = self.value.__getitem__(index=index)
-        fre_v: float = self.frequency.__getitem__(index=index)
-        amp_v: float = self.amplitude.__getitem__(index=index)
-        del_v: float = self.delta.__getitem__(index=index)
+        val_v: float = self.value.__getitem__(index=index, sample_rate=sample_rate)
+        fre_v: float = self.frequency.__getitem__(index=index, sample_rate=sample_rate)
+        amp_v: float = self.amplitude.__getitem__(index=index, sample_rate=sample_rate)
+        del_v: float = self.delta.__getitem__(index=index, sample_rate=sample_rate)
 
         #
         ### Calculate the phase. ###
@@ -1145,13 +1145,13 @@ class Triangle(Value):
         return amp_v * triangle_value
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        val_v: NDArray[np.float32] = self.value.getitem_np(indexes_buffer=indexes_buffer)
-        fre_v: NDArray[np.float32] = self.frequency.getitem_np(indexes_buffer=indexes_buffer)
-        amp_v: NDArray[np.float32] = self.amplitude.getitem_np(indexes_buffer=indexes_buffer)
-        del_v: NDArray[np.float32] = self.delta.getitem_np(indexes_buffer=indexes_buffer)
+        val_v: NDArray[np.float32] = self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        fre_v: NDArray[np.float32] = self.frequency.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        amp_v: NDArray[np.float32] = self.amplitude.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        del_v: NDArray[np.float32] = self.delta.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
 
         #
         ### Calculate the phase. ###
@@ -1218,14 +1218,14 @@ class Square(Value):
         self.duty_cycle: Value = duty_cycle
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        val_v: float = self.value.__getitem__(index=index)
-        fre_v: float = self.frequency.__getitem__(index=index)
-        amp_v: float = self.amplitude.__getitem__(index=index)
-        del_v: float = self.delta.__getitem__(index=index)
-        duty_v: float = self.duty_cycle.__getitem__(index=index)
+        val_v: float = self.value.__getitem__(index=index, sample_rate=sample_rate)
+        fre_v: float = self.frequency.__getitem__(index=index, sample_rate=sample_rate)
+        amp_v: float = self.amplitude.__getitem__(index=index, sample_rate=sample_rate)
+        del_v: float = self.delta.__getitem__(index=index, sample_rate=sample_rate)
+        duty_v: float = self.duty_cycle.__getitem__(index=index, sample_rate=sample_rate)
 
         #
         ### Calculate the phase and normalize to [0, 1). ###
@@ -1245,14 +1245,14 @@ class Square(Value):
             return -amp_v
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        val_v: NDArray[np.float32] = self.value.getitem_np(indexes_buffer=indexes_buffer)
-        fre_v: NDArray[np.float32] = self.frequency.getitem_np(indexes_buffer=indexes_buffer)
-        amp_v: NDArray[np.float32] = self.amplitude.getitem_np(indexes_buffer=indexes_buffer)
-        del_v: NDArray[np.float32] = self.delta.getitem_np(indexes_buffer=indexes_buffer)
-        duty_v: NDArray[np.float32] = self.duty_cycle.getitem_np(indexes_buffer=indexes_buffer)
+        val_v: NDArray[np.float32] = self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        fre_v: NDArray[np.float32] = self.frequency.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        amp_v: NDArray[np.float32] = self.amplitude.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        del_v: NDArray[np.float32] = self.delta.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        duty_v: NDArray[np.float32] = self.duty_cycle.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
 
         #
         ### Calculate the phase and normalize to [0, 1). ###
@@ -1315,14 +1315,14 @@ class Sawtooth(Value):
         self.direction: Value = direction
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        val_v: float = self.value.__getitem__(index=index)
-        fre_v: float = self.frequency.__getitem__(index=index)
-        amp_v: float = self.amplitude.__getitem__(index=index)
-        del_v: float = self.delta.__getitem__(index=index)
-        dir_v: float = self.direction.__getitem__(index=index)
+        val_v: float = self.value.__getitem__(index=index, sample_rate=sample_rate)
+        fre_v: float = self.frequency.__getitem__(index=index, sample_rate=sample_rate)
+        amp_v: float = self.amplitude.__getitem__(index=index, sample_rate=sample_rate)
+        del_v: float = self.delta.__getitem__(index=index, sample_rate=sample_rate)
+        dir_v: float = self.direction.__getitem__(index=index, sample_rate=sample_rate)
 
         #
         ### Calculate the phase and normalize to [0, 1). ###
@@ -1351,14 +1351,14 @@ class Sawtooth(Value):
         return amp_v * sawtooth_value
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        val_v: NDArray[np.float32] = self.value.getitem_np(indexes_buffer=indexes_buffer)
-        fre_v: NDArray[np.float32] = self.frequency.getitem_np(indexes_buffer=indexes_buffer)
-        amp_v: NDArray[np.float32] = self.amplitude.getitem_np(indexes_buffer=indexes_buffer)
-        del_v: NDArray[np.float32] = self.delta.getitem_np(indexes_buffer=indexes_buffer)
-        dir_v: NDArray[np.float32] = self.direction.getitem_np(indexes_buffer=indexes_buffer)
+        val_v: NDArray[np.float32] = self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        fre_v: NDArray[np.float32] = self.frequency.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        amp_v: NDArray[np.float32] = self.amplitude.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        del_v: NDArray[np.float32] = self.delta.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        dir_v: NDArray[np.float32] = self.direction.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
 
         #
         ### Calculate the phase and normalize to [0, 1). ###

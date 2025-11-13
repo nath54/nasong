@@ -1,11 +1,13 @@
 #
 ### Import Modules. ###
 #
-import lib_value as lv
 import math
 #
 import numpy as np
 from numpy.typing import NDArray
+#
+import lib_value as lv
+from lib_ext_effects_1 import ADSR2
 
 
 #
@@ -91,10 +93,10 @@ class GuitarString(lv.Value):
         self.brightness: float = brightness
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        t: float = self.time.__getitem__(index=index)
+        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
         relative_t: float = t - self.start_time
 
         #
@@ -146,12 +148,12 @@ class GuitarString(lv.Value):
         return env * signal * 0.25
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
         ### Get time and relative time for the whole buffer. ###
         #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer)
+        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
         relative_t: NDArray[np.float32] = t - self.start_time
 
         #
@@ -243,10 +245,10 @@ class GuitarString2(lv.Value):
         self.amplitude: float = amplitude
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        t: float = self.time.__getitem__(index=index)
+        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
         relative_time: float = t - self.start_time
 
         #
@@ -304,10 +306,10 @@ class GuitarString2(lv.Value):
         return self.amplitude * env * (signal + noise)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer)
+        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
         relative_time: NDArray[np.float32] = t - self.start_time
 
         #
@@ -399,10 +401,10 @@ class AcousticString(lv.Value):
         self.decay_rate: float = decay_rate
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        t: float = self.time.__getitem__(index=index)
+        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
         relative_time: float = t - self.pluck_time
 
         #
@@ -454,10 +456,10 @@ class AcousticString(lv.Value):
         return self.amplitude * env * signal
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer)
+        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
         #
         relative_time: NDArray[np.float32] = t - self.pluck_time
 
@@ -567,19 +569,19 @@ class Fingerpicking(lv.Value):
                 self.strings.append(AcousticString(time, note, pluck_time, 0.25, 2.0))
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        return sum(s.__getitem__(index=index) for s in self.strings)
+        return sum(s.__getitem__(index=index, sample_rate=sample_rate) for s in self.strings)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
         ### Create an array of all string outputs. ###
         #
         all_strings: list[NDArray[np.float32]] = [
-            s.getitem_np(indexes_buffer=indexes_buffer) for s in self.strings
+            s.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate) for s in self.strings
         ]
 
         #
@@ -626,97 +628,25 @@ class Strum(lv.Value):
             self.strings.append(GuitarString(time, freq, start_time + offset, duration))
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        return sum(string.__getitem__(index) for string in self.strings)
+        return sum(string.__getitem__(index=index, sample_rate=sample_rate) for string in self.strings)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
         ### Create an array of all string outputs. ###
         #
         all_strings: list[NDArray[np.float32]] = [
-            s.getitem_np(indexes_buffer=indexes_buffer) for s in self.strings
+            s.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate) for s in self.strings
         ]
 
         #
         ### Sum them all together. ###
         #
         return np.sum(all_strings, axis=0)
-
-
-#
-class ADSR_Piano(lv.Value):
-
-    """
-    A stub for the ADSR class. The original `lib_ext_instr_1.py`
-    used this class but did not provide its definition.
-
-    This stub is built from `lib_value` components, just as
-    `PianoNote` is.
-    """
-
-    #
-    def __init__(
-        self,
-        time: lv.Value,
-        note_start: float,
-        note_duration: float,
-        attack_time: float = 0.02,
-        decay_time: float = 0.15,
-        sustain_level: float = 0.6,
-        release_time: float = 0.3
-    ):
-
-        #
-        super().__init__()
-
-        #
-        ### This is a conceptual implementation. A real ADSR is more complex. ###
-        ### This class just demonstrates that it's built from other Values.   ###
-        #
-        self.time: lv.Value = time
-        self.note_start: float = note_start
-        self.note_end: float = note_start + note_duration
-
-        #
-        ### This is NOT a real ADSR, just a placeholder.         ###
-        ### A real one would use lv.Polynom and lv.TimeInterval. ###
-        #
-        self.stub_env: lv.Value = lv.BasicScaling(
-            lv.Sin(time, lv.Constant(1.0 / (note_duration + release_time))),
-            lv.Constant(1.0),
-            lv.Constant(0.0)
-        )
-
-    #
-    def __getitem__(self, index: int) -> float:
-
-        #
-        ### This is a stub. ###
-        #
-        t: float = self.time.__getitem__(index=index)
-        #
-        if t < self.note_start or t > self.note_end + 0.3:
-            #
-            return 0.0
-        #
-        return self.stub_env.__getitem__(index=index)
-
-    #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
-
-        #
-        ### This is a stub. ###
-        #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer)
-        #
-        mask: NDArray[np.bool_] = (t >= self.note_start) & (t <= self.note_end + 0.3)
-        #
-        return self.stub_env.getitem_np(indexes_buffer=indexes_buffer) * mask
-
 
 #
 class PianoNote(lv.Value):
@@ -760,7 +690,7 @@ class PianoNote(lv.Value):
         #
         ### Create ADSR envelope. ###
         #
-        self.envelope: ADSR_Piano = ADSR_Piano(
+        self.envelope: ADSR2 = ADSR2(
             time=time,
             note_start=start_time,
             note_duration=duration,
@@ -805,10 +735,10 @@ class PianoNote(lv.Value):
         )
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        envelope_val: float = self.envelope.__getitem__(index=index)
+        envelope_val: float = self.envelope.__getitem__(index=index, sample_rate=sample_rate)
         #
         if envelope_val == 0:
             #
@@ -818,27 +748,25 @@ class PianoNote(lv.Value):
         ### Sum harmonics. ###
         #
         harmonic_sum: float = (
-            self.fundamental.__getitem__(index=index) +
-            self.harmonic2.__getitem__(index=index) +
-            self.harmonic3.__getitem__(index=index) +
-            self.harmonic4.__getitem__(index=index)
+            self.fundamental.__getitem__(index=index, sample_rate=sample_rate) +
+            self.harmonic2.__getitem__(index=index, sample_rate=sample_rate) +
+            self.harmonic3.__getitem__(index=index, sample_rate=sample_rate) +
+            self.harmonic4.__getitem__(index=index, sample_rate=sample_rate)
         )
 
         #
         ### Alternatively, using the pre-built `lv.Sum`                      ###
-        ### harmonic_sum: float = self.harmonic_sum.__getitem__(index=index) ###
+        ### harmonic_sum: float = self.harmonic_sum.__getitem__(index=index, sample_rate=sample_rate) ###
         #
         return self.amplitude * envelope_val * harmonic_sum
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
         ### Get the vectorized envelope. ###
         #
-        envelope_val: NDArray[np.float32] = self.envelope.getitem_np(
-            indexes_buffer=indexes_buffer
-        )
+        envelope_val: NDArray[np.float32] = self.envelope.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
 
         #
         ### Optimization: if the whole envelope is 0, return zeros. ###
@@ -850,9 +778,7 @@ class PianoNote(lv.Value):
         #
         ### Get the vectorized sum of harmonics. ###
         #
-        harmonic_sum: NDArray[np.float32] = self.harmonic_sum.getitem_np(
-            indexes_buffer=indexes_buffer
-        )
+        harmonic_sum: NDArray[np.float32] = self.harmonic_sum.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
 
         #
         return (self.amplitude * envelope_val * harmonic_sum).astype(dtype=np.float32)
@@ -894,10 +820,10 @@ class PianoNote2(lv.Value):
         self.duration: float = duration
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        t: float = self.time.__getitem__(index=index)
+        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
         #
         relative_t: float = t - self.start_time
 
@@ -940,10 +866,10 @@ class PianoNote2(lv.Value):
         return env * (fundamental + harmonic2 + harmonic3 + harmonic4 + harmonic5) * 0.3
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer)
+        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
         #
         relative_t: NDArray[np.float32] = t - self.start_time
 
@@ -1040,10 +966,10 @@ class WobbleBass(lv.Value):
         self.amplitude: float = amplitude
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        t: float = self.time.__getitem__(index=index)
+        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
         #
         relative_time: float = t - self.start_time
 
@@ -1080,10 +1006,10 @@ class WobbleBass(lv.Value):
         return self.amplitude * filtered
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer)
+        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
         #
         relative_time: NDArray[np.float32] = t - self.start_time
 
@@ -1160,10 +1086,10 @@ class DeepBass(lv.Value):
         self.duration: float = duration
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        t: float = self.time.__getitem__(index=index)
+        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
         #
         relative_t: float = t - self.start_time
 
@@ -1186,10 +1112,10 @@ class DeepBass(lv.Value):
         return env * bass * 0.4
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer)
+        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
         #
         relative_t: NDArray[np.float32] = t - self.start_time
 
@@ -1256,10 +1182,10 @@ class SaxophoneNote(lv.Value):
         self.amplitude: float = amplitude
 
     #
-    def __getitem__(self, index: int) -> float:
+    def __getitem__(self, index: int, sample_rate: int) -> float:
 
         #
-        t: float = self.time.__getitem__(index=index)
+        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
         #
         relative_time: float = t - self.start_time
 
@@ -1316,10 +1242,10 @@ class SaxophoneNote(lv.Value):
         return self.amplitude * env * (signal + breath * 0.5)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32]) -> NDArray[np.float32]:
+    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
 
         #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer)
+        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
         relative_time: NDArray[np.float32] = t - self.start_time
 
         #
