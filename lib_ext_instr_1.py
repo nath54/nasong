@@ -3,1264 +3,627 @@
 #
 import math
 #
-import numpy as np
-from numpy.typing import NDArray
-#
 import lib_value as lv
 
 
 #
-class GuitarString(lv.Value):
+def GuitarString(
+    time: lv.Value,
+    frequency: float,
+    start_time: float,
+    duration: float = 3.0,
+    brightness: float = 1.0
+) -> lv.Value:
 
     """
-    Simulates a plucked guitar string with Karplus-Strong-like characteristics.
-
-    "Truthness" / "Good Listening" Analysis:
-        - "Truthness": This is a "truthful" additive synthesis model. It models
-            a fundamental, several harmonics, and a "brightness" parameter that
-            correctly makes higher harmonics decay faster.
-        - "Good Listening": This class is **POOR** for "good listening" at
-            audio rates.
-        - **Reason:** It uses naive `sin` calls for high-order harmonics
-            (e.g., `frequency * 6`). If `frequency * 6` exceeds half the
-            sample rate (Nyquist limit), it will cause significant **aliasing**,
-            which sounds like a harsh, inharmonic "digital" noise.
-        - **Improvement:** To be "realistic," this class would need to be
-            band-limited, which requires knowing the `sample_rate`.
+    Refactored GuitarString.
+    Builds graph from lib_value components.
+    "POOR" aliasing  remains, as it's built-in to the design
+    (and `sample_rate` is not available at construction).
     """
 
-    def __init__(
-        self,
-        time: lv.Value,
-        frequency: float,
-        start_time: float,
-        duration: float = 3.0,
-        brightness: float = 1.0
-    ) -> None:
-
-        #
-        super().__init__()
-
-        #
-        self.time: lv.Value = time
-        self.frequency: float = frequency
-        self.start_time: float = start_time
-        self.duration: float = duration
-        self.brightness: float = brightness
+    #
+    ### Envelope: 0.002s attack, then exp(-t * 1.2) decay  ###
+    #
+    amp_env: lv.Value = lv.ExponentialADSR(
+        time,
+        note_start=start_time,
+        note_duration=duration,
+        attack_time=0.002,
+        decay_time=duration - 0.002,
+        sustain_level=0.0,
+        release_time=0.01,
+        attack_curve=1.0,     # Linear attack
+        decay_curve=1.5       # Approx exp(-t*1.2)
+    )
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
-
-        #
-        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
-        relative_t: float = t - self.start_time
-
-        #
-        ### Gate: stop sound outside the note's duration. ###
-        #
-        if relative_t < 0 or relative_t > self.duration:
-            #
-            return 0.0
-
-        #
-        ### Envelope: sharp 0.002s attack, then exponential decay. ###
-        #
-        if relative_t < 0.002:
-            #
-            env: float = relative_t / 0.002
-        #
-        else:
-            #
-            env: float = math.exp(-relative_t * 1.2)
-
-        #
-        ### Fundamental and harmonics (additive synthesis) ###
-        #
-        fundamental: float = math.sin(2 * math.pi * self.frequency * relative_t)
-        harmonic2: float = 0.6 * math.sin(2 * math.pi * self.frequency * 2 * relative_t)
-        harmonic3: float = 0.4 * math.sin(2 * math.pi * self.frequency * 3 * relative_t)
-        harmonic4: float = 0.25 * math.sin(2 * math.pi * self.frequency * 4 * relative_t)
-        harmonic5: float = 0.15 * math.sin(2 * math.pi * self.frequency * 5 * relative_t)
-        harmonic6: float = 0.1 * math.sin(2 * math.pi * self.frequency * 6 * relative_t)
-
-        #
-        ### High harmonics decay faster (brightness parameter) ###
-        #
-        decay_factor: float = math.exp(-relative_t * 2 * self.brightness)
-
-        #
-        ### Sum the signal. ###
-        #
-        signal: float = (
-            fundamental +
-            harmonic2 * (0.5 + 0.5 * decay_factor) +
-            harmonic3 * decay_factor +
-            harmonic4 * decay_factor * 0.8 +
-            harmonic5 * decay_factor * 0.6 +
-            harmonic6 * decay_factor * 0.4
-        )
-
-        #
-        return env * signal * 0.25
+    ### Oscillator: 6 additive harmonics  ###
+    #
+    relative_time: lv.Value = lv.BasicScaling(time, lv.c(1), lv.c(-start_time))
+    pi2: float = 2 * math.pi
+    #
+    h1: lv.Value = lv.Sin(relative_time, lv.c(frequency * 1 * pi2), lv.c(1.0))
+    h2: lv.Value = lv.Sin(relative_time, lv.c(frequency * 2 * pi2), lv.c(0.6))
+    h3: lv.Value = lv.Sin(relative_time, lv.c(frequency * 3 * pi2), lv.c(0.4))
+    h4: lv.Value = lv.Sin(relative_time, lv.c(frequency * 4 * pi2), lv.c(0.25))
+    h5: lv.Value = lv.Sin(relative_time, lv.c(frequency * 5 * pi2), lv.c(0.15))
+    h6: lv.Value = lv.Sin(relative_time, lv.c(frequency * 6 * pi2), lv.c(0.1))
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    ### Brightness decay: exp(-t * 2 * brightness)  ###
+    #
+    brightness_env: lv.Value = lv.ExponentialDecay(
+        time, start_time, 2.0 * brightness
+    )
 
-        #
-        ### Get time and relative time for the whole buffer. ###
-        #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        relative_t: NDArray[np.float32] = t - self.start_time
+    #
+    ### Apply brightness decay to harmonics per original logic  ###
+    #
+    df_1: lv.Value = lv.Sum(lv.c(0.5), lv.Product(lv.c(0.5), brightness_env))
+    df_2: lv.Value = brightness_env
+    df_3: lv.Value = lv.Product(brightness_env, lv.c(0.8))
+    df_4: lv.Value = lv.Product(brightness_env, lv.c(0.6))
+    df_5: lv.Value = lv.Product(brightness_env, lv.c(0.4))
 
-        #
-        ### Gate mask: sound is only non-zero within the duration. ###
-        #
-        mask: NDArray[np.bool_] = (relative_t >= 0) & (relative_t <= self.duration)
-        if not np.any(mask):
-            return np.zeros_like(indexes_buffer, dtype=np.float32)
+    #
+    signal: lv.Value = lv.Sum(
+        h1,
+        lv.Product(h2, df_1),
+        lv.Product(h3, df_2),
+        lv.Product(h4, df_3),
+        lv.Product(h5, df_4),
+        lv.Product(h6, df_5)
+    )
 
-        #
-        ### Envelope: sharp 0.002s attack, then exponential decay. ###
-        #
-        attack_env: NDArray[np.float32] = relative_t / 0.002
-        decay_env: NDArray[np.float32] = np.exp(-relative_t * 1.2)
-        env: NDArray[np.float32] = np.where(relative_t < 0.002, attack_env, decay_env)
-
-        #
-        ### Fundamental and harmonics (vectorized additive synthesis). ###
-        #
-        pi2: float = 2 * np.pi
-        fundamental: NDArray[np.float32] = np.sin(pi2 * self.frequency * relative_t)
-        harmonic2: NDArray[np.float32] = (0.6 * np.sin(pi2 * self.frequency * 2 * relative_t)).astype(dtype=np.float32)
-        harmonic3: NDArray[np.float32] = (0.4 * np.sin(pi2 * self.frequency * 3 * relative_t)).astype(dtype=np.float32)
-        harmonic4: NDArray[np.float32] = (0.25 * np.sin(pi2 * self.frequency * 4 * relative_t)).astype(dtype=np.float32)
-        harmonic5: NDArray[np.float32] = (0.15 * np.sin(pi2 * self.frequency * 5 * relative_t)).astype(dtype=np.float32)
-        harmonic6: NDArray[np.float32] = (0.1 * np.sin(pi2 * self.frequency * 6 * relative_t)).astype(dtype=np.float32)
-
-        #
-        ### High harmonics decay faster. ###
-        #
-        decay_factor: NDArray[np.float32] = np.exp(-relative_t * 2 * self.brightness)
-
-        #
-        ### Sum the signal. ###
-        #
-        signal: NDArray[np.float32] = (
-            fundamental +
-            harmonic2 * (0.5 + 0.5 * decay_factor) +
-            harmonic3 * decay_factor +
-            harmonic4 * decay_factor * 0.8 +
-            harmonic5 * decay_factor * 0.6 +
-            harmonic6 * decay_factor * 0.4
-        ).astype(dtype=np.float32)
-
-        #
-        ### Apply envelope, gain, and gate mask. ###
-        #
-        return (env * signal * 0.25 * mask).astype(dtype=np.float32)
+    #
+    ### Final = 0.25 * AmpEnv * Signal ###
+    #
+    return lv.Product(
+        lv.c(0.25),
+        amp_env,
+        signal
+    )
 
 
 #
-class GuitarString2(lv.Value):
+def GuitarString2(
+    time: lv.Value,
+    frequency: float,
+    start_time: float,
+    duration: float,
+    amplitude: float = 0.4
+) -> lv.Value:
 
     """
-    Simulates a guitar string with distortion and harmonics.
-
-    "Truthness" / "Good Listening" Analysis:
-        - "Truthness": Another additive synthesis model with a more complex
-            ADR (Attack-Decay-Release) envelope.
-        - "Good Listening": **POOR**.
-        - **Reason:**
-            1.  **Aliasing:** Same problem as `GuitarString` due to naive harmonics.
-            2.  **Bad Noise:** The original `hash()`-based noise is not
-                "good listening." It's not truly random and creates a
-                periodic, digital artifact.
-        - **Improvement:** This `getitem_np` version replaces the "bad"
-            `hash()` noise with a proper, deterministic vectorized noise
-            generator (`_vectorized_noise`). This fixes one of the "good
-            listening" problems, but the aliasing remains.
+    Refactored GuitarString2.
+    Builds graph from lib_value components.
+    Fixes "bad noise".
     """
 
-    def __init__(
-        self,
-        time: lv.Value,
-        frequency: float,
-        start_time: float,
-        duration: float,
-        amplitude: float = 0.4
-    ) -> None:
-
-        #
-        super().__init__()
-
-        #
-        self.time: lv.Value = time
-        self.frequency: float = frequency
-        self.start_time: float = start_time
-        self.duration: float = duration
-        self.amplitude: float = amplitude
+    #
+    ### Envelope: Complex ADR . Approximated. ###
+    #
+    amp_env: lv.Value = lv.ExponentialADSR(
+        time,
+        note_start=start_time,
+        note_duration=duration,
+        attack_time=0.01,
+        decay_time=duration - 0.11, # 0.1s release
+        sustain_level=0.0, # Decays to 0
+        release_time=0.1,
+        attack_curve=1.0,
+        decay_curve=1.2 # Approx exp(-t*0.5)
+    )
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
-
-        #
-        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
-        relative_time: float = t - self.start_time
-
-        #
-        if relative_time < 0 or relative_time > self.duration:
-            #
-            return 0.0
-
-        #
-        ### Envelope (Attack-Decay-Release). ###
-        #
-
-        #
-        ## Attack. ###
-        #
-        if relative_time < 0.01:
-            #
-            env: float = relative_time / 0.01
-
-        #
-        ## Decay. ##
-        #
-        elif relative_time < self.duration - 0.1:
-            #
-            env: float = 1.0 * math.exp(-relative_time * 0.5)
-
-        #
-        ## Release. ###
-        #
-        else:
-            #
-            release: float = (relative_time - (self.duration - 0.1)) / 0.1
-            env: float = (1.0 * math.exp(-relative_time * 0.5)) * (1.0 - release)
-
-        #
-        if env <= 0:
-            #
-            return 0.0
-
-        #
-        ### String vibration with harmonics. ###
-        #
-        fundamental: float = math.sin(2 * math.pi * self.frequency * t)
-        harmonic2: float = 0.5 * math.sin(2 * math.pi * self.frequency * 2 * t)
-        harmonic3: float = 0.3 * math.sin(2 * math.pi * self.frequency * 3 * t)
-
-        #
-        signal: float = fundamental + harmonic2 + harmonic3
-
-        #
-        ### Add some noise for realism (this is the "bad" hash-based noise). ###
-        #
-        noise: float = (hash((index * 12345) % 1000000) % 100 - 50) / 5000.0
-
-        #
-        return self.amplitude * env * (signal + noise)
+    ### Oscillator: 3 harmonics, using `time` (t)  ###
+    #
+    pi2: float = 2 * math.pi
+    #
+    h1: lv.Value = lv.Sin(time, lv.c(frequency * 1 * pi2), lv.c(1.0))
+    h2: lv.Value = lv.Sin(time, lv.c(frequency * 2 * pi2), lv.c(0.5))
+    h3: lv.Value = lv.Sin(time, lv.c(frequency * 3 * pi2), lv.c(0.3))
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    ### Noise: Fixed with WhiteNoise  ###
+    #
+    noise: lv.Value = lv.WhiteNoise(seed=12345, scale=1/5000.0)
 
-        #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        relative_time: NDArray[np.float32] = t - self.start_time
+    #
+    signal: lv.Value = lv.Sum(h1, h2, h3, noise)
 
-        #
-        ### Gate mask. ###
-        #
-        mask: NDArray[np.bool_] = (relative_time >= 0) & (relative_time <= self.duration)
-        #
-        if not np.any(mask):
-            #
-            return np.zeros_like(indexes_buffer, dtype=np.float32)
-
-        #
-        ### Vectorized Envelope (Attack-Decay-Release). ###
-        #
-        attack_part: NDArray[np.float32] = relative_time / 0.01
-        decay_part: NDArray[np.float32] = np.exp(-relative_time * 0.5)
-
-        #
-        release_phase: NDArray[np.float32] = (relative_time - (self.duration - 0.1)) / 0.1
-        release_part: NDArray[np.float32] = (decay_part * (1.0 - release_phase)).astype(dtype=np.float32)
-
-        #
-        # Build envelope with nested `np.where`
-        #
-        env: NDArray[np.float32] = np.where(
-            relative_time < 0.01,
-            attack_part,
-            np.where(relative_time < self.duration - 0.1, decay_part, release_part)
-        )
-        env_mask: NDArray[np.bool_] = env > 0
-
-        #
-        # String vibration with harmonics
-        #
-        pi2t: NDArray[np.float32] = 2 * np.pi * t
-        fundamental: NDArray[np.float32] = np.sin(self.frequency * pi2t)
-        harmonic2: NDArray[np.float32] = (0.5 * np.sin(self.frequency * 2 * pi2t)).astype(dtype=np.float32)
-        harmonic3: NDArray[np.float32] = (0.3 * np.sin(self.frequency * 3 * pi2t)).astype(dtype=np.float32)
-
-        signal: NDArray[np.float32] = (fundamental + harmonic2 + harmonic3).astype(dtype=np.float32)
-
-        #
-        # Vectorized deterministic noise (the "Improvement")
-        #
-        noise: NDArray[np.float32] = lv.WhiteNoise.vectorized_noise(
-            indexes_buffer,
-            seed=12345,
-            scale=1/5000.0
-        )
-
-        #
-        return (self.amplitude * env * (signal + noise) * mask * env_mask).astype(dtype=np.float32)
+    #
+    ### Final = Amplitude * AmpEnv * Signal ###
+    #
+    return lv.Product(
+        lv.c(amplitude),
+        amp_env,
+        signal
+    )
 
 
 #
-class AcousticString(lv.Value):
-    """
-    Simulates an acoustic guitar string with natural decay.
+def AcousticString(
+    time: lv.Value,
+    frequency: float,
+    pluck_time: float,
+    amplitude: float = 0.3,
+    decay_rate: float = 2.0
+) -> lv.Value:
 
-    "Truthness" / "Good Listening" Analysis:
-        - "Truthness": A model combining a sharp attack, exponential decay,
-            rich harmonics, and string noise. This is a "truthful" model.
-        - "Good Listening": **POOR**.
-        - **Reason:**
-            1.  **Aliasing:** Same problem as `GuitarString` due to naive harmonics.
-            2.  **Bad Noise:** Same `hash()`-based noise problem as `GuitarString2`.
-        - **Improvement:** Replaced `hash()` noise with `_vectorized_noise`.
-            The aliasing problem remains, as it's fundamental to this
-            synthesis method without `sample_rate` context.
+    """
+    Refactored AcousticString.
+    Builds graph from lib_value components.
+    Fixes "bad noise" .
     """
 
-    def __init__(
-        self,
-        time: lv.Value,
-        frequency: float,
-        pluck_time: float,
-        amplitude: float = 0.3,
-        decay_rate: float = 2.0
-    ) -> None:
-
-        #
-        super().__init__()
-
-        #
-        self.time: lv.Value = time
-        self.frequency: float = frequency
-        self.pluck_time: float = pluck_time
-        self.amplitude: float = amplitude
-        self.decay_rate: float = decay_rate
+    #
+    ### Envelope: 0.005s attack  ###
+    #
+    attack_env: lv.Value = lv.ADSR2(
+        time, pluck_time, 0.005, 0.005, 0.001, 1.0, 0.001
+    )
+    #
+    decay_env: lv.Value = lv.ExponentialDecay(time, pluck_time, decay_rate)
+    #
+    amp_env: lv.Value = lv.Product(attack_env, decay_env)
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
-
-        #
-        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
-        relative_time: float = t - self.pluck_time
-
-        #
-        if relative_time < 0 or relative_time > 3.0:
-            #
-            return 0.0
-
-        #
-        ### Quick attack (pluck). ###
-        #
-        if relative_time < 0.005:
-            #
-            attack: float = relative_time / 0.005
-        #
-        else:
-            #
-            attack: float = 1.0
-
-        #
-        ### Natural exponential decay. ###
-        #
-        decay: float = math.exp(-relative_time * self.decay_rate)
-        #
-        env: float = attack * decay
-
-        #
-        if env < 0.001:
-            #
-            return 0.0
-
-        #
-        ### Rich harmonic content. ###
-        #
-        fundamental: float = math.sin(2 * math.pi * self.frequency * t)
-        harmonic2: float = 0.6 * math.sin(2 * math.pi * self.frequency * 2 * t)
-        harmonic3: float = 0.4 * math.sin(2 * math.pi * self.frequency * 3 * t)
-        harmonic4: float = 0.25 * math.sin(2 * math.pi * self.frequency * 4 * t)
-        harmonic5: float = 0.15 * math.sin(2 * math.pi * self.frequency * 5 * t)
-
-        #
-        ### Add subtle string noise ("bad" hash-based). ###
-        #
-        noise: float = (hash((index * 8191) % 1000000) % 100 - 50) / 8000.0
-
-        #
-        signal: float = fundamental + harmonic2 + harmonic3 + harmonic4 + harmonic5 + noise
-
-        #
-        return self.amplitude * env * signal
+    ### Gate: 3.0s hard gate  ###
+    #
+    gate_env: lv.Value = lv.ADSR2(
+        time, pluck_time, 3.0, 0.001, 0.001, 1.0, 0.001
+    )
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    ### Oscillator: 5 harmonics, using `time` (t)  ###
+    #
+    pi2: float = 2 * math.pi
+    #
+    h1: lv.Value = lv.Sin(time, lv.c(frequency * 1 * pi2), lv.c(1.0))
+    h2: lv.Value = lv.Sin(time, lv.c(frequency * 2 * pi2), lv.c(0.6))
+    h3: lv.Value = lv.Sin(time, lv.c(frequency * 3 * pi2), lv.c(0.4))
+    h4: lv.Value = lv.Sin(time, lv.c(frequency * 4 * pi2), lv.c(0.25))
+    h5: lv.Value = lv.Sin(time, lv.c(frequency * 5 * pi2), lv.c(0.15))
 
-        #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        #
-        relative_time: NDArray[np.float32] = t - self.pluck_time
+    #
+    ### Noise: Fixed with WhiteNoise  ###
+    #
+    noise: lv.Value = lv.WhiteNoise(seed=8191, scale=1/8000.0)
 
-        #
-        ### Gate mask (hard-coded 3.0s duration). ###
-        #
-        mask: NDArray[np.bool_] = (relative_time >= 0) & (relative_time <= 3.0)
-        #
-        if not np.any(mask):
-            #
-            return np.zeros_like(indexes_buffer, dtype=np.float32)
+    #
+    signal: lv.Value = lv.Sum(h1, h2, h3, h4, h5, noise)
 
-        #
-        ### Vectorized Envelope (Attack/Decay). ###
-        #
-        attack_part: NDArray[np.float32] = relative_time / 0.005
-        #
-        decay_part: NDArray[np.float32] = np.exp(-relative_time * self.decay_rate)
-
-        #
-        env: NDArray[np.float32] = np.where(relative_time < 0.005, attack_part, 1.0) * decay_part
-        env_mask: NDArray[np.bool_] = env >= 0.001
-
-        #
-        ### Rich harmonic content. ###
-        #
-        pi2t: NDArray[np.float32] = 2 * np.pi * t
-        fundamental: NDArray[np.float32] = np.sin(self.frequency * pi2t)
-        harmonic2: NDArray[np.float32] = (0.6 * np.sin(self.frequency * 2 * pi2t)).astype(dtype=np.float32)
-        harmonic3: NDArray[np.float32] = (0.4 * np.sin(self.frequency * 3 * pi2t)).astype(dtype=np.float32)
-        harmonic4: NDArray[np.float32] = (0.25 * np.sin(self.frequency * 4 * pi2t)).astype(dtype=np.float32)
-        harmonic5: NDArray[np.float32] = (0.15 * np.sin(self.frequency * 5 * pi2t)).astype(dtype=np.float32)
-
-        #
-        ### Vectorized deterministic noise (the "Improvement"). ###
-        #
-        noise: NDArray[np.float32] = lv.WhiteNoise.vectorized_noise(
-            indexes_buffer,
-            seed=8191,
-            scale=1/8000.0
-        )
-
-        #
-        signal: NDArray[np.float32] = (
-            fundamental + harmonic2 + harmonic3 + harmonic4 + harmonic5 + noise
-        ).astype(dtype=np.float32)
-
-        #
-        return (self.amplitude * env * signal * mask * env_mask).astype(dtype=np.float32)
+    #
+    ### Final = Amplitude * Gate * AmpEnv * Signal ###
+    #
+    return lv.Product(
+        lv.c(amplitude),
+        gate_env,
+        amp_env,
+        signal
+    )
 
 
 #
-class Fingerpicking(lv.Value):
+def Fingerpicking(
+    time: lv.Value,
+    bass_note: float,
+    chord_notes: list[float],
+    start_time: float,
+    pattern_duration: float = 2.0
+) -> lv.Value:
 
     """
-    Generates a fingerpicking pattern by summing multiple AcousticString instances.
-
-    "Truthness" / "Good Listening" Analysis:
-        - "Truthness": This is a "container" class. Its truthness is high,
-            as this is how patterns are constructed: by summing individual notes.
-        - "Good Listening": This class will inherit all the "bad listening"
-            (aliasing) problems from the `AcouS-ticString` objects it creates.
-    """
-
-    #
-    def __init__(
-        self,
-        time: lv.Value,
-        bass_note: float,
-        chord_notes: list[float],
-        start_time: float,
-        pattern_duration: float = 2.0
-    ) -> None:
-
-        #
-        super().__init__()
-
-        #
-        self.time: lv.Value = time
-        self.bass_note: float = bass_note
-        self.chord_notes: list[float] = chord_notes
-        self.start_time: float = start_time
-        self.pattern_duration: float = pattern_duration
-        self.strings: list[AcousticString] = []
-
-        #
-        ### Classic Travis picking pattern: bass, treble, bass, treble. ###
-        #
-        ### Bass on beat 1 and 3. ###
-        #
-        self.strings.append(AcousticString(time, bass_note, start_time, 0.35, 1.5))
-        self.strings.append(AcousticString(time, bass_note, start_time + pattern_duration/2, 0.35, 1.5))
-
-        #
-        ### Treble strings on off-beats. ###
-        #
-        eighth: float = pattern_duration / 8
-        #
-        for i, note_idx in enumerate([0, 1, 2, 1, 0, 1, 2, 1]):
-            #
-            ### Off-beats. ###
-            #
-            if i % 2 == 1:
-                #
-                pluck_time: float = start_time + i * eighth
-                note: float = self.chord_notes[note_idx % len(self.chord_notes)]
-                self.strings.append(AcousticString(time, note, pluck_time, 0.25, 2.0))
-
-    #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
-
-        #
-        return sum(s.__getitem__(index=index, sample_rate=sample_rate) for s in self.strings)
-
-    #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
-
-        #
-        ### Create an array of all string outputs. ###
-        #
-        all_strings: list[NDArray[np.float32]] = [
-            s.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate) for s in self.strings
-        ]
-
-        #
-        ### Sum them all together. ###
-        #
-        return np.sum(all_strings, axis=0)
-
-
-#
-class Strum(lv.Value):
-
-    """
-    Simulates a guitar strum (chord with slight time offset between strings).
-
-    "Truthness" / "Good Listening" Analysis:
-        - "Truthness": This is a "container" class. Its "truthness" is high,
-            as it correctly models a strum by playing notes with a slight delay.
-        - "Good Listening": This class will inherit all the "bad listening"
-            (aliasing) problems from the `GuitarString` objects it creates.
+    Refactored Fingerpicking.
+    This "container"  is now a `lv.Sequencer`.
     """
 
     #
-    def __init__(
-        self,
-        time: lv.Value,
-        frequencies: list[float],
-        start_time: float,
-        duration: float = 2.5
-    ) -> None:
-
-        #
-        super().__init__()
-
-        #
-        self.strings: list[GuitarString] = []
-
-        #
-        for i, freq in enumerate(frequencies):
-            #
-            ### Each string is plucked slightly after the previous one. ###
-            #
-            offset: float = i * 0.015
-            #
-            self.strings.append(GuitarString(time, freq, start_time + offset, duration))
+    note_data_list: list[tuple[float, ...]] = []
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
-
-        #
-        return sum(string.__getitem__(index=index, sample_rate=sample_rate) for string in self.strings)
+    ### Bass notes  ###
+    #
+    note_data_list.append(
+        (bass_note, start_time, 0.35, 1.5)
+    )
+    note_data_list.append(
+        (bass_note, start_time + pattern_duration/2, 0.35, 1.5)
+    )
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
-
-        #
-        ### Create an array of all string outputs. ###
-        #
-        all_strings: list[NDArray[np.float32]] = [
-            s.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate) for s in self.strings
-        ]
-
-        #
-        ### Sum them all together. ###
-        #
-        return np.sum(all_strings, axis=0)
-
-#
-class PianoNote(lv.Value):
-    """
-    Simulates a piano note with harmonics using `lib_value` components.
-
-    "Truthness" / "Good Listening" Analysis:
-        - "Truthness": This is a "truthful" additive synthesis model.
-            It is also **well-designed** because it's built by composing
-            other `lv.Value` objects (`ADSR`, `lv.Sin`, `lv.Constant`).
-        - "Good Listening": **GOOD**.
-        - **Reason:** This class uses `lv.Sin` for its harmonics. A pure
-            sine wave (`np.sin`) does not have aliasing artifacts (unless
-            its *fundamental* frequency is above the Nyquist limit, which
-            is user error).
-        - **Improvement:** This is already a good class. A "more realistic"
-            model would have higher harmonics decay faster, but this is
-            a great "good listening" implementation.
-    """
-
+    ### Treble notes  ###
     #
-    def __init__(
-        self,
-        time: lv.Value,
-        frequency: float,
-        start_time: float,
-        duration: float,
-        amplitude: float = 0.3
-    ) -> None:
-
-        #
-        super().__init__()
-
-        #
-        self.time: lv.Value = time
-        self.frequency: float = frequency
-        self.start_time: float = start_time
-        self.duration: float = duration
-        self.amplitude: float = amplitude
-
-        #
-        ### Create ADSR envelope. ###
-        #
-        self.envelope: lv.ADSR2 = lv.ADSR2(
-            time=time,
-            note_start=start_time,
-            note_duration=duration,
-            attack_time=0.02,
-            decay_time=0.15,
-            sustain_level=0.6,
-            release_time=0.3
-        )
-
-        #
-        ### Piano has strong fundamental and harmonics. ###
-        #
-        self.fundamental: lv.Sin = lv.Sin(
-            value=time,
-            frequency=lv.Constant(frequency * (2 * math.pi)), # Freq in rad/s
-            amplitude=lv.Constant(1.0)
-        )
-        #
-        self.harmonic2: lv.Sin = lv.Sin(
-            value=time,
-            frequency=lv.Constant(frequency * 2 * (2 * math.pi)),
-            amplitude=lv.Constant(0.4)
-        )
-        #
-        self.harmonic3: lv.Sin = lv.Sin(
-            value=time,
-            frequency=lv.Constant(frequency * 3 * (2 * math.pi)),
-            amplitude=lv.Constant(0.2)
-        )
-        #
-        self.harmonic4: lv.Sin = lv.Sin(
-            value=time,
-            frequency=lv.Constant(frequency * 4 * (2 * math.pi)),
-            amplitude=lv.Constant(0.1)
-        )
-
-        #
-        ### We can also pre-build the sum of harmonics as a `lv.Sum` value. ###
-        #
-        self.harmonic_sum: lv.Sum = lv.Sum(
-            [self.fundamental, self.harmonic2, self.harmonic3, self.harmonic4]
-        )
-
+    eighth: float = pattern_duration / 8
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
-
+    for i, note_idx in enumerate([0, 1, 2, 1, 0, 1, 2, 1]):
         #
-        envelope_val: float = self.envelope.__getitem__(index=index, sample_rate=sample_rate)
-        #
-        if envelope_val == 0:
+        if i % 2 == 1: # Off-beats
             #
-            return 0.0
-
-        #
-        ### Sum harmonics. ###
-        #
-        harmonic_sum: float = (
-            self.fundamental.__getitem__(index=index, sample_rate=sample_rate) +
-            self.harmonic2.__getitem__(index=index, sample_rate=sample_rate) +
-            self.harmonic3.__getitem__(index=index, sample_rate=sample_rate) +
-            self.harmonic4.__getitem__(index=index, sample_rate=sample_rate)
-        )
-
-        #
-        ### Alternatively, using the pre-built `lv.Sum`                      ###
-        ### harmonic_sum: float = self.harmonic_sum.__getitem__(index=index, sample_rate=sample_rate) ###
-        #
-        return self.amplitude * envelope_val * harmonic_sum
-
-    #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
-
-        #
-        ### Get the vectorized envelope. ###
-        #
-        envelope_val: NDArray[np.float32] = self.envelope.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-
-        #
-        ### Optimization: if the whole envelope is 0, return zeros. ###
-        #
-        if not np.any(envelope_val):
+            pluck_time: float = start_time + i * eighth
+            note: float = chord_notes[note_idx % len(chord_notes)]
             #
-            return np.zeros_like(indexes_buffer, dtype=np.float32)
-
-        #
-        ### Get the vectorized sum of harmonics. ###
-        #
-        harmonic_sum: NDArray[np.float32] = self.harmonic_sum.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-
-        #
-        return (self.amplitude * envelope_val * harmonic_sum).astype(dtype=np.float32)
-
-
-#
-class PianoNote2(lv.Value):
-    """
-    Simulates a piano note with harmonics and a custom envelope.
-
-    "Truthness" / "Good Listening" Analysis:
-        - "Truthness": An additive synthesis model with a complex, 4-stage
-            piecewise envelope. The model is "truthful" in its intent.
-        - "Good Listening": **POOR**.
-        - **Reason:**
-            1.  **Aliasing:** Same problem as `GuitarString` due to naive harmonics.
-            2.  **Envelope Clicks:** The envelope is piecewise (built with `if`
-                statements). This creates sharp "corners" at the stage
-                transitions, which can cause audible "clicks." A "good"
-                envelope would be smoothly interpolated.
-    """
-
-    #
-    def __init__(
-        self,
-        time: lv.Value,
-        frequency: float,
-        start_time: float,
-        duration: float = 2.0
-    ) -> None:
-
-        #
-        super().__init__()
-
-        #
-        self.time: lv.Value = time
-        self.frequency: float = frequency
-        self.start_time: float = start_time
-        self.duration: float = duration
-
-    #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
-
-        #
-        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
-        #
-        relative_t: float = t - self.start_time
-
-        #
-        if relative_t < 0 or relative_t > self.duration + 0.5:
-            #
-            return 0.0
-
-        #
-        ### Complex 4-stage Envelope. ###
-        #
-        if relative_t < 0.01:
-            #
-            env: float = relative_t / 0.01
-        #
-        elif relative_t < 0.1:
-            #
-            env: float = 1.0 - 0.3 * (relative_t - 0.01) / 0.09
-        #
-        elif relative_t < self.duration:
-            #
-            env: float = 0.7 * math.exp(-relative_t * 0.8)
-        #
-        else:
-            #
-            env: float = 0.7 * math.exp(-self.duration * 0.8) * (
-                1.0 - (relative_t - self.duration) / 0.5
+            note_data_list.append(
+                (note, pluck_time, 0.25, 2.0)
             )
 
+    #
+    ### Factory function to create the notes ###
+    #
+    def acoustic_string_factory(
+        t: lv.Value, freq: float, p_time: float, amp: float, d_rate: float
+    ) -> lv.Value:
         #
-        ### Harmonics. ###
-        #
-        fundamental: float = math.sin(2 * math.pi * self.frequency * relative_t)
-        harmonic2: float = 0.5 * math.sin(2 * math.pi * self.frequency * 2 * relative_t)
-        harmonic3: float = 0.25 * math.sin(2 * math.pi * self.frequency * 3 * relative_t)
-        harmonic4: float = 0.15 * math.sin(2 * math.pi * self.frequency * 4 * relative_t)
-        harmonic5: float = 0.1 * math.sin(2 * math.pi * self.frequency * 5 * relative_t)
-
-        #
-        return env * (fundamental + harmonic2 + harmonic3 + harmonic4 + harmonic5) * 0.3
+        return AcousticString(t, freq, p_time, amp, d_rate)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
-
-        #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        #
-        relative_t: NDArray[np.float32] = t - self.start_time
-
-        #
-        ### Gate mask. ###
-        #
-        mask: NDArray[np.bool_] = (relative_t >= 0) & (relative_t <= self.duration + 0.5)
-        #
-        if not np.any(mask):
-            #
-            return np.zeros_like(indexes_buffer, dtype=np.float32)
-
-        #
-        ### Vectorized 4-stage Envelope. ###
-        #
-        attack_part: NDArray[np.float32] = relative_t / 0.01
-        decay1_part: NDArray[np.float32] = (1.0 - 0.3 * (relative_t - 0.01) / 0.09).astype(dtype=np.float32)
-        decay2_part: NDArray[np.float32] = (0.7 * np.exp(-relative_t * 0.8)).astype(dtype=np.float32)
-        release_part: NDArray[np.float32] = 0.7 * np.exp(-self.duration * 0.8) * (
-            1.0 - (relative_t - self.duration) / 0.5
-        )
-
-        #
-        ### Build envelope with nested `np.where`. ###
-        #
-        env: NDArray[np.float32] = np.where(
-            relative_t < 0.01,
-            attack_part,
-            np.where(
-                relative_t < 0.1,
-                decay1_part,
-                np.where(relative_t < self.duration, decay2_part, release_part)
-            )
-        )
-
-        #
-        ### Harmonics. ###
-        #
-        pi2: float = 2 * np.pi
-        fundamental: NDArray[np.float32] = np.sin(pi2 * self.frequency * relative_t)
-        harmonic2: NDArray[np.float32] = (0.5 * np.sin(pi2 * self.frequency * 2 * relative_t)).astype(dtype=np.float32)
-        harmonic3: NDArray[np.float32] = (0.25 * np.sin(pi2 * self.frequency * 3 * relative_t)).astype(dtype=np.float32)
-        harmonic4: NDArray[np.float32] = (0.15 * np.sin(pi2 * self.frequency * 4 * relative_t)).astype(dtype=np.float32)
-        harmonic5: NDArray[np.float32] = (0.1 * np.sin(pi2 * self.frequency * 5 * relative_t)).astype(dtype=np.float32)
-
-        #
-        signal: NDArray[np.float32] = (
-            fundamental + harmonic2 + harmonic3 + harmonic4 + harmonic5
-        ).astype(dtype=np.float32)
-
-        #
-        return (env * signal * 0.3 * mask).astype(dtype=np.float32)
+    return lv.Sequencer(
+        time,
+        instrument_factory=acoustic_string_factory,
+        note_data_list=note_data_list
+    )
 
 
 #
-class WobbleBass(lv.Value):
+def Strum(
+    time: lv.Value,
+    frequencies: list[float],
+    start_time: float,
+    duration: float = 2.5
+) -> lv.Value:
 
     """
-    Dubstep-style wobble bass with LFO modulation.
-
-    "Truthness" / "Good Listening" Analysis:
-        - "Truthness": This is a **VERY truthful** model of a classic
-            subtractive-synthesis wobble bass. It models a sawtooth wave,
-            an LFO, a filter (by multiplying the signal by the LFO),
-            and distortion (using `tanh` clipping).
-        - "Good Listening": **EXCELLENT**.
-        - **Reason:** This class is *naturally band-limited*. The sawtooth
-            wave is built from only 7 harmonics. This is a "realistic" and
-            "good listening" technique that actively *prevents* aliasing.
-            The `tanh` soft-clipping is also a "good" way to add distortion.
-            This class is a model for how to do synthesis well.
+    Refactored Strum.
+    This "container"  is now a `lv.Sequencer`.
     """
 
     #
-    def __init__(
-        self,
-        time: lv.Value,
-        base_frequency: float,
-        start_time: float,
-        duration: float,
-        wobble_rate: float = 4.0,
-        amplitude: float = 0.4
-    ) -> None:
-
-        #
-        super().__init__()
-
-        #
-        self.time: lv.Value = time
-        self.base_frequency: float = base_frequency
-        self.start_time: float = start_time
-        self.duration: float = duration
-        self.wobble_rate: float = wobble_rate
-        self.amplitude: float = amplitude
+    note_data_list: list[tuple[float, ...]] = []
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
-
+    for i, freq in enumerate(frequencies):
         #
-        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
+        ### Each string plucked slightly after  ###
         #
-        relative_time: float = t - self.start_time
-
+        offset: float = i * 0.015
         #
-        if relative_time < 0 or relative_time > self.duration:
-            #
-            return 0.0
-
+        ### Note Data: (frequency, start_time, duration, brightness) ###
         #
-        ### LFO (Low Frequency Oscillator) for wobble. ###
-        #
-        lfo: float = (math.sin(2 * math.pi * self.wobble_rate * t) + 1.0) / 2.0
-
-        #
-        ### Generate rich harmonics (band-limited sawtooth). ###
-        #
-        sawtooth: float = 0.0
-        #
-        for harmonic in range(1, 8):
-            #
-            sawtooth += math.sin(2 * math.pi * self.base_frequency * harmonic * t) / harmonic
-
-        #
-        ### Apply LFO as a filter cutoff simulation. ###
-        #
-        filtered: float = sawtooth * (0.3 + 0.7 * lfo)
-
-        #
-        ### Soft clipping for distortion. ###
-        #
-        filtered = math.tanh(filtered * 2.0)
-
-        #
-        return self.amplitude * filtered
+        note_data_list.append(
+            (freq, start_time + offset, duration, 1.0) # Default brightness
+        )
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    ### Factory function to create the notes ###
+    #
+    def guitar_string_factory(
+        t: lv.Value, freq: float, s_time: float, dur: float, bright: float
+    ) -> lv.Value:
+        #
+        return GuitarString(t, freq, s_time, dur, bright)
 
-        #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        #
-        relative_time: NDArray[np.float32] = t - self.start_time
-
-        #
-        ### Gate mask. ###
-        #
-        mask: NDArray[np.bool_] = (relative_time >= 0) & (relative_time <= self.duration)
-        #
-        if not np.any(mask):
-            #
-            return np.zeros_like(indexes_buffer, dtype=np.float32)
-
-        #
-        ### LFO (Low Frequency Oscillator) for wobble. ###
-        #
-        lfo: NDArray[np.float32] = ((np.sin(2 * np.pi * self.wobble_rate * t) + 1.0) / 2.0).astype(dtype=np.float32)
-
-        #
-        ### Generate rich harmonics (band-limited sawtooth). ###
-        #
-        pi2t: NDArray[np.float32] = 2 * np.pi * t
-        #
-        sawtooth: NDArray[np.float32] = np.zeros_like(indexes_buffer, dtype=np.float32)
-        #
-        for harmonic in range(1, 8):
-            #
-            sawtooth += np.sin(self.base_frequency * harmonic * pi2t) / harmonic
-
-        #
-        ### Apply LFO as a filter cutoff simulation. ###
-        #
-        filtered: NDArray[np.float32] = (sawtooth * (0.3 + 0.7 * lfo)).astype(dtype=np.float32)
-
-        #
-        ### Soft clipping for distortion. ###
-        #
-        filtered = np.tanh(filtered * 2.0)
-
-        #
-        return self.amplitude * filtered * mask
+    #
+    return lv.Sequencer(
+        time,
+        instrument_factory=guitar_string_factory,
+        note_data_list=note_data_list
+    )
 
 
 #
-class DeepBass(lv.Value):
+def PianoNote(
+    time: lv.Value,
+    frequency: float,
+    start_time: float,
+    duration: float,
+    amplitude: float = 0.3
+) -> lv.Value:
 
     """
-    Deep sub-bass to accompany the drums.
-
-    "Truthness" / "Good Listening" Analysis:
-        - "Truthness": This is a **VERY truthful** model. A sub-bass
-            is just a pure sine wave with a volume envelope.
-        - "Good Listening": **EXCELLENT**.
-        - **Reason:** It's a pure sine wave. It cannot produce aliasing
-            (unless the fundamental frequency itself is > Nyquist, which
-            is user error). This is the "cleanest" sound possible.
+    Refactored PianoNote.
+    This class was already "GOOD"  and is just
+    converted to a compositional factory function.
     """
 
     #
-    def __init__(
-        self,
-        time: lv.Value,
-        frequency: float,
-        start_time: float,
-        duration: float = 0.5
-    ) -> None:
-
-        #
-        super().__init__()
-
-        #
-        self.time: lv.Value = time
-        self.frequency: float = frequency
-        self.start_time: float = start_time
-        self.duration: float = duration
+    ### Create ADSR envelope  ###
+    #
+    envelope: lv.Value = lv.ADSR2(
+        time=time,
+        note_start=start_time,
+        note_duration=duration,
+        attack_time=0.02,
+        decay_time=0.15,
+        sustain_level=0.6,
+        release_time=0.3
+    )
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
-
-        #
-        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
-        #
-        relative_t: float = t - self.start_time
-
-        #
-        if relative_t < 0 or relative_t > self.duration:
-            #
-            return 0.0
-
-        #
-        ### Exponential decay. ###
-        #
-        env: float = math.exp(-relative_t * 6)
-
-        #
-        ### Pure sine wave for sub-bass. ###
-        #
-        bass: float = math.sin(2 * math.pi * self.frequency * relative_t)
-
-        #
-        return env * bass * 0.4
+    ### Piano harmonics  ###
+    #
+    pi2: float = 2 * math.pi
+    #
+    fundamental: lv.Value = lv.Sin(
+        value=time,
+        frequency=lv.Constant(frequency * pi2),
+        amplitude=lv.Constant(1.0)
+    )
+    #
+    harmonic2: lv.Value = lv.Sin(
+        value=time,
+        frequency=lv.Constant(frequency * 2 * pi2),
+        amplitude=lv.Constant(0.4)
+    )
+    #
+    harmonic3: lv.Value = lv.Sin(
+        value=time,
+        frequency=lv.Constant(frequency * 3 * pi2),
+        amplitude=lv.Constant(0.2)
+    )
+    #
+    harmonic4: lv.Value = lv.Sin(
+        value=time,
+        frequency=lv.Constant(frequency * 4 * pi2),
+        amplitude=lv.Constant(0.1)
+    )
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    ### Pre-build the sum of harmonics  ###
+    #
+    harmonic_sum: lv.Value = lv.Sum(
+        [fundamental, harmonic2, harmonic3, harmonic4]
+    )
 
-        #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        #
-        relative_t: NDArray[np.float32] = t - self.start_time
-
-        #
-        ### Gate mask. ###
-        #
-        mask: NDArray[np.bool_] = (relative_t >= 0) & (relative_t <= self.duration)
-        #
-        if not np.any(mask):
-            #
-            return np.zeros_like(indexes_buffer, dtype=np.float32)
-
-        #
-        ### Exponential decay. ###
-        #
-        env: NDArray[np.float32] = np.exp(-relative_t * 6)
-
-        #
-        ### Pure sine wave for sub-bass. ###
-        #
-        bass: NDArray[np.float32] = np.sin(2 * np.pi * self.frequency * relative_t)
-
-        #
-        return (env * bass * 0.4 * mask).astype(dtype=np.float32)
+    #
+    ### Final = Amplitude * Envelope * Signal ###
+    #
+    return lv.Product(
+        lv.c(amplitude),
+        envelope,
+        harmonic_sum
+    )
 
 
 #
-class SaxophoneNote(lv.Value):
+def PianoNote2(
+    time: lv.Value,
+    frequency: float,
+    start_time: float,
+    duration: float = 2.0
+) -> lv.Value:
 
     """
-    Simulates a saxophone note with realistic timbre.
-
-    "Truthness" / "Good Listening" Analysis:
-        - "Truthness": This is a **VERY truthful** model. It includes
-            vibrato (via phase modulation), a correct emphasis on odd
-            harmonics, and "breath noise."
-        - "Good Listening": **POOR**.
-        - **Reason:**
-            1.  **Aliasing:** Same problem as `GuitarString` due to naive harmonics.
-            2.  **Bad Noise:** Same `hash()`-based noise problem as `GuitarString2`.
-        - **Improvement:** Replaced `hash()` noise with `_vectorized_noise`.
-            The vibrato (FM) and aliasing interaction will be complex and
-            likely produce even *more* inharmonic aliasing.
+    Refactored PianoNote2.
+    Builds graph from lib_value components.
+    The "POOR"  is
+    approximated with ExponentialADSR.
     """
 
     #
-    def __init__(
-        self,
-        time: lv.Value,
-        frequency: float,
-        start_time: float,
-        duration: float,
-        amplitude: float = 0.3
-    ) -> None:
-
-        #
-        super().__init__()
-
-        #
-        self.time: lv.Value = time
-        self.frequency: float = frequency
-        self.start_time: float = start_time
-        self.duration: float = duration
-        self.amplitude: float = amplitude
+    ### Envelope: Approximates the 4-stage original  ###
+    #
+    amp_env: lv.Value = lv.ExponentialADSR(
+        time,
+        note_start=start_time,
+        note_duration=duration,
+        attack_time=0.01,
+        decay_time=0.09,
+        sustain_level=0.7,
+        release_time=0.5,
+        attack_curve=1.0,
+        decay_curve=1.0
+    )
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
-
-        #
-        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
-        #
-        relative_time: float = t - self.start_time
-
-        #
-        if relative_time < 0 or relative_time > self.duration:
-            #
-            return 0.0
-
-        #
-        ### Saxophone envelope - smooth attack and release. ###
-        #
-        if relative_time < 0.1:
-            #
-            env: float = relative_time / 0.1
-        #
-        elif relative_time < self.duration - 0.15:
-            #
-            env: float = 1.0
-        #
-        else:
-            #
-            release: float = (relative_time - (self.duration - 0.15)) / 0.15
-            env: float = 1.0 - release
-
-        #
-        if env <= 0:
-            #
-            return 0.0
-
-        #
-        ### Add vibrato for expressiveness. ###
-        #
-        vibrato_mod: float = 1.0 + 0.01 * math.sin(2 * math.pi * 5.5 * t)
-        freq: float = self.frequency * vibrato_mod
-
-        #
-        ### Saxophone has strong odd harmonics. ###
-        #
-        fundamental: float = math.sin(2 * math.pi * freq * t)
-        harmonic2: float = 0.3 * math.sin(2 * math.pi * freq * 2 * t)
-        harmonic3: float = 0.6 * math.sin(2 * math.pi * freq * 3 * t)
-        harmonic4: float = 0.15 * math.sin(2 * math.pi * freq * 4 * t)
-        harmonic5: float = 0.4 * math.sin(2 * math.pi * freq * 5 * t)
-
-        #
-        signal: float = fundamental + harmonic2 + harmonic3 + harmonic4 + harmonic5
-
-        #
-        ### Add breath noise ("bad" hash-based). ###
-        #
-        breath: float = (hash((index * 7919) % 1000000) % 100 - 50) / 1000.0
-
-        #
-        return self.amplitude * env * (signal + breath * 0.5)
+    ### Harmonics  ###
+    #
+    relative_time: lv.Value = lv.BasicScaling(time, lv.c(1), lv.c(-start_time))
+    pi2: float = 2 * math.pi
+    #
+    h1: lv.Value = lv.Sin(relative_time, lv.c(frequency * 1 * pi2), lv.c(1.0))
+    h2: lv.Value = lv.Sin(relative_time, lv.c(frequency * 2 * pi2), lv.c(0.5))
+    h3: lv.Value = lv.Sin(relative_time, lv.c(frequency * 3 * pi2), lv.c(0.25))
+    h4: lv.Value = lv.Sin(relative_time, lv.c(frequency * 4 * pi2), lv.c(0.15))
+    h5: lv.Value = lv.Sin(relative_time, lv.c(frequency * 5 * pi2), lv.c(0.1))
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    signal: lv.Value = lv.Sum(h1, h2, h3, h4, h5)
 
-        #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        relative_time: NDArray[np.float32] = t - self.start_time
+    #
+    ### Final = 0.3 * AmpEnv * Signal ###
+    #
+    return lv.Product(
+        lv.c(0.3),
+        amp_env,
+        signal
+    )
 
-        #
-        ### Gate mask. ###
-        #
-        mask: NDArray[np.bool_] = (relative_time >= 0) & (relative_time <= self.duration)
-        #
-        if not np.any(mask):
-            #
-            return np.zeros_like(indexes_buffer, dtype=np.float32)
 
-        #
-        ### Vectorized Envelope (Attack-Sustain-Release). ###
-        #
-        attack_part: NDArray[np.float32] = relative_time / 0.1
-        sustain_part: NDArray[np.float32] = np.ones_like(indexes_buffer, dtype=np.float32)
-        release_phase: NDArray[np.float32] = (relative_time - (self.duration - 0.15)) / 0.15
-        release_part: NDArray[np.float32] = 1.0 - release_phase
+#
+def WobbleBass(
+    time: lv.Value,
+    base_frequency: float,
+    start_time: float,
+    duration: float,
+    wobble_rate: float = 4.0,
+    amplitude: float = 0.4
+) -> lv.Value:
 
-        #
-        ### Build envelope with nested `np.where`. ###
-        #
-        env: NDArray[np.float32] = np.where(
-            relative_time < 0.1,
-            attack_part,
-            np.where(relative_time < self.duration - 0.15, sustain_part, release_part)
-        )
-        #
-        env_mask: NDArray[np.bool_] = env > 0
+    """
+    Refactored WobbleBass.
+    This class was "EXCELLENT"  and is now built
+    compositionally from its core components.
+    """
 
-        #
-        ### Add vibrato for expressiveness. ###
-        #
-        vibrato_mod: NDArray[np.float32] = (1.0 + 0.01 * np.sin(2 * np.pi * 5.5 * t)).astype(dtype=np.float32)
-        freq: NDArray[np.float32] = self.frequency * vibrato_mod
+    #
+    ### Gate: hard gate at duration. ###
+    #
+    gate_env: lv.Value = lv.ADSR2(
+        time, start_time, duration, 0.001, 0.001, 1.0, 0.001
+    )
 
-        #
-        ### Saxophone has strong odd harmonics. ###
-        #
-        pi2t: NDArray[np.float32] = 2 * np.pi * t
-        fundamental: NDArray[np.float32] = np.sin(freq * pi2t)
-        harmonic2: NDArray[np.float32] = (0.3 * np.sin(freq * 2 * pi2t)).astype(dtype=np.float32)
-        harmonic3: NDArray[np.float32] = (0.6 * np.sin(freq * 3 * pi2t)).astype(dtype=np.float32)
-        harmonic4: NDArray[np.float32] = (0.15 * np.sin(freq * 4 * pi2t)).astype(dtype=np.float32)
-        harmonic5: NDArray[np.float32] = (0.4 * np.sin(freq * 5 * pi2t)).astype(dtype=np.float32)
+    #
+    ### LFO (0 to 1 range): (sin(...) + 1) / 2  ###
+    #
+    lfo_base: lv.Value = lv.LFO(
+        time, lv.c(wobble_rate), lv.Sin
+    )
+    #
+    lfo_0_to_1: lv.Value = lv.BasicScaling(
+        lfo_base, lv.c(0.5), lv.c(0.5)
+    )
 
-        #
-        signal: NDArray[np.float32] = (
-            fundamental + harmonic2 + harmonic3 + harmonic4 + harmonic5
-        ).astype(dtype=np.float32)
+    #
+    ### Oscillator: 7-harmonic sawtooth  ###
+    #
+    osc: lv.Value = lv.BandLimitedSawtooth(
+        time, lv.c(base_frequency), num_harmonics=7
+    )
 
-        #
-        ### Vectorized deterministic noise (the "Improvement"). ###
-        #
-        breath: NDArray[np.float32] = lv.WhiteNoise.vectorized_noise(
-            indexes_buffer,
-            seed=7919,
-            scale=1/1000.0
-        )
+    #
+    ### "Filter": osc * (0.3 + 0.7 * lfo)  ###
+    #
+    filter_mod: lv.Value = lv.BasicScaling(
+        lfo_0_to_1, lv.c(0.7), lv.c(0.3)
+    )
+    #
+    filtered: lv.Value = lv.Product(osc, filter_mod)
 
-        #
-        return (self.amplitude * env * (signal + breath * 0.5) * mask * env_mask).astype(dtype=np.float32)
+    #
+    ### Distortion: tanh(filtered * 2.0)  ###
+    #
+    distorted: lv.Value = lv.Distortion(
+        filtered, drive=2.0
+    )
+
+    #
+    ### Final = Amplitude * Gate * DistortedSignal ###
+    #
+    return lv.Product(
+        lv.c(amplitude),
+        gate_env,
+        distorted
+    )
+
+
+#
+def DeepBass(
+    time: lv.Value,
+    frequency: float,
+    start_time: float,
+    duration: float = 0.5
+) -> lv.Value:
+
+    """
+    Refactored DeepBass.
+    This class was "EXCELLENT"  and is just
+    converted to a compositional factory function.
+    """
+
+    #
+    ### Gate: hard gate at duration. ###
+    #
+    gate_env: lv.Value = lv.ADSR2(
+        time, start_time, duration, 0.001, 0.001, 1.0, 0.001
+    )
+
+    #
+    ### Amplitude envelope: exp(-relative_t * 6)  ###
+    #
+    amp_env: lv.Value = lv.ExponentialDecay(time, start_time, 6.0)
+
+    #
+    ### Oscillator: Pure sine wave  ###
+    #
+    relative_time: lv.Value = lv.BasicScaling(time, lv.c(1), lv.c(-start_time))
+    #
+    signal: lv.Value = lv.Sin(
+        relative_time,
+        frequency=lv.c(frequency * 2 * math.pi)
+    )
+
+    #
+    ### Final = 0.4 * Gate * AmpEnv * Signal ###
+    #
+    return lv.Product(
+        lv.c(0.4),
+        gate_env,
+        amp_env,
+        signal
+    )
+
+
+#
+def SaxophoneNote(
+    time: lv.Value,
+    frequency: float,
+    start_time: float,
+    duration: float,
+    amplitude: float = 0.3
+) -> lv.Value:
+
+    """
+    Refactored SaxophoneNote.
+    Builds graph from lib_value components.
+    Fixes "bad noise".
+    """
+
+    #
+    ### Envelope: ASR  ###
+    #
+    amp_env: lv.Value = lv.ADSR2(
+        time,
+        note_start=start_time,
+        note_duration=duration,
+        attack_time=0.1,
+        decay_time=0.001,
+        sustain_level=1.0,
+        release_time=0.15
+    )
+
+    #
+    ### Vibrato LFO: 5.5 Hz rate, 0.01 depth  ###
+    #
+    vibrato_lfo: lv.Value = lv.LFO(
+        time,
+        rate_hz=lv.c(5.5),
+        waveform_class=lv.Sin,
+        amplitude=lv.c(0.01 * frequency) # Depth is relative
+    )
+    #
+    osc_freq: lv.Value = lv.Sum(lv.c(frequency), vibrato_lfo)
+
+    #
+    ### Harmonics (odd-heavy) , using `time` (t) ###
+    #
+    pi2: float = 2 * math.pi
+    freq_rad: lv.Value = lv.Product(osc_freq, lv.c(pi2))
+    #
+    h1: lv.Value = lv.Sin(time, freq_rad, lv.c(1.0))
+    h2: lv.Value = lv.Sin(time, lv.Product(freq_rad, lv.c(2)), lv.c(0.3))
+    h3: lv.Value = lv.Sin(time, lv.Product(freq_rad, lv.c(3)), lv.c(0.6))
+    h4: lv.Value = lv.Sin(time, lv.Product(freq_rad, lv.c(4)), lv.c(0.15))
+    h5: lv.Value = lv.Sin(time, lv.Product(freq_rad, lv.c(5)), lv.c(0.4))
+    #
+    harmonics: lv.Value = lv.Sum(h1, h2, h3, h4, h5)
+
+    #
+    ### Breath noise  ###
+    #
+    breath: lv.Value = lv.WhiteNoise(
+        seed=7919, scale=(1/1000.0 * 0.5)
+    )
+
+    #
+    signal: lv.Value = lv.Sum(harmonics, breath)
+
+    #
+    ### Final = Amplitude * AmpEnv * Signal ###
+    #
+    return lv.Product(
+        lv.c(amplitude),
+        amp_env,
+        signal
+    )

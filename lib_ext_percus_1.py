@@ -1,689 +1,376 @@
 #
 ### Import Modules. ###
 #
-import lib_value as lv
 import math
-import random
 #
 import numpy as np
 from numpy.typing import NDArray
+#
+import lib_value as lv
 
 
 #
-class KickDrum(lv.Value):
+def KickDrum(
+    time: lv.Value,
+    trigger_time: float,
+    amplitude: float = 0.6
+) -> lv.Value:
 
     """
-    Electronic kick drum.
-
-    "Truthness" / "Good Listening" Analysis:
-        - "Truthness": **EXCELLENT**. This is a "truthful" and classic
-            model of a synthesized kick drum (like an 808 or 909). It
-            combines a pitch-enveloped sine wave (the "body") with a
-            fast, clicky transient (the "beater").
-        - "Good Listening": **EXCELLENT**. This is a solid, standard
-            kick synthesis model that sounds "good" and "realistic" for
-            an electronic drum.
+    Refactored KickDrum.
+    Builds the sound graph from lib_value components.
     """
 
     #
-    def __init__(
-        self,
-        time: lv.Value,
-        trigger_time: float,
-        amplitude: float = 0.6
-    ) -> None:
-
-        #
-        super().__init__()
-
-        #
-        self.time: lv.Value = time
-        self.trigger_time: float = trigger_time
-        self.amplitude: float = amplitude
+    ### The original had a 0.5s hard gate. We use ADSR2 for this. ###
+    #
+    gate_env: lv.Value = lv.ADSR2(
+        time, trigger_time, 0.5, 0.001, 0.001, 1.0, 0.001
+    )
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
-
-        #
-        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
-        relative_time: float = t - self.trigger_time
-
-        #
-        ### Gate: duration is 0.5s. ###
-        #
-        if relative_time < 0 or relative_time > 0.5:
-            #
-            return 0.0
-
-        #
-        ### Pitch envelope (starts high, drops quickly). ###
-        #
-        pitch: float = 150 * math.exp(-relative_time * 20)
-
-        #
-        ### Amplitude envelope. ###
-        #
-        env: float = math.exp(-relative_time * 8)
-
-        #
-        ### Generate tone. ###
-        #
-        tone: float = math.sin(2 * math.pi * pitch * relative_time)
-
-        #
-        ### Add click. ###
-        #
-        click: float = math.exp(-relative_time * 50) * 0.3
-
-        #
-        return self.amplitude * env * (tone + click)
+    ### Amplitude envelope: exp(-relative_time * 8) ###
+    #
+    amp_env: lv.Value = lv.ExponentialDecay(time, trigger_time, 8.0)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    ### Pitch envelope: 150 * exp(-relative_time * 20) ###
+    #
+    pitch_env: lv.Value = lv.Product(
+        lv.c(150), lv.ExponentialDecay(time, trigger_time, 20.0)
+    )
 
-        #
-        ### Get time and relative time. ###
-        #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        relative_time: NDArray[np.float32] = t - self.trigger_time
+    #
+    ### Tone: sin(2 * pi * pitch * relative_time) ###
+    #
+    relative_time: lv.Value = lv.BasicScaling(time, lv.c(1), lv.c(-trigger_time))
+    #
+    tone: lv.Value = lv.Sin(
+        relative_time,
+        frequency=lv.Product(pitch_env, lv.c(2 * math.pi))
+    )
 
-        #
-        ### Gate mask. ###
-        #
-        mask: NDArray[np.bool_] = (relative_time >= 0) & (relative_time <= 0.5)
-        #
-        if not np.any(mask):
-            #
-            return np.zeros_like(indexes_buffer, dtype=np.float32)
+    #
+    ### Click: 0.3 * exp(-relative_time * 50) ###
+    #
+    click: lv.Value = lv.Product(
+        lv.c(0.3), lv.ExponentialDecay(time, trigger_time, 50.0)
+    )
 
-        #
-        ### Pitch envelope (vectorized). ###
-        #
-        pitch: NDArray[np.float32] = 150 * np.exp(-relative_time * 20)
+    #
+    ### Signal = (Tone + Click) ###
+    #
+    signal: lv.Value = lv.Sum(tone, click)
 
-        #
-        ### Amplitude envelope (vectorized). ###
-        #
-        env: NDArray[np.float32] = np.exp(-relative_time * 8)
-
-        #
-        ### Generate tone (vectorized)                                    ###
-        ### Note: This is phase modulation, as 'pitch' is inside the sin. ###
-        ### A more "correct" (but different-sounding) way would be        ###
-        ### to integrate the frequency (pitch) to get phase.              ###
-        ### But we will be "truthful" to the original code.               ###
-        #
-        tone: NDArray[np.float32] = np.sin(2 * np.pi * pitch * relative_time)
-
-        #
-        ### Add click (vectorized). ###
-        #
-        click: NDArray[np.float32] = (np.exp(-relative_time * 50) * 0.3).astype(dtype=np.float32)
-
-        #
-        ### Combine and apply mask. ###
-        #
-        return (self.amplitude * env * (tone + click) * mask).astype(dtype=np.float32)
+    #
+    ### Final = Amplitude * Gate * AmpEnv * Signal ###
+    #
+    return lv.Product(
+        lv.c(amplitude),
+        gate_env,
+        amp_env,
+        signal
+    )
 
 
 #
-class KickDrum2(lv.Value):
+def KickDrum2(time: lv.Value, start_time: float) -> lv.Value:
 
     """
-    Simulates a kick drum (bass drum) sound.
-
-    "Truthness" / "Good Listening" Analysis:
-        - "Truthness": **EXCELLENT**. Another "truthful" kick model,
-            very similar to `KickDrum`.
-        - "Good Listening": **POOR** (in original form).
-        - **Reason:** The "click" is made with `random.random()`. This
-            is not vectorizable and sounds like inconsistent static,
-            not a "click."
-        - **Improvement:** The `getitem_np` replaces this "bad"
-            random noise with a deterministic, vectorized noise generator
-            (`_vectorized_noise`), making it "good listening."
+    Refactored KickDrum2.
+    Builds the sound graph from lib_value components.
     """
 
     #
-    def __init__(self, time: lv.Value, start_time: float) -> None:
-
-        #
-        super().__init__()
-
-        #
-        self.time: lv.Value = time
-        self.start_time: float = start_time
+    ### Gate: 0.5s hard gate. ###
+    #
+    gate_env: lv.Value = lv.ADSR2(
+        time, start_time, 0.5, 0.001, 0.001, 1.0, 0.001
+    )
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
-
-        #
-        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
-        relative_t: float = t - self.start_time
-
-        #
-        if relative_t < 0 or relative_t > 0.5:
-            #
-            return 0.0
-
-        #
-        ### Pitch envelope (starts high, drops quickly). ###
-        #
-        pitch_env: float = 60 + 100 * math.exp(-relative_t * 50)
-
-        #
-        ### Amplitude envelope (very sharp attack and decay). ###
-        #
-        amp_env: float = math.exp(-relative_t * 15)
-
-        #
-        ### Sine wave for the body. ###
-        #
-        kick: float = math.sin(2 * math.pi * pitch_env * relative_t)
-
-        #
-        ### Add click for attack ("bad" random-based). ###
-        #
-        click: float = 0.5 * math.exp(-relative_t * 100) * (random.random() * 2 - 1)
-
-        #
-        return amp_env * (kick + click) * 0.6
+    ### Amplitude envelope: exp(-relative_t * 15) ###
+    #
+    amp_env: lv.Value = lv.ExponentialDecay(time, start_time, 15.0)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    ### Pitch envelope: 60 + 100 * exp(-relative_t * 50) ###
+    #
+    pitch_decay: lv.Value = lv.Product(
+        lv.c(100), lv.ExponentialDecay(time, start_time, 50.0)
+    )
+    #
+    pitch_env: lv.Value = lv.Sum(lv.c(60), pitch_decay)
 
-        #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        relative_t: NDArray[np.float32] = t - self.start_time
+    #
+    ### Tone: sin(2 * pi * pitch * relative_time) ###
+    #
+    relative_time: lv.Value = lv.BasicScaling(time, lv.c(1), lv.c(-start_time))
+    #
+    tone: lv.Value = lv.Sin(
+        relative_time,
+        frequency=lv.Product(pitch_env, lv.c(2 * math.pi))
+    )
 
-        #
-        ### Gate mask. ###
-        #
-        mask: NDArray[np.bool_] = (relative_t >= 0) & (relative_t <= 0.5)
-        #
-        if not np.any(mask):
-            #
-            return np.zeros_like(indexes_buffer, dtype=np.float32)
+    #
+    ### Click: 0.5 * exp(-relative_t * 100) * (noise) ###
+    #
+    click_env: lv.Value = lv.Product(
+        lv.c(0.5), lv.ExponentialDecay(time, start_time, 100.0)
+    )
+    #
+    click_noise: lv.Value = lv.WhiteNoise(seed=4567) # Seed from original 
+    #
+    click: lv.Value = lv.Product(click_env, click_noise)
 
-        #
-        ### Pitch envelope (vectorized). ###
-        #
-        pitch_env: NDArray[np.float32] = 60 + 100 * np.exp(-relative_t * 50)
+    #
+    ### Signal = (Tone + Click) ###
+    #
+    signal: lv.Value = lv.Sum(tone, click)
 
-        #
-        ### Amplitude envelope (vectorized). ###
-        #
-        amp_env: NDArray[np.float32] = np.exp(-relative_t * 15)
-
-        #
-        ### Sine wave for the body (vectorized). ###
-        #
-        kick: NDArray[np.float32] = np.sin(2 * np.pi * pitch_env * relative_t)
-
-        #
-        ### Add click for attack ("good" vectorized noise). ###
-        #
-        click_env: NDArray[np.float32] = (0.5 * np.exp(-relative_t * 100)).astype(dtype=np.float32)
-        #
-        click_noise: NDArray[np.float32] = lv.WhiteNoise.vectorized_noise(
-            indexes_buffer,
-            seed=4567,
-            scale=1/100.0  # (2-1) / 200 = 0.005 approx
-        ) * 200.0 # Scale to -1 to 1
-
-        #
-        click: NDArray[np.float32] = click_env * click_noise
-
-        #
-        return (amp_env * (kick + click) * 0.6 * mask).astype(dtype=np.float32)
+    #
+    ### Final = 0.6 * Gate * AmpEnv * Signal ###
+    #
+    return lv.Product(
+        lv.c(0.6),
+        gate_env,
+        amp_env,
+        signal
+    )
 
 
 #
-class Snare(lv.Value):
+def Snare(
+    time: lv.Value,
+    trigger_time: float,
+    amplitude: float = 0.4
+) -> lv.Value:
 
     """
-    Electronic snare with noise.
-
-    "Truthness" / "Good Listening" Analysis:
-        - "Truthness": **EXCELLENT**. This is the standard "truthful"
-            model for a synthesized snare: a tonal "body" (sine wave)
-            mixed with a noise burst (the "snare wires").
-        - "Good Listening": **POOR** (in original form).
-        - **Reason:** The `hash()`-based noise is "bad listening."
-            It's not random, but a periodic digital artifact that
-            will have a metallic, ugly "tone."
-        - **Improvement:** The `getitem_np` replaces this "bad"
-            hash noise with `_vectorized_noise`, making it "good listening."
+    Refactored Snare.
+    Builds the sound graph from lib_value components.
+    Fixes "bad noise".
     """
 
     #
-    def __init__(
-        self,
-        time: lv.Value,
-        trigger_time: float,
-        amplitude: float = 0.4
-    ) -> None:
-
-        #
-        super().__init__()
-
-        #
-        self.time: lv.Value = time
-        self.trigger_time: float = trigger_time
-        self.amplitude: float = amplitude
+    ### Gate: 0.3s hard gate. ###
+    #
+    gate_env: lv.Value = lv.ADSR2(
+        time, trigger_time, 0.3, 0.001, 0.001, 1.0, 0.001
+    )
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
-
-        #
-        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
-        relative_time: float = t - self.trigger_time
-
-        #
-        if relative_time < 0 or relative_time > 0.3:
-            return 0.0
-
-        #
-        ### Envelope. ###
-        #
-        env: float = math.exp(-relative_time * 15)
-
-        #
-        ### Tone component. ###
-        #
-        tone: float = math.sin(2 * math.pi * 200 * relative_time) * 0.4
-
-        #
-        ### Noise component ("bad" hash-based). ###
-        #
-        noise: float = (hash((index * 9973) % 1000000) % 200 - 100) / 100.0
-
-        #
-        return self.amplitude * env * (tone + noise * 0.8)
+    ### Amplitude envelope: exp(-relative_time * 15) ###
+    #
+    amp_env: lv.Value = lv.ExponentialDecay(time, trigger_time, 15.0)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    ### Tone: 0.4 * sin(2 * pi * 200 * relative_time) ###
+    #
+    relative_time: lv.Value = lv.BasicScaling(time, lv.c(1), lv.c(-trigger_time))
+    #
+    tone: lv.Value = lv.Sin(
+        relative_time,
+        frequency=lv.c(200 * 2 * math.pi),
+        amplitude=lv.c(0.4)
+    )
 
-        #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        relative_time: NDArray[np.float32] = t - self.trigger_time
+    #
+    ### Noise: 0.8 * (noise) ###
+    #
+    noise: lv.Value = lv.Product(
+        lv.WhiteNoise(seed=9973), # Seed from original 
+        lv.c(0.8)
+    )
 
-        #
-        ### Gate mask. ###
-        #
-        mask: NDArray[np.bool_] = (relative_time >= 0) & (relative_time <= 0.3)
-        #
-        if not np.any(mask):
-            #
-            return np.zeros_like(indexes_buffer, dtype=np.float32)
+    #
+    ### Signal = (Tone + Noise) ###
+    #
+    signal: lv.Value = lv.Sum(tone, noise)
 
-        #
-        ### Envelope (vectorized). ###
-        #
-        env: NDArray[np.float32] = np.exp(-relative_time * 15)
-
-        #
-        ### Tone component (vectorized). ###
-        #
-        tone: NDArray[np.float32] = (np.sin(2 * np.pi * 200 * relative_time) * 0.4).astype(dtype=np.float32)
-
-        #
-        ### Noise component ("good" vectorized noise). ###
-        #
-        noise: NDArray[np.float32] = lv.WhiteNoise.vectorized_noise(
-            indexes_buffer,
-            seed=9973,
-            scale=1/100.0  # This matches the (200-100)/100 scaling
-        )
-
-        #
-        return (self.amplitude * env * (tone + noise * 0.8) * mask).astype(dtype=np.float32)
+    #
+    ### Final = Amplitude * Gate * AmpEnv * Signal ###
+    #
+    return lv.Product(
+        lv.c(amplitude),
+        gate_env,
+        amp_env,
+        signal
+    )
 
 
 #
-class SnareDrum(lv.Value):
+def SnareDrum(time: lv.Value, start_time: float) -> lv.Value:
 
     """
-    Simulates a snare drum sound.
-
-    "Truthness" / "Good Listening" Analysis:
-        - "Truthness": **EXCELLENT**. Another "truthful" snare model,
-            just like `Snare`.
-        - "Good Listening": **POOR** (in original form).
-        - **Reason:** Uses `random.random()` for noise, which is "bad."
-        - **Improvement:** The `getitem_np` replaces this "bad"
-            random noise with `_vectorized_noise`, making it "good listening."
+    Refactored SnareDrum.
+    Builds the sound graph from lib_value components.
+    Fixes "bad noise".
     """
 
     #
-    def __init__(self, time: lv.Value, start_time: float) -> None:
-
-        #
-        super().__init__()
-
-        #
-        self.time: lv.Value = time
-        self.start_time: float = start_time
+    ### Gate: 0.2s hard gate. ###
+    #
+    gate_env: lv.Value = lv.ADSR2(
+        time, start_time, 0.2, 0.001, 0.001, 1.0, 0.001
+    )
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
-
-        #
-        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
-        relative_t: float = t - self.start_time
-
-        #
-        if relative_t < 0 or relative_t > 0.2:
-            #
-            return 0.0
-
-        #
-        ### Very sharp decay. ###
-        #
-        amp_env: float = math.exp(-relative_t * 30)
-
-        #
-        ### Tonal component (drum head). ###
-        #
-        tone_freq: float = 200
-        tone: float = 0.3 * math.sin(2 * math.pi * tone_freq * relative_t)
-
-        #
-        ### Noise component (snare wires) ("bad" random-based). ###
-        #
-        noise: float = (random.random() * 2 - 1) * 0.7
-
-        #
-        return amp_env * (tone + noise) * 0.4
+    ### Amplitude envelope: exp(-relative_t * 30) ###
+    #
+    amp_env: lv.Value = lv.ExponentialDecay(time, start_time, 30.0)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    ### Tone: 0.3 * sin(2 * pi * 200 * relative_time) ###
+    #
+    relative_time: lv.Value = lv.BasicScaling(time, lv.c(1), lv.c(-start_time))
+    #
+    tone: lv.Value = lv.Sin(
+        relative_time,
+        frequency=lv.c(200 * 2 * math.pi),
+        amplitude=lv.c(0.3)
+    )
 
-        #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        relative_t: NDArray[np.float32] = t - self.start_time
+    #
+    ### Noise: 0.7 * (noise) ###
+    #
+    noise: lv.Value = lv.Product(
+        lv.WhiteNoise(seed=1337), # Seed from original 
+        lv.c(0.05)
+    )
 
-        #
-        ### Gate mask. ###
-        #
-        mask: NDArray[np.bool_] = (relative_t >= 0) & (relative_t <= 0.2)
-        #
-        if not np.any(mask):
-            #
-            return np.zeros_like(indexes_buffer, dtype=np.float32)
+    #
+    ### Signal = (Tone + Noise) ###
+    #
+    signal: lv.Value = lv.Sum(tone, noise)
 
-        #
-        ### Very sharp decay (vectorized). ###
-        #
-        amp_env: NDArray[np.float32] = np.exp(-relative_t * 30)
-
-        #
-        ### Tonal component (drum head) (vectorized). ###
-        #
-        tone_freq: float = 200
-        #
-        tone: NDArray[np.float32] = (0.3 * np.sin(2 * np.pi * tone_freq * relative_t)).astype(dtype=np.float32)
-
-        #
-        ### Noise component (snare wires) ("good" vectorized noise). ###
-        #
-        noise_val: NDArray[np.float32] = lv.WhiteNoise.vectorized_noise(
-            indexes_buffer,
-            seed=1337,
-            scale=1/100.0
-        ) * 100.0 # Scale to approx -1 to 1
-
-        #
-        noise: NDArray[np.float32] = noise_val * 0.7
-
-        #
-        return (amp_env * (tone + noise) * 0.4 * mask).astype(dtype=np.float32)
+    #
+    ### Final = 0.4 * Gate * AmpEnv * Signal ###
+    #
+    return lv.Product(
+        lv.c(0.4),
+        gate_env,
+        amp_env,
+        signal
+    )
 
 
 #
-class HiHat(lv.Value):
+def HiHat(time: lv.Value, start_time: float, open: bool = False) -> lv.Value:
 
     """
-    Simulates a hi-hat cymbal.
-
-    "Truthness" / "Good Listening" Analysis:
-        - "Truthness": **GOOD**. This is a "truthful" model. Cymbals are
-            "inharmonic," and this models inharmonicity by summing multiple
-            high-frequency sine waves that are not musically related.
-        - "Good Listening": **POOR**.
-        - **Reason:**
-            1.  **Aliasing:** The high-frequency `sin` waves (8-12 kHz)
-                will alias *massively*, creating a harsh, ugly sound.
-            2.  **Bad Noise:** The `random.random()` noise is "bad."
-        - **Improvement:** `getitem_np` replaces the "bad" random noise
-            with `_vectorized_noise`. The aliasing problem is unavoidable
-            without the `sample_rate`, so it remains, but I've noted
-            it in the docstring.
+    Refactored HiHat.
+    Builds the sound graph from lib_value components.
+    Fixes "bad noise".
     """
 
     #
-    def __init__(self, time: lv.Value, start_time: float, open: bool = False) -> None:
-
-        #
-        super().__init__()
-
-        #
-        self.time: lv.Value = time
-        self.start_time: float = start_time
-        self.open: bool = open
-        self.duration: float = 0.4 if self.open else 0.08
-        self.decay_rate: float = 8.0 if self.open else 50.0
-        self.pi2: float = 2 * math.pi
-        self.cymbal_freqs: list[float] = [8000.0, 9000.0, 10000.0, 11000.0, 12000.0]
+    duration: float = 0.4 if open else 0.08
+    decay_rate: float = 8.0 if open else 50.0
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
-
-        #
-        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
-        relative_t: float = t - self.start_time
-
-        #
-        if relative_t < 0 or relative_t > self.duration:
-            #
-            return 0.0
-
-        #
-        ### Exponential decay (slower for open hi-hat). ###
-        #
-        amp_env: float = math.exp(-relative_t * self.decay_rate)
-
-        #
-        ### High-frequency noise (metallic sound). ###
-        #
-        noise: float = 0.0
-        #
-        for freq in self.cymbal_freqs:
-            #
-            noise += math.sin(self.pi2 * freq * relative_t) / 5
-
-        #
-        ### Add some randomness ("bad" random-based). ###
-        #
-        noise += (random.random() * 2 - 1) * 0.3
-
-        #
-        return amp_env * noise * 0.15
+    ### Gate: hard gate at duration. ###
+    #
+    gate_env: lv.Value = lv.ADSR2(
+        time, start_time, duration, 0.001, 0.001, 1.0, 0.001
+    )
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    ### Amplitude envelope: exp(-relative_t * decay_rate) ###
+    #
+    amp_env: lv.Value = lv.ExponentialDecay(time, start_time, decay_rate)
 
-        #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        relative_t: NDArray[np.float32] = t - self.start_time
+    #
+    ### Tone: Sum of high-frequency sines ###
+    #
+    relative_time: lv.Value = lv.BasicScaling(time, lv.c(1), lv.c(-start_time))
+    pi2: float = 2 * math.pi
+    cymbal_freqs: list[float] = [8000.0, 9000.0, 10000.0, 11000.0, 12000.0]
+    #
+    tone_list: list[lv.Value] = [
+        lv.Sin(relative_time, lv.c(f * pi2)) for f in cymbal_freqs
+    ]
+    #
+    tone: lv.Value = lv.Product(
+        lv.Sum(tone_list), lv.c(1.0 / len(cymbal_freqs))
+    )
 
-        #
-        ### Gate mask. ###
-        #
-        mask: NDArray[np.bool_] = (relative_t >= 0) & (relative_t <= self.duration)
-        #
-        if not np.any(mask):
-            #
-            return np.zeros_like(indexes_buffer, dtype=np.float32)
+    #
+    ### Noise: 0.3 * (noise) ###
+    #
+    noise: lv.Value = lv.Product(
+        lv.WhiteNoise(seed=2222), # Seed from original 
+        lv.c(0.05)
+    )
 
-        #
-        ### Exponential decay (vectorized). ###
-        #
-        amp_env: NDArray[np.float32] = np.exp(-relative_t * self.decay_rate)
+    #
+    ### Signal = (Tone + Noise) ###
+    #
+    signal: lv.Value = lv.Sum(tone, noise)
 
-        #
-        ### High-frequency noise (vectorized, but will alias). ###
-        #
-        noise: NDArray[np.float32] = np.zeros_like(indexes_buffer, dtype=np.float32)
-        #
-        for freq in self.cymbal_freqs:
-            #
-            noise += np.sin(self.pi2 * freq * relative_t)
-
-        #
-        ### Normalize. ###
-        #
-        noise /= len(self.cymbal_freqs)
-
-        #
-        ### Add some randomness ("good" vectorized noise). ###
-        #
-        random_noise: NDArray[np.float32] = lv.WhiteNoise.vectorized_noise(
-            indexes_buffer,
-            seed=2222,
-            scale=1/100.0
-        ) * 100.0 # Scale to -1 to 1
-
-        #
-        noise += random_noise * 0.3
-
-        #
-        return (amp_env * noise * 0.15 * mask).astype(dtype=np.float32)
+    #
+    ### Final = 0.15 * Gate * AmpEnv * Signal ###
+    #
+    return lv.Product(
+        lv.c(0.15),
+        gate_env,
+        amp_env,
+        signal
+    )
 
 
 #
-class CrashCymbal(lv.Value):
+def CrashCymbal(time: lv.Value, start_time: float) -> lv.Value:
 
     """
-    Simulates a crash cymbal.
-
-    "Truthness" / "Good Listening" Analysis:
-        - "Truthness": **GOOD**. A "truthful" model, very similar to `HiHat`
-            but with a longer decay and more complex frequencies.
-        - "Good Listening": **POOR**.
-        - **Reason:**
-            1.  **Aliasing:** Same problem as `HiHat`, but even worse due
-                to more sine waves at very high frequencies (up to 14.5 kHz).
-            2.  **Bad Noise:** The `random.random()` *inside the loop* is
-                non-vectorizable and will sound terrible.
-        - **Improvement:** The `getitem_np` replaces this "bad"
-            random noise. The original intent was likely *phase* noise
-            to make the harmonics inharmonic. I have implemented this
-            by creating a *static* random phase for each oscillator,
-            which is "truthful" to the intent and vectorizable.
+    Refactored CrashCymbal.
+    Builds the sound graph from lib_value components.
+    Fixes "bad noise" by using static random phase.
     """
 
     #
-    def __init__(self, time: lv.Value, start_time: float) -> None:
-
-        #
-        super().__init__()
-
-        #
-        self.time: lv.Value = time
-        self.start_time: float = start_time
-        self.pi2: float = 2 * math.pi
-
-        #
-        ### Frequencies for the cymbal's inharmonic tones. ###
-        #
-        self.cymbal_freqs: list[float] = [
-            7000.0, 8500.0, 10000.0, 11500.0, 13000.0, 14500.0
-        ]
-
-        #
-        ### Pre-calculate static random phases for the `getitem_np` ###
-        ### This is the "Improvement" to replace `random.random()`  ###
-        #
-        self.static_phases: NDArray[np.float32] = np.random.uniform(
-            low=0.0,
-            high=self.pi2,
-            size=len(self.cymbal_freqs)
-        ).astype(np.float32)
+    ### Gate: 2.0s hard gate. ###
+    #
+    gate_env: lv.Value = lv.ADSR2(
+        time, start_time, 2.0, 0.001, 0.001, 1.0, 0.001
+    )
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
-
-        #
-        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
-        #
-        relative_t: float = t - self.start_time
-
-        #
-        if relative_t < 0 or relative_t > 2.0:
-            #
-            return 0.0
-
-        #
-        ### Slow decay. ###
-        #
-        amp_env: float = math.exp(-relative_t * 2)
-
-        #
-        ### Complex high-frequency content ("bad" random-based). ###
-        #
-        noise: float = 0.0
-        #
-        for freq in self.cymbal_freqs:
-            #
-            noise += math.sin(self.pi2 * freq * relative_t + random.random())
-
-        #
-        ### Normalize. ###
-        #
-        noise /= len(self.cymbal_freqs)
-
-        #
-        return amp_env * noise * 0.25
+    ### Amplitude envelope: exp(-relative_t * 2) ###
+    #
+    amp_env: lv.Value = lv.ExponentialDecay(time, start_time, 2.0)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    ### Tone: Sum of high-frequency sines with random phase ###
+    #
+    relative_time: lv.Value = lv.BasicScaling(time, lv.c(1), lv.c(-start_time))
+    pi2: float = 2 * math.pi
+    #
+    cymbal_freqs: list[float] = [
+        7000.0, 8500.0, 10000.0, 11500.0, 13000.0, 14500.0
+    ]
+    #
+    ### Pre-calculate static random phases, as in original  ###
+    #
+    static_phases: NDArray[np.float32] = np.random.uniform(
+        low=0.0, high=pi2, size=len(cymbal_freqs)
+    ).astype(np.float32)
+    #
+    tone_list: list[lv.Value] = [
+        lv.Sin(relative_time, lv.c(f * pi2), delta=lv.c(float(phase)))
+        for f, phase in zip(cymbal_freqs, static_phases)
+    ]
+    #
+    tone: lv.Value = lv.Product(
+        lv.Sum(tone_list), lv.c(1.0 / len(cymbal_freqs))
+    )
 
-        #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        #
-        relative_t: NDArray[np.float32] = t - self.start_time
-
-        #
-        ### Gate mask. ###
-        #
-        mask: NDArray[np.bool_] = (relative_t >= 0) & (relative_t <= 2.0)
-        #
-        if not np.any(mask):
-            #
-            return np.zeros_like(indexes_buffer, dtype=np.float32)
-
-        #
-        ### Slow decay (vectorized). ###
-        #
-        amp_env: NDArray[np.float32] = np.exp(-relative_t * 2)
-
-        #
-        ### Complex high-frequency content (vectorized with static phase noise) ###
-        ### This is the "Improvement" ###
-        #
-        noise: NDArray[np.float32] = np.zeros_like(indexes_buffer, dtype=np.float32)
-        #
-        for i, freq in enumerate(self.cymbal_freqs):
-            #
-            phase: NDArray[np.float32] = self.pi2 * freq * relative_t
-            #
-            static_phase_offset: float = self.static_phases[i]
-            #
-            noise += np.sin(phase + static_phase_offset)
-
-        #
-        noise /= len(self.cymbal_freqs) # Normalize
-
-        #
-        return (amp_env * noise * 0.25 * mask).astype(dtype=np.float32)
+    #
+    ### Final = 0.25 * Gate * AmpEnv * Tone ###
+    #
+    return lv.Product(
+        lv.c(0.25),
+        gate_env,
+        amp_env,
+        tone
+    )

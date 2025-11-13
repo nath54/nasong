@@ -287,13 +287,15 @@ class RandomChoice(Value):
 class WhiteNoise(Value):
 
     #
-    def __init__(self, seed: int = 42):
+    def __init__(self, seed: int = 42, scale: float = 1.0):
 
         #
         super().__init__()
 
         #
-        self.seed = seed
+        self.seed: int = seed
+        #
+        self.scale: float = scale
 
     #
     ### Helper function for vectorized deterministic noise ###
@@ -341,7 +343,7 @@ class WhiteNoise(Value):
     #
     def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
         #
-        return self.__class__.vectorized_noise(indexes_buffer, self.seed, 1.0)
+        return self.__class__.vectorized_noise(indexes_buffer, self.seed, self.scale)
 
 
 #
@@ -487,9 +489,9 @@ def LFO(
     This helper function simplifies LFO creation by abstracting the
     frequency unit inconsistency in the oscillator APIs.
     - `Sin` and `Cos` expect frequency in radians per second.
-[cite_start][cite: 100, 357]
+
     - `Triangle`, `Square`, `Sawtooth` expect frequency in Hz.
-[cite_start][cite: 392, 403, 414]
+
 
     This function always takes `rate_hz` in Hz and automatically
     converts it to the correct unit for the given `waveform_class`.
@@ -1520,24 +1522,44 @@ class ExponentialADSR(Value):
         #
         ### Define the 4 stages and their values. ###
         #
+
+        #
+        ## ATTACK. ##
+        #
         attack_mask: NDArray[np.bool_] = relative_time < self.attack_end
         attack_progress: NDArray[np.float32] = (relative_time / self.attack_time).astype(dtype=np.float32)
-        attack_val: NDArray[np.float32] = np.power(attack_progress, self.attack_curve)
+        #
+        ## Ensure base is not negative (which happens if relative_time < 0). ##
+        #
+        attack_base = np.maximum(0.0, attack_progress)
+        attack_val: NDArray[np.float32] = np.power(attack_base, self.attack_curve)
 
+        #
+        ## DECAY. ##
         #
         decay_mask: NDArray[np.bool_] = relative_time < self.decay_end
         decay_progress: NDArray[np.float32] = ((relative_time - self.attack_time) / self.decay_time).astype(dtype=np.float32)
-        decay_val: NDArray[np.float32] = (self.sustain_level + (1.0 - self.sustain_level) * np.power(1.0 - decay_progress, self.decay_curve)).astype(dtype=np.float32)
+        #
+        ## Ensure base is not negative (which happens if progress > 1.0). ##
+        #
+        decay_base = np.maximum(0.0, 1.0 - decay_progress)
+        decay_val: NDArray[np.float32] = (self.sustain_level + (1.0 - self.sustain_level) * np.power(decay_base, self.decay_curve)).astype(dtype=np.float32)
 
+        #
+        ## SUSTAIN. ##
         #
         sustain_mask: NDArray[np.bool_] = relative_time < self.sustain_end
         sustain_val: NDArray[np.float32] = np.full_like(relative_time, self.sustain_level)
 
         #
-        ### The final 'else' is the release phase. ###
+        ## RELEASE. ##
         #
         release_progress: NDArray[np.float32] = ((relative_time - self.note_duration) / self.release_time).astype(dtype=np.float32)
-        release_val: NDArray[np.float32] = (self.sustain_level * np.power(1.0 - release_progress, self.release_curve)).astype(dtype=np.float32)
+        #
+        ## Ensure base is not negative. ##
+        #
+        release_base = np.maximum(0.0, 1.0 - release_progress)
+        release_val: NDArray[np.float32] = (self.sustain_level * np.power(release_base, self.release_curve)).astype(dtype=np.float32)
 
         #
         ### Build the envelope with nested np.where. ###
@@ -1935,9 +1957,12 @@ class ExponentialDecay(Value):
             return np.zeros_like(indexes_buffer, dtype=np.float32)
 
         #
-        ### Calculate decay for all samples. ###
+        safe_relative_time: NDArray[np.float32] = np.maximum(0.0, relative_time)
+
         #
-        decay_val: NDArray[np.float32] = np.exp(-relative_time * self.decay_rate)
+        ### Calculate decay for all samples using the safe time. ###
+        #
+        decay_val: NDArray[np.float32] = np.exp(-safe_relative_time * self.decay_rate)
 
         #
         ### Apply gate mask to ensure output is 0 before the start. ###
@@ -1957,7 +1982,7 @@ class BandLimitedSawtooth(Value):
         - "Good Listening": **GOOD**.
         - **Reason:** This class avoids the "naive" formula by summing
             `Sin` waves, following the model of the `WobbleBass` class
-[cite_start][cite: 138, 144].
+.
             This is a "fixed-harmonic-limit" oscillator.
         - **Compromise:** This is not *perfectly* band-limited (which
             would require checking `frequency * n` against `sample_rate`
