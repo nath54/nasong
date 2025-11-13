@@ -7,49 +7,6 @@ import random
 #
 import numpy as np
 from numpy.typing import NDArray
-from typing import List
-
-
-#
-### Helper function for vectorized deterministic noise ###
-#
-def _vectorized_noise(
-    indexes_buffer: NDArray[np.float32],
-    seed: int,
-    scale: float
-) -> NDArray[np.float32]:
-
-    """
-    Generates a deterministic, pseudo-random noise value for each index.
-
-    This replaces the non-vectorizable, non-performant `hash()`-based
-    and `random.random()`-based noise in the original classes.
-
-    Args:
-        indexes_buffer: The buffer of sample indices.
-        seed: An integer to vary the noise (e.g., 8191, 7919).
-        scale: The final scaling factor (e.g., 1/100.0).
-
-    Returns:
-        A NumPy array of noise values, one for each index.
-    """
-
-    #
-    ### A simple LCG: (a * x + c) % m              ###
-    ### We use bitwise-AND for a fast modulo 2^32. ###
-    #
-    idx_int: NDArray[np.uint32] = indexes_buffer.astype(np.uint32)
-    noise_int: NDArray[np.uint32] = ((idx_int * seed + 12345) & 0xFFFFFFFF).astype(dtype=np.uint32)
-
-    #
-    ### Convert to float in range [-0.5, 0.5]. ###
-    #
-    noise_float: NDArray[np.float32] = ((noise_int.astype(np.float32) / 0xFFFFFFFF) - 0.5).astype(dtype=np.float32)
-
-    #
-    ### Scale to match original intent (e.g., -100 to 100, then / 100.0). ###
-    #
-    return (noise_float * 200.0 * scale).astype(dtype=np.float32)
 
 
 #
@@ -268,7 +225,7 @@ class KickDrum2(lv.Value):
         #
         click_env: NDArray[np.float32] = (0.5 * np.exp(-relative_t * 100)).astype(dtype=np.float32)
         #
-        click_noise: NDArray[np.float32] = _vectorized_noise(
+        click_noise: NDArray[np.float32] = lv.WhiteNoise.vectorized_noise(
             indexes_buffer,
             seed=4567,
             scale=1/100.0  # (2-1) / 200 = 0.005 approx
@@ -373,7 +330,7 @@ class Snare(lv.Value):
         #
         ### Noise component ("good" vectorized noise). ###
         #
-        noise: NDArray[np.float32] = _vectorized_noise(
+        noise: NDArray[np.float32] = lv.WhiteNoise.vectorized_noise(
             indexes_buffer,
             seed=9973,
             scale=1/100.0  # This matches the (200-100)/100 scaling
@@ -470,7 +427,7 @@ class SnareDrum(lv.Value):
         #
         ### Noise component (snare wires) ("good" vectorized noise). ###
         #
-        noise_val: NDArray[np.float32] = _vectorized_noise(
+        noise_val: NDArray[np.float32] = lv.WhiteNoise.vectorized_noise(
             indexes_buffer,
             seed=1337,
             scale=1/100.0
@@ -517,7 +474,7 @@ class HiHat(lv.Value):
         self.duration: float = 0.4 if self.open else 0.08
         self.decay_rate: float = 8.0 if self.open else 50.0
         self.pi2: float = 2 * math.pi
-        self.cymbal_freqs: List[float] = [8000.0, 9000.0, 10000.0, 11000.0, 12000.0]
+        self.cymbal_freqs: list[float] = [8000.0, 9000.0, 10000.0, 11000.0, 12000.0]
 
     #
     def __getitem__(self, index: int, sample_rate: int) -> float:
@@ -591,7 +548,7 @@ class HiHat(lv.Value):
         #
         ### Add some randomness ("good" vectorized noise). ###
         #
-        random_noise: NDArray[np.float32] = _vectorized_noise(
+        random_noise: NDArray[np.float32] = lv.WhiteNoise.vectorized_noise(
             indexes_buffer,
             seed=2222,
             scale=1/100.0
@@ -640,7 +597,7 @@ class CrashCymbal(lv.Value):
         #
         ### Frequencies for the cymbal's inharmonic tones. ###
         #
-        self.cymbal_freqs: List[float] = [
+        self.cymbal_freqs: list[float] = [
             7000.0, 8500.0, 10000.0, 11500.0, 13000.0, 14500.0
         ]
 

@@ -7,50 +7,6 @@ import numpy as np
 from numpy.typing import NDArray
 #
 import lib_value as lv
-from lib_ext_effects_1 import ADSR2
-
-
-#
-### Helper function for vectorized deterministic noise ###
-#
-def _vectorized_noise(
-    indexes_buffer: NDArray[np.float32],
-    seed: int,
-    scale: float
-) -> NDArray[np.float32]:
-
-    """
-    Generates a deterministic, pseudo-random noise value for each index.
-
-    This replaces the non-vectorizable, non-performant `hash()`-based
-    noise in the original classes. This uses a simple, fast LCG (Linear
-    Congruential Generator) which is "hash-like" and deterministic.
-
-    Args:
-        indexes_buffer: The buffer of sample indices.
-        seed: An integer to vary the noise (e.g., 8191, 7919).
-        scale: The final scaling factor (e.g., 1/5000.0).
-
-    Returns:
-        A NumPy array of noise values, one for each index.
-    """
-
-    #
-    ### A simple LCG: (a * x + c) % m              ###
-    ### We use bitwise-AND for a fast modulo 2^32. ###
-    #
-    idx_int: NDArray[np.uint32] = indexes_buffer.astype(np.uint32)
-    noise_int: NDArray[np.uint32] = ((idx_int * seed + 12345) & 0xFFFFFFFF).astype(dtype=np.uint32)
-
-    #
-    ### Convert to float in range [-0.5, 0.5] ###
-    #
-    noise_float: NDArray[np.float32] = ((noise_int.astype(np.float32) / 0xFFFFFFFF) - 0.5).astype(dtype=np.float32)
-
-    #
-    ### Scale to match original intent (e.g., approx -50 to 50, then / 5000) ###
-    #
-    return (noise_float * 100.0 * scale).astype(dtype=np.float32)
 
 
 #
@@ -354,7 +310,7 @@ class GuitarString2(lv.Value):
         #
         # Vectorized deterministic noise (the "Improvement")
         #
-        noise: NDArray[np.float32] = _vectorized_noise(
+        noise: NDArray[np.float32] = lv.WhiteNoise.vectorized_noise(
             indexes_buffer,
             seed=12345,
             scale=1/5000.0
@@ -496,7 +452,7 @@ class AcousticString(lv.Value):
         #
         ### Vectorized deterministic noise (the "Improvement"). ###
         #
-        noise: NDArray[np.float32] = _vectorized_noise(
+        noise: NDArray[np.float32] = lv.WhiteNoise.vectorized_noise(
             indexes_buffer,
             seed=8191,
             scale=1/8000.0
@@ -690,7 +646,7 @@ class PianoNote(lv.Value):
         #
         ### Create ADSR envelope. ###
         #
-        self.envelope: ADSR2 = ADSR2(
+        self.envelope: lv.ADSR2 = lv.ADSR2(
             time=time,
             note_start=start_time,
             note_duration=duration,
@@ -1300,7 +1256,7 @@ class SaxophoneNote(lv.Value):
         #
         ### Vectorized deterministic noise (the "Improvement"). ###
         #
-        breath: NDArray[np.float32] = _vectorized_noise(
+        breath: NDArray[np.float32] = lv.WhiteNoise.vectorized_noise(
             indexes_buffer,
             seed=7919,
             scale=1/1000.0
