@@ -3,7 +3,7 @@
 #
 import lib_value as lv
 #
-from lib_ext_instr_1 import DeepBass
+from lib_ext_instr_1_bass import DeepBass
 #
 from lib_ext_percus_1 import KickDrum, SnareDrum, HiHat, CrashCymbal
 

@@ -3,7 +3,7 @@
 #
 import lib_value as lv
 #
-from lib_ext_instr_1 import PianoNote
+from lib_ext_instr_1_keyboards import PianoNote
 
 
 #
