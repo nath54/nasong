@@ -70,5 +70,5 @@ def song(time: lv.Value) -> lv.Value:
     #
     ### Mix ###
     #
-    return lv.Sum(violin_seq, cello_seq)
+    return cello_seq # lv.Sum(violin_seq, cello_seq)
 

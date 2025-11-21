@@ -17,9 +17,9 @@ def Violin(
     frequency: float,
     start_time: float,
     duration: float,
-    amplitude: float = 0.15, # Reduced from 0.3
-    vibrato_rate: float = 6.0,
-    vibrato_depth: float = 0.015,
+    amplitude: float = 0.18, # Slightly increased to compensate for attenuation
+    vibrato_rate: float = 30.0,
+    vibrato_depth: float = 0.15,
     sample_rate: int = 44100
 ) -> lv.Value:
 
@@ -30,7 +30,6 @@ def Violin(
 
     #
     ### 1. Vibrato (LFO on Pitch) ###
-    ### Delayed start for realism (starts after 0.1s) ###
     #
     vibrato_lfo: lv.Value = lv.LFO(
         time,
@@ -39,39 +38,31 @@ def Violin(
         amplitude=lv.c(vibrato_depth * frequency)
     )
     
-    #
-    ### Vibrato delay envelope (0 to 1 over 0.5s) ###
-    #
     vib_env: lv.Value = lv.ADSR2(
         time, start_time, duration, 0.2, 0.001, 1.0, 0.1
     )
-    #
     delayed_vibrato: lv.Value = lv.Product(vibrato_lfo, vib_env)
-    
-    #
-    ### Modulated Frequency ###
-    #
     mod_freq: lv.Value = lv.Sum(lv.c(frequency), delayed_vibrato)
 
     #
-    ### 2. Formant Definitions (Approximate Violin Body Resonances) ###
+    ### 2. Formant Definitions - ADJUSTED Q values to reduce odd harmonic amp ###
     #
     formants: list[lv.Formant] = [
-        lv.Formant(freq=280.0, gain_db=0.0, q=10.0),   # Main Air Resonance
-        lv.Formant(freq=450.0, gain_db=-3.0, q=8.0),   # Main Wood Resonance
-        lv.Formant(freq=1000.0, gain_db=-6.0, q=5.0),  # Bridge/Body
-        lv.Formant(freq=2500.0, gain_db=-12.0, q=3.0), # High sheen
-        lv.Formant(freq=4000.0, gain_db=-15.0, q=2.0)  # Air/Bow sizzle
+        lv.Formant(freq=280.0, gain_db=0.0, q=6.0),    # Reduced Q
+        lv.Formant(freq=450.0, gain_db=-3.0, q=5.0),   # Reduced Q
+        lv.Formant(freq=1000.0, gain_db=-6.0, q=3.0),  # Reduced Q
+        lv.Formant(freq=2500.0, gain_db=-12.0, q=2.0), # Reduced Q
+        lv.Formant(freq=4000.0, gain_db=-15.0, q=1.5)  # Reduced Q
     ]
 
     #
-    ### 3. Generate Harmonics (Sawtooth-like source shaped by formants) ###
+    ### 3. Generate Harmonics - ATTENUATE ODD HARMONICS ###
     #
     
     harmonics_list: list[lv.Value] = []
     nyquist_limit: float = sample_rate / 2.0
     pi2: float = 2 * math.pi
-    num_harmonics: int = 30 # Rich spectrum
+    num_harmonics: int = 40
     
     for n in range(1, num_harmonics + 1):
         harmonic_freq_static = frequency * n
@@ -88,13 +79,15 @@ def Violin(
         
         # Sawtooth falloff (1/n)
         source_amp = 1.0 / n
+        
+        # CORRECTED FIX: ATTENUATE odd harmonics instead
+        if n % 2 == 1 and n > 1:  # Don't attenuate fundamental
+            source_amp *= 0.5  # 50% reduction for odd harmonics (except fundamental)
+        
         final_amp = source_amp * combined_gain
         
         # Create Oscillator with Modulated Frequency
-        # freq_n = mod_freq * n
         freq_n_rad = lv.Product(mod_freq, lv.c(n * pi2))
-        
-        # Random phase
         delta = lv.c(random.uniform(0, pi2))
         
         harmonics_list.append(
@@ -106,47 +99,38 @@ def Violin(
             )
         )
         
-    # Scale down the sum of harmonics significantly to prevent clipping
-    signal: lv.Value = lv.Product(lv.Sum(harmonics_list), lv.c(0.1))
+    # Adjusted scaling
+    signal: lv.Value = lv.Product(lv.Sum(harmonics_list), lv.c(0.12))
 
     #
-    ### 4. Bow Noise (Scraping sound on attack) ###
+    ### 4. Bow Noise - MINIMAL ###
     #
-    noise: lv.Value = lv.WhiteNoise(seed=int(frequency), scale=0.02) # Reduced noise scale
-    # Short burst at start
+    noise: lv.Value = lv.WhiteNoise(seed=int(frequency), scale=0.003)
     noise_env: lv.Value = lv.ADSR2(
-        time, start_time, 0.1, 0.01, 0.05, 0.0, 0.01
+        time, start_time, 0.08, 0.01, 0.03, 0.0, 0.01
     )
     bow_noise: lv.Value = lv.Product(noise, noise_env)
-    
-    # Mix signal and noise
     mixed_signal: lv.Value = lv.Sum(signal, bow_noise)
 
     #
-    ### 5. Amplitude Envelope (Slow attack for bowed feel) ###
+    ### 5. Amplitude Envelope ###
     #
     amp_env: lv.Value = lv.ADSR2(
         time,
         note_start=start_time,
         note_duration=duration,
-        attack_time=0.1,   # Bow bite
+        attack_time=0.1,
         decay_time=0.1,
         sustain_level=0.9,
         release_time=0.2
     )
 
     #
-    ### 6. Tremolo (Slight amplitude modulation) ###
+    ### 6. Tremolo ###
     #
     tremolo: lv.Value = lv.LFO(
-        time, lv.c(vibrato_rate), lv.Sin, amplitude=lv.c(0.1), delta=lv.c(1.0)
+        time, lv.c(vibrato_rate), lv.Sin, amplitude=lv.c(0.08), delta=lv.c(1.0)
     )
-    # (1.0 + 0.1*sin) -> varies between 0.9 and 1.1
-    tremolo_norm: lv.Value = lv.BasicScaling(tremolo, lv.c(0.5), lv.c(0.5)) # 0.45 to 0.55? No.
-    # LFO returns -amp to +amp. 
-    # We want 1.0 +/- 0.1.
-    # LFO(amp=0.1) -> -0.1 to 0.1.
-    # Add 1.0.
     tremolo_final: lv.Value = lv.Sum(tremolo, lv.c(1.0))
 
     #
@@ -166,9 +150,9 @@ def Cello(
     frequency: float,
     start_time: float,
     duration: float,
-    amplitude: float = 0.2, # Reduced from 0.35
-    vibrato_rate: float = 5.0, # Slower vibrato for Cello
-    vibrato_depth: float = 0.012,
+    amplitude: float = 0.22,  # Increased to compensate for attenuation
+    vibrato_rate: float = 0.1,
+    vibrato_depth: float = 0.032,
     sample_rate: int = 44100
 ) -> lv.Value:
 
@@ -193,23 +177,23 @@ def Cello(
     mod_freq: lv.Value = lv.Sum(lv.c(frequency), delayed_vibrato)
 
     #
-    ### 2. Formant Definitions (Cello Body Resonances) ###
+    ### 2. Formant Definitions - ADJUSTED Q values ###
     #
     formants: list[lv.Formant] = [
-        lv.Formant(freq=100.0, gain_db=0.0, q=8.0),    # Main Air
-        lv.Formant(freq=175.0, gain_db=-2.0, q=6.0),   # Main Wood
-        lv.Formant(freq=450.0, gain_db=-5.0, q=5.0),   # Body
-        lv.Formant(freq=900.0, gain_db=-10.0, q=4.0),  # Upper Body
-        lv.Formant(freq=2000.0, gain_db=-20.0, q=2.0)  # Sizzle
+        lv.Formant(freq=100.0, gain_db=0.0, q=5.0),    # Reduced Q
+        lv.Formant(freq=175.0, gain_db=-2.0, q=4.0),   # Reduced Q
+        lv.Formant(freq=450.0, gain_db=-5.0, q=3.0),   # Reduced Q
+        lv.Formant(freq=900.0, gain_db=-10.0, q=2.5),  # Reduced Q
+        lv.Formant(freq=2000.0, gain_db=-20.0, q=1.5)  # Reduced Q
     ]
 
     #
-    ### 3. Generate Harmonics ###
+    ### 3. Generate Harmonics - ATTENUATE ODD HARMONICS ###
     #
     harmonics_list: list[lv.Value] = []
     nyquist_limit: float = sample_rate / 2.0
     pi2: float = 2 * math.pi
-    num_harmonics: int = 40 # More harmonics for bass richness
+    num_harmonics: int = 50
     
     for n in range(1, num_harmonics + 1):
         harmonic_freq_static = frequency * n
@@ -226,6 +210,11 @@ def Cello(
         
         # Sawtooth falloff (1/n)
         source_amp = 1.0 / n
+        
+        # CORRECTED FIX: ATTENUATE odd harmonics (except fundamental)
+        if n % 2 == 1 and n > 1:
+            source_amp *= 0.55  # 45% reduction
+        
         final_amp = source_amp * combined_gain
         
         # Create Oscillator
@@ -241,21 +230,21 @@ def Cello(
             )
         )
         
-    # Scale down harmonics
-    signal: lv.Value = lv.Product(lv.Sum(harmonics_list), lv.c(0.1))
+    # Scale
+    signal: lv.Value = lv.Product(lv.Sum(harmonics_list), lv.c(0.11))
 
     #
-    ### 4. Bow Noise ###
+    ### 4. Bow Noise - MINIMAL ###
     #
-    noise: lv.Value = lv.WhiteNoise(seed=int(frequency * 2), scale=0.02) # Reduced noise
+    noise: lv.Value = lv.WhiteNoise(seed=int(frequency * 2), scale=0.003)
     noise_env: lv.Value = lv.ADSR2(
-        time, start_time, 0.15, 0.01, 0.05, 0.0, 0.01
+        time, start_time, 0.12, 0.01, 0.03, 0.0, 0.01
     )
     bow_noise: lv.Value = lv.Product(noise, noise_env)
     mixed_signal: lv.Value = lv.Sum(signal, bow_noise)
 
     #
-    ### 5. Amplitude Envelope (Slower attack than violin) ###
+    ### 5. Amplitude Envelope ###
     #
     amp_env: lv.Value = lv.ADSR2(
         time,

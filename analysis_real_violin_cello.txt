@@ -1,0 +1,46 @@
+✅ Loaded audio: 8481216 samples at 44100 Hz (192.32s)
+
+📊 COMPREHENSIVE AUDIO REPORT
+==============================
+
+🔹 1. GENERAL & DYNAMICS
+  - Duration:            192.3178 s
+  - Effective Duration:  186.7712 s
+  - RMS Amplitude:       0.0605
+  - Peak Amplitude:      0.5475
+  - Dynamic Range:       19.13 dB (Crest Factor: 9.05)
+
+🔹 2. TIME DOMAIN & ENVELOPE
+  - ADSR Estimates:      A=156.743s, D=0.050s, S=0.09, R=5.031s
+  - Temporal Centroid:   93.2136 s
+  - Temporal Skewness:   -0.1802
+  - Temporal Kurtosis:   -1.2825
+
+🔹 3. SPECTRAL SHAPE (TIMBRE)
+  - Spectral Centroid:   2058.18 Hz (Brightness)
+  - Spectral Bandwidth:  2433.84 Hz
+  - Spectral Rolloff:    936.65 Hz (85% Energy)
+  - Spectral Flatness:   0.0452 (0=Tone, 1=Noise)
+  - Spectral Slope:      -3.07e-02
+  - Spectral Flux:       4.30e-03
+  - Spectral Skewness:   2.5321
+  - Spectral Kurtosis:   7.8555
+  - Zero Crossing Rate:  0.0392
+
+🔹 4. HARMONIC & PITCH
+  - Fundamental Freq:    73.01 Hz
+Traceback (most recent call last):
+  File "/home/nathan/github/nasong/vis_tool.py", line 160, in <module>
+    main()
+    ~~~~^^
+  File "/home/nathan/github/nasong/vis_tool.py", line 125, in main
+    print(f"  - Pitch Clarity:       {analyzer.get_pitch_clarity():.4f} (AutoCorr Peak)")
+                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/nathan/github/nasong/lib_vis.py", line 587, in get_pitch_clarity
+    f0 = self.get_fundamental_frequency()
+  File "/home/nathan/github/nasong/lib_vis.py", line 468, in get_fundamental_frequency
+    corr = np.correlate(sig, sig, mode='full')
+  File "/home/nathan/.local/lib/python3.13/site-packages/numpy/_core/numeric.py", line 799, in correlate
+    return multiarray.correlate2(a, v, mode)
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+KeyboardInterrupt

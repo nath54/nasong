@@ -1,0 +1,42 @@
+✅ Loaded audio: 1440000 samples at 96000 Hz (15.00s)
+
+📊 COMPREHENSIVE AUDIO REPORT
+==============================
+
+🔹 1. GENERAL & DYNAMICS
+  - Duration:            15.0000 s
+  - Effective Duration:  13.2632 s
+  - RMS Amplitude:       0.0781
+  - Peak Amplitude:      0.3262
+  - Dynamic Range:       12.42 dB (Crest Factor: 4.18)
+
+🔹 2. TIME DOMAIN & ENVELOPE
+  - ADSR Estimates:      A=7.461s, D=0.050s, S=0.49, R=1.207s
+  - Temporal Centroid:   7.1421 s
+  - Temporal Skewness:   -0.0451
+  - Temporal Kurtosis:   -1.1959
+
+🔹 3. SPECTRAL SHAPE (TIMBRE)
+  - Spectral Centroid:   2610.63 Hz (Brightness)
+  - Spectral Bandwidth:  4615.06 Hz
+  - Spectral Rolloff:    838.80 Hz (85% Energy)
+  - Spectral Flatness:   0.0714 (0=Tone, 1=Noise)
+  - Spectral Slope:      -1.28e-01
+  - Spectral Flux:       2.73e-02
+  - Spectral Skewness:   4.3300
+  - Spectral Kurtosis:   24.9675
+  - Zero Crossing Rate:  0.0123
+
+🔹 4. HARMONIC & PITCH
+  - Fundamental Freq:    2000.00 Hz
+  - Pitch Clarity:       0.5494 (AutoCorr Peak)
+  - HNR:                 0.86 dB
+  - Odd/Even Ratio:      11.0723 (>1 Odd dom, <1 Even dom)
+  - Tristimulus:         T1=0.89 (Fund), T2=0.10 (2-4), T3=0.01 (High)
+
+⚠️ ISSUES DETECTION
+  - Clipping (>0.99):    0.00% ✅
+  - DC Offset:           0.0005 ✅
+  - Silence (<-60dB):    12.10%
+==============================
+
