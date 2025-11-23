@@ -3,6 +3,9 @@
 #
 from typing import Callable
 #
+import torch
+from torch import Tensor 
+#
 import numpy as np
 from numpy.typing import NDArray
 #
@@ -11,6 +14,19 @@ from numpy.typing import NDArray
 import lib_config as lc
 import lib_value as lv
 import lib_wav as lw
+
+
+#
+def get_device() -> str | torch.device:
+
+    #
+    if torch.cuda.is_available():
+        #
+        return torch.device("cuda")
+    #
+    else:
+        #
+        return torch.device("cpu")
 
 
 #
@@ -26,35 +42,6 @@ class Song:
         #
         self.config: lc.Config = config
         self.value_of_time: Callable[[lv.Value], lv.Value] = value_of_time
-
-    #
-    def render_single_thread(
-        self,
-        from_sample: int,
-        to_sample: int,
-        audio_value: lv.Value,
-        audio_data: NDArray[np.float32]
-    ) -> None:
-
-        """
-        I had a lot of doubts concerning this function, because I was wondering about rendering the most efficiently possible (by chunking & parallelisation), and also wanted to be able to easily visualize the rendering progress.
-        But, in another hand, I also wanted to introduce effects like echo, reverb, delay, or others that need to have the full audio data (and especially the previously rendered audio steps) to calculate the next step.
-        """
-
-        #
-        idx_buffer: NDArray[np.float32] = np.arange(from_sample, to_sample, 1, dtype=np.float32)
-        #
-        audio_data[from_sample: to_sample] = audio_value.getitem_np(indexes_buffer=idx_buffer, sample_rate=self.config.sample_rate)
-
-        #
-        # steps: int = 2048 * 10
-
-        # #
-        # for i in tqdm(range(from_sample, to_sample, steps)):
-        #     #
-        #     idx_buffer: NDArray[np.float32] = np.arange(i, min(to_sample, i+steps), 1, dtype=np.float32)
-        #     #
-        #     audio_data[i:min(to_sample, i+steps)] = audio_value.getitem_np(indexes_buffer=idx_buffer, sample_rate=self.config.sample_rate)
 
     #
     def render(self) -> NDArray[np.float32]:
@@ -73,24 +60,51 @@ class Song:
         tot_samples: int = int(self.config.sample_rate * self.config.total_duration)
 
         #
-        audio_data: NDArray[np.float32] = np.zeros((tot_samples,), dtype=np.float32)
-
+        idx_buffer: NDArray[np.float32] = np.arange(0, tot_samples, 1, dtype=np.float32)
         #
-        self.render_single_thread(
-            from_sample=0,
-            to_sample=tot_samples,
-            audio_value=audio_value,
-            audio_data=audio_data
-        )
+        audio_data: NDArray[np.float32] = audio_value.getitem_np(indexes_buffer=idx_buffer, sample_rate=self.config.sample_rate)
 
         #
         return audio_data
 
     #
-    def export_to_wav(self) -> None:
+    def render_torch(self, device: str | torch.device = get_device()) -> Tensor:
 
         #
-        audio_data: NDArray[np.float32] = self.render()
+        time_val: lv.Value = lv.BasicScaling(
+            value=lv.Identity(),
+            mult_scale=lv.Constant(1/self.config.sample_rate),
+            sum_scale=lv.Constant(0)
+        )
+
+        #
+        audio_value: lv.Value = self.value_of_time(time_val)
+
+        #
+        tot_samples: int = int(self.config.sample_rate * self.config.total_duration)
+
+        #
+        idx_buffer: Tensor = torch.arange(tot_samples, dtype=torch.float32, device=device)
+        #
+        audio_data: Tensor = audio_value.getitem_torch(indexes_buffer=idx_buffer, sample_rate=self.config.sample_rate, device=device)
+
+        #
+        return audio_data
+
+    #
+    def export_to_wav(self, use_torch: bool = False, device: str | torch.device = get_device()) -> None:
+
+        #
+        audio_data: NDArray[np.float32]
+
+        #
+        if use_torch:
+            #
+            audio_data = self.render_torch(device=device).cpu().numpy()
+        #
+        else:
+            #
+            audio_data = self.render()
 
         #
         prepared_audio_signal: NDArray[np.int16] = lw.WavUtils.prepare_signal(audio_data=audio_data)
@@ -101,4 +115,4 @@ class Song:
             sample_rate=self.config.sample_rate,
             audio_data=prepared_audio_signal
         )
-
+    

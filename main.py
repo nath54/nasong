@@ -2,7 +2,9 @@
 ### Import Modules. ###
 #
 from typing import Callable
-
+#
+import torch
+#
 import argparse
 #
 import lib_import as li
@@ -16,6 +18,8 @@ def main(
     sound_file: str,
     output_filename: str = "output.wav",
     sample_rate: int = 44100,
+    use_torch: bool = False,
+    device: str | torch.device = ls.get_device()
 ) -> None:
 
     """
@@ -42,7 +46,7 @@ def main(
     )
 
     #
-    song.export_to_wav()
+    song.export_to_wav(use_torch=use_torch, device=device)
 
 
 #
@@ -59,6 +63,8 @@ if __name__ == "__main__":
     parser.add_argument('-i', type=str, required=True, help='Path to the python song description.')
     parser.add_argument('-o', type=str, default="output.wav", help='Path to the generated file.')
     parser.add_argument('-s', type=int, default=44100, help='Sample Rate')
+    parser.add_argument('-t', action="store_true", default=False, help='Use torch for rendering.')
+    parser.add_argument('-d', type=str, default="cpu", help='Device to use for rendering.')
 
     #
     ### Parse Arguments. ###
@@ -72,4 +78,6 @@ if __name__ == "__main__":
         sound_file = args.i,
         output_filename = args.o,
         sample_rate = args.s,
+        use_torch = args.t,
+        device = args.d
     )
