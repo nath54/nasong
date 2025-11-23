@@ -3,7 +3,7 @@
 #
 import lib_value as lv
 #
-from lib_ext_instr_1_plucker_strings import Strum, GuitarString
+from lib_ext_instr_1_plucked_strings import Strum, GuitarString
 
 #
 ### Specify duration (in seconds). ###
