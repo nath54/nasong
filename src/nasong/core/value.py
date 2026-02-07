@@ -149,25 +149,115 @@ class Value:
 
 
 #
+### CONTEXT MANAGER FOR PARAMETERS ###
+#
+
+
+class ParameterContext:
+    """
+    Context manager to capture or inject parameters into ValueTrainableParameter.
+    """
+
+    _current = None
+
+    def __init__(
+        self,
+        parameters: dict[str, float] | None = None,
+        capture: bool = False,
+        ignore_unknown: bool = True,
+    ):
+        self.parameters = parameters or {}
+        self.capture = capture
+        self.captured_params: list["ValueTrainableParameter"] = []
+        self.ignore_unknown = ignore_unknown
+        self._param_counter = 0
+
+    def __enter__(self):
+        self._previous = ParameterContext._current
+        ParameterContext._current = self
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        ParameterContext._current = self._previous
+
+    @classmethod
+    def get_current(cls):
+        return cls._current
+
+
+#
 class ValueTrainableParameter(Value):
     """
     A Value that can be trained.
     """
 
     #
-    def __init__(self, initial_value: float | int) -> None:
+    def __init__(self, initial_value: float | int, name: str | None = None) -> None:
 
         #
         super().__init__()
 
-        #
-        self.value: Tensor = torch.tensor(initial_value, dtype=torch.float32)
+        self.name = name
+        self.initial_value = initial_value
+
+        # Check for active context
+        ctx = ParameterContext.get_current()
+
+        # Default behavior: use torch if available
+        use_torch_local = HAS_TORCH
+
+        # Value to hold (Tensor if training/torch, float if inference/no-torch)
+        self.value: Any = None
+
+        if ctx:
+            if ctx.capture:
+                # Training mode restriction: must have torch
+                if not HAS_TORCH:
+                    # If we are capturing for training, we likely need torch.
+                    # But maybe we just want to inspect structure.
+                    # For now, let's assume if capturing, we want to train, so we keep torch behavior if possible.
+                    pass
+
+                if name is None:
+                    # Auto-generate name based on order/counter if needed
+                    # But for now, just store ref
+                    pass
+
+                ctx.captured_params.append(self)
+
+            elif ctx.parameters:
+                # Inference/Injection mode
+                # Try to find value in context parameters
+
+                injected_value = None
+
+                if name and name in ctx.parameters:
+                    injected_value = ctx.parameters[name]
+                else:
+                    # Fallback to positional injection if using list?
+                    # Current impl uses dict. If name missing, cant inject by name.
+                    # We could support list injection based on capture order if needed.
+                    pass
+
+                if injected_value is not None:
+                    # We found a value! Use it and force NO-TORCH mode for this instance (inference)
+                    self.value = float(injected_value)
+                    use_torch_local = False
+
+        # If no injected value, use initial
+        if self.value is None:
+            if use_torch_local:
+                self.value = torch.tensor(initial_value, dtype=torch.float32)
+            else:
+                self.value = float(initial_value)
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        return self.value
+        if isinstance(self.value, float):
+            return self.value
+        return self.value.item()
 
     #
     def getitem_np(
@@ -175,9 +265,11 @@ class ValueTrainableParameter(Value):
     ) -> NDArray[np.float32]:
 
         #
-        return np.full_like(
-            indexes_buffer, fill_value=self.value.item(), dtype=np.float32
-        )
+        val = self.value
+        if not isinstance(val, float):
+            val = val.item()
+
+        return np.full_like(indexes_buffer, fill_value=val, dtype=np.float32)
 
     #
     def getitem_torch(
@@ -190,6 +282,12 @@ class ValueTrainableParameter(Value):
         #
         ### Best way to pass the value correctly with good gradient flow. ###
         #
+        if isinstance(self.value, float):
+            # Fallback if we accidentally call torch render on inference object
+            # Convert float to tensor on fly (no gradient obviously)
+            t_val = torch.tensor(self.value, device=device)
+            return t_val.expand_as(indexes_buffer)
+
         return self.value.to(device).expand_as(indexes_buffer)
 
 

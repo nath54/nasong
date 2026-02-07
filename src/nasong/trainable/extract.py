@@ -13,6 +13,7 @@ from nasong.trainable.instruments import (
     TrainableBowed,
     TrainablePad,
     TrainableBass,
+    TrainableNamedExamples,
 )
 
 #
@@ -37,7 +38,10 @@ TRAINABLE_INSTRUMENTS = {
     # Atmospheric
     "pad": TrainablePad,
     # Bass
+    # Bass
     "bass": TrainableBass,
+    # Examples
+    "named_fm": TrainableNamedExamples,
 }
 
 

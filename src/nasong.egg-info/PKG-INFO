@@ -11,7 +11,6 @@ License-File: LICENSE
 Requires-Dist: numpy
 Requires-Dist: scipy
 Requires-Dist: matplotlib
-Requires-Dist: torch
 Dynamic: license-file
 
 # Nasong
@@ -58,41 +57,62 @@ At the heart of Nasong is the `Value` class.
     git clone https://github.com/nasong/nasong.git
     cd nasong
     ```
-2.  Ensure you have Python 3 installed.
-3.  (Optional) Install VLC or another media player to play the generated WAV files from the command line.
+2.  Install the package (editable mode recommended for development):
+    ```bash
+    pip install -e .
+    ```
+    *Note: PyTorch is an optional dependency for GPU acceleration. If you want to use it, install it separately following instructions at [pytorch.org](https://pytorch.org).*
 
 ## Usage
 
-To compile a song and play it, use the `main.py` script. You need to specify the sample rate and the input song file.
+Nasong provides two command-line tools: `nasong` (for generation) and `nasong-vis` (for visualization).
 
-### Basic Command
+### Generating Music
+
+Use the `nasong` command to render a song example to a WAV file.
 
 ```bash
-python main.py -s 44100 -i song_examples/song_electronic_synth.py -o song_electronic_synth.wav && vlc song_electronic_synth.wav
+nasong -i song_examples/song_electronic_synth.py -o output.wav
 ```
 
-### Arguments
-
+**Arguments:**
 - `-i`: Path to the Python song description file (Required).
+- `-o`: Output WAV filename (Default: `output.wav`).
 - `-s`: Sample rate in Hz (Default: 44100).
-- `-o`: Path to the generated output WAV file (Default: `output.wav`).
+- `-t`: Use PyTorch for rendering (requires Torch installed).
+- `-d`: Device to use (e.g., `cpu`, `cuda`).
 
-### Example
+### Visualizing Audio
 
-To render the "Electronic Synth" example:
+Use `nasong-vis` to analyze or plot waveforms/spectrograms of generated audio.
 
 ```bash
-python main.py -s 44100 -i song_examples/song_electronic_synth.py -o song_electronic_synth.wav
+nasong-vis -i output.wav --analyze --plot spectrogram
 ```
 
-This will create an `song_electronic_synth.wav` file in the current directory.
+**Arguments:**
+- `-i`: Input WAV file or Python song file.
+- `-o`: Output image filename (for plots).
+- `--analyze`: Print audio analysis metrics (RMS, peak, etc.).
+- `--plot`: Type of plot (`waveform`, `spectrogram`, `spectrum`, `all`).
+
+### Using as a Library
+
+You can import Nasong instruments and core classes in your own Python scripts:
+
+```python
+import nasong.core.value as lv
+from nasong.instruments.synth import SynthLead
+
+# Define your song logic...
+```
 
 ## Project Structure
 
-- `main.py`: The entry point for the application.
-- `lib_*.py`: Core libraries for value generation, song structure, import handling, etc.
-- `lib_ext_*.py`: Extended libraries containing instrument definitions (bass, bowed strings, keyboards, plucked strings, winds, percussion, synths).
-- `song_examples/`: Directory containing example song definitions.
+- `src/nasong/core/`: Core libraries (Values, Song, Wav, config).
+- `src/nasong/instruments/`: Built-in instrument library.
+- `src/nasong/scripts/`: CLI entry points.
+- `song_examples/`: Example song definitions.
 
 ## License
 
