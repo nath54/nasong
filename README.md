@@ -139,6 +139,22 @@ Manage your training experiments.
   nasong-monitor delete <experiment_id>
   ```
 
+### 6. Evaluating Models (`nasong-evaluate`)
+
+Evaluate the performance of trained models by comparing detected notes in the target vs. synthesized audio.
+
+```bash
+nasong-evaluate --experiment my_experiment
+```
+Or evaluate all experiments in a directory:
+```bash
+nasong-evaluate --models-dir trained_models
+```
+
+This generates:
+- `evaluation.json`: Detailed note detection metrics.
+- `comparison_<instrument>.png`: Side-by-side spectrograms.
+
 ## Experiment Tracking & Inference
 
 Nasong allows you to use trained instruments in your songs **without** needing PyTorch installed. The system effectively "compiles" the trained parameters into the instrument.

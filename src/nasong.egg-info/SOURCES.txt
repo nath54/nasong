@@ -26,12 +26,14 @@ src/nasong/instruments/plucked_strings.py
 src/nasong/instruments/synth.py
 src/nasong/instruments/winds.py
 src/nasong/scripts/__init__.py
+src/nasong/scripts/evaluate.py
 src/nasong/scripts/experiment_manager.py
 src/nasong/scripts/main.py
 src/nasong/scripts/monitor_cli.py
 src/nasong/scripts/train_cli.py
 src/nasong/scripts/vis_tool.py
 src/nasong/trainable/__init__.py
+src/nasong/trainable/config.py
 src/nasong/trainable/extract.py
 src/nasong/trainable/inference.py
 src/nasong/trainable/train.py
@@ -42,4 +44,12 @@ src/nasong/trainable/instruments/melodic.py
 src/nasong/trainable/instruments/named_examples.py
 src/nasong/trainable/instruments/percussion.py
 src/nasong/trainable/instruments/synth.py
+src/nasong/trainable/note_detection/__init__.py
+src/nasong/trainable/note_detection/audioflux_detect.py
+src/nasong/trainable/note_detection/base.py
+src/nasong/trainable/note_detection/basic_pitch_detect.py
+src/nasong/trainable/note_detection/create.py
+src/nasong/trainable/note_detection/legacy.py
+src/nasong/trainable/note_detection/librosa_detect.py
+src/nasong/trainable/note_detection/torchcrepe_detect.py
 tests/test_visualizations.py

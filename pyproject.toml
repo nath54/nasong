@@ -25,6 +25,7 @@ dependencies = [
 nasong = "nasong.scripts.main:main"
 nasong-vis = "nasong.scripts.vis_tool:main"
 nasong-train = "nasong.scripts.train_cli:main" # Placeholder, need to check if main exists or add it
+nasong-evaluate = "nasong.scripts.evaluate:main"
 nasong-monitor = "nasong.scripts.monitor_cli:main"
 
 [tool.setuptools.packages.find]
