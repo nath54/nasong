@@ -2,16 +2,19 @@
 ### Import Modules. ###
 #
 from typing import Optional, Any
+
 #
 import os
+
 #
 import importlib.util
 import importlib.machinery
 
 
 #
-def import_module_from_filepath(filepath: str, replace: list[tuple[str, str]] = []) -> object:
-
+def import_module_from_filepath(
+    filepath: str, replace: list[tuple[str, str]] = []
+) -> object:
     """
     Imports a Python module from a filepath.
 
@@ -29,7 +32,6 @@ def import_module_from_filepath(filepath: str, replace: list[tuple[str, str]] = 
     ### If asked to replace. ###
     #
     if replace:
-
         #
         ### Copy the base file to import into tmp.py. ###
         #
@@ -59,7 +61,9 @@ def import_module_from_filepath(filepath: str, replace: list[tuple[str, str]] = 
     #
     ### Create a module specification using the module name and filepath, spec is of type ModuleSpec. ###
     #
-    spec: Optional[importlib.machinery.ModuleSpec] = importlib.util.spec_from_file_location(module_name, filepath)
+    spec: Optional[importlib.machinery.ModuleSpec] = (
+        importlib.util.spec_from_file_location(module_name, filepath)
+    )
 
     #
     ### Check for errors. ###
@@ -91,4 +95,3 @@ def import_module_from_filepath(filepath: str, replace: list[tuple[str, str]] = 
     ### Return the imported module object. ###
     #
     return module
-

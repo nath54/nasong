@@ -2,6 +2,7 @@
 ### Import Modules. ###
 #
 import lib_value as lv
+
 #
 from lib_ext_instr_1_plucked_strings import Strum, GuitarString
 
@@ -52,53 +53,54 @@ def song(time: lv.Value) -> lv.Value:
 
     # Fingerpicking melody on top
     melody_notes = [
-        GuitarString(time, 587.33, 0.5, 1.5, 1.2),    # D5
-        GuitarString(time, 554.37, 1.5, 1.0, 1.2),    # C#5
-        GuitarString(time, 493.88, 2.5, 1.5, 1.2),    # B4
-
-        GuitarString(time, 554.37, 3.5, 1.5, 1.2),    # C#5
-        GuitarString(time, 587.33, 4.5, 1.0, 1.2),    # D5
-        GuitarString(time, 659.25, 5.5, 1.5, 1.2),    # E5
-
-        GuitarString(time, 587.33, 6.5, 1.5, 1.2),    # D5
-        GuitarString(time, 493.88, 7.5, 1.0, 1.2),    # B4
-        GuitarString(time, 440.00, 8.5, 1.5, 1.2),    # A4
-
-        GuitarString(time, 493.88, 9.5, 1.5, 1.2),    # B4
-        GuitarString(time, 440.00, 10.5, 1.0, 1.2),   # A4
-        GuitarString(time, 392.00, 11.5, 2.0, 1.2),   # G4
-
+        GuitarString(time, 587.33, 0.5, 1.5, 1.2),  # D5
+        GuitarString(time, 554.37, 1.5, 1.0, 1.2),  # C#5
+        GuitarString(time, 493.88, 2.5, 1.5, 1.2),  # B4
+        GuitarString(time, 554.37, 3.5, 1.5, 1.2),  # C#5
+        GuitarString(time, 587.33, 4.5, 1.0, 1.2),  # D5
+        GuitarString(time, 659.25, 5.5, 1.5, 1.2),  # E5
+        GuitarString(time, 587.33, 6.5, 1.5, 1.2),  # D5
+        GuitarString(time, 493.88, 7.5, 1.0, 1.2),  # B4
+        GuitarString(time, 440.00, 8.5, 1.5, 1.2),  # A4
+        GuitarString(time, 493.88, 9.5, 1.5, 1.2),  # B4
+        GuitarString(time, 440.00, 10.5, 1.0, 1.2),  # A4
+        GuitarString(time, 392.00, 11.5, 2.0, 1.2),  # G4
         # Second verse
         GuitarString(time, 587.33, 13.0, 1.5, 1.2),
         GuitarString(time, 659.25, 14.0, 1.0, 1.2),
         GuitarString(time, 587.33, 15.0, 1.5, 1.2),
-
         GuitarString(time, 554.37, 16.5, 1.5, 1.2),
         GuitarString(time, 493.88, 17.5, 1.0, 1.2),
         GuitarString(time, 440.00, 18.5, 1.5, 1.2),
-
         GuitarString(time, 493.88, 20.0, 1.5, 1.2),
         GuitarString(time, 440.00, 21.0, 1.0, 1.2),
-        GuitarString(time, 392.00, 22.0, 2.5, 1.0),   # Final note
+        GuitarString(time, 392.00, 22.0, 2.5, 1.0),  # Final note
     ]
 
     # Combine all elements
     chords = lv.Sum(
-        d_major_strum1, d_major_strum2,
-        a_major_strum1, a_major_strum2,
-        bm_strum1, bm_strum2,
-        g_major_strum1, g_major_strum2,
-        d_major_strum3, d_major_strum4,
-        a_major_strum3, a_major_strum4,
-        bm_strum3, bm_strum4,
-        g_major_strum3, g_major_ending
+        d_major_strum1,
+        d_major_strum2,
+        a_major_strum1,
+        a_major_strum2,
+        bm_strum1,
+        bm_strum2,
+        g_major_strum1,
+        g_major_strum2,
+        d_major_strum3,
+        d_major_strum4,
+        a_major_strum3,
+        a_major_strum4,
+        bm_strum3,
+        bm_strum4,
+        g_major_strum3,
+        g_major_ending,
     )
 
     melody = lv.Sum(*melody_notes)
 
     final = lv.Sum(
-        lv.Product(chords, lv.Constant(0.7)),
-        lv.Product(melody, lv.Constant(0.5))
+        lv.Product(chords, lv.Constant(0.7)), lv.Product(melody, lv.Constant(0.5))
     )
 
     return lv.Product(final, lv.Constant(0.6))

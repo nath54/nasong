@@ -3,18 +3,16 @@
 #
 import numpy as np
 from numpy.typing import NDArray
+
 #
-from scipy.io import wavfile  # type: ignore
+from scipy.io import wavfile
 
 
 #
 class WavUtils:
-
     #
     @staticmethod
-    def prepare_signal(
-        audio_data: NDArray[np.float32]
-    ) -> NDArray[np.int16]:
+    def prepare_signal(audio_data: NDArray[np.float32]) -> NDArray[np.int16]:
 
         #
         ### The amplitude is scaled by 32767 for a 16-bit integer representation ###
@@ -32,11 +30,8 @@ class WavUtils:
     #
     @staticmethod
     def save_wav_file(
-        filename: str,
-        sample_rate: int,
-        audio_data: NDArray[np.int16]
+        filename: str, sample_rate: int, audio_data: NDArray[np.int16]
     ) -> None:
-
         """
         Saves a NumPy array to a WAV file.
 
@@ -58,6 +53,3 @@ class WavUtils:
         except Exception as e:
             #
             print(f"❌ Error saving WAV file: {e}")
-
-
-

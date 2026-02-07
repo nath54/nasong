@@ -2,6 +2,7 @@
 ### Import Modules. ###
 #
 import math
+
 #
 import lib_value as lv
 
@@ -10,14 +11,14 @@ import lib_value as lv
 ### CATEGORY: WINDS ###
 #
 
+
 def SaxophoneNote(
     time: lv.Value,
     frequency: float,
     start_time: float,
     duration: float,
-    amplitude: float = 0.3
+    amplitude: float = 0.3,
 ) -> lv.Value:
-
     """
     Refactored SaxophoneNote.
     Builds graph from lib_value components.
@@ -34,7 +35,7 @@ def SaxophoneNote(
         attack_time=0.1,
         decay_time=0.001,
         sustain_level=1.0,
-        release_time=0.15
+        release_time=0.15,
     )
 
     #
@@ -44,7 +45,7 @@ def SaxophoneNote(
         time,
         rate_hz=lv.c(5.5),
         waveform_class=lv.Sin,
-        amplitude=lv.c(0.01 * frequency) # Depth is relative
+        amplitude=lv.c(0.01 * frequency),  # Depth is relative
     )
     #
     osc_freq: lv.Value = lv.Sum(lv.c(frequency), vibrato_lfo)
@@ -66,9 +67,7 @@ def SaxophoneNote(
     #
     ### Breath noise  ###
     #
-    breath: lv.Value = lv.WhiteNoise(
-        seed=7919, scale=(1/1000.0 * 0.5)
-    )
+    breath: lv.Value = lv.WhiteNoise(seed=7919, scale=(1 / 1000.0 * 0.5))
 
     #
     signal: lv.Value = lv.Sum(harmonics, breath)
@@ -76,9 +75,4 @@ def SaxophoneNote(
     #
     ### Final = Amplitude * AmpEnv * Signal ###
     #
-    return lv.Product(
-        lv.c(amplitude),
-        amp_env,
-        signal
-    )
-
+    return lv.Product(lv.c(amplitude), amp_env, signal)

@@ -2,12 +2,15 @@
 ### Import Modules. ###
 #
 from typing import cast, Callable, Any
+
 #
 import random
 import math
+
 #
 import numpy as np
 from numpy.typing import NDArray
+
 #
 import torch
 from torch import Tensor
@@ -17,9 +20,9 @@ from torch import Tensor
 ### ABSTRACT CLASS. ###
 #
 
+
 #
 class Value:
-
     """
     Abstract base class for a time-varying value.
 
@@ -29,15 +32,13 @@ class Value:
 
     #
     def __init__(self) -> None:
-
         """Initializes the base Value object."""
 
         #
         pass
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
-
+    def get_item(self, index: int, sample_rate: int) -> float:
         """
         Get the value at a single sample index.
 
@@ -55,8 +56,9 @@ class Value:
         return 0
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
-
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
         """
         Get the values for an array of sample indexes (vectorized).
 
@@ -65,7 +67,7 @@ class Value:
         For the implementation of the base Value class:
 
             - The base implementation is a slow, non-optimized placeholder
-            that iterates and calls __getitem__.
+            that iterates and calls get_item.
 
             - Subclasses should override this
             with a fast, vectorized NumPy implementation.
@@ -86,14 +88,18 @@ class Value:
         #
         for idx, i in enumerate(indexes_buffer):
             #
-            default[idx] = self.__getitem__(index=int(i), sample_rate=sample_rate)
+            default[idx] = self.get_item(index=int(i), sample_rate=sample_rate)
 
         #
         return default
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
-
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
         """
         Get the values for a tensor of sample indexes (vectorized).
 
@@ -103,7 +109,7 @@ class Value:
         So the gradient flow is important and need to be well implemented
         without much discontinuity with all the other torch operations.
 
-        So for instance, we should avoid randint, clamp or using the __getitem__
+        So for instance, we should avoid randint, clamp or using the get_item
         method.
 
         Args:
@@ -119,7 +125,9 @@ class Value:
         #
         ### If we arrive here, it is because there are not implemented getitem_torch method, so we are using this non optimized placeholder. ###
         #
-        default: Tensor = torch.zeros_like(indexes_buffer, dtype=torch.float32, device=device)
+        default: Tensor = torch.zeros_like(
+            indexes_buffer, dtype=torch.float32, device=device
+        )
 
         #
         ### We don't use the __get_item__ method to avoid gradient discontinuity. ###
@@ -131,9 +139,9 @@ class Value:
 ### VALUE TRAINABLE PARAMETERS. ###
 #
 
+
 #
 class ValueTrainableParameter(Value):
-
     """
     A Value that can be trained.
     """
@@ -148,19 +156,28 @@ class ValueTrainableParameter(Value):
         self.value: Tensor = torch.tensor(initial_value, dtype=torch.float32)
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
         return self.value
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
-        return np.full_like(indexes_buffer, fill_value=self.value.item(), dtype=np.float32)
+        return np.full_like(
+            indexes_buffer, fill_value=self.value.item(), dtype=np.float32
+        )
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
         ### Best way to pass the value correctly with good gradient flow. ###
@@ -172,9 +189,9 @@ class ValueTrainableParameter(Value):
 ### BASIC INSTANCES CLASSES. ###
 #
 
+
 #
 class Constant(Value):
-
     """A Value that returns the same constant number for all indexes."""
 
     #
@@ -187,27 +204,38 @@ class Constant(Value):
         self.value: float | int = value
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
         return self.value
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
         return np.full_like(indexes_buffer, fill_value=self.value, dtype=np.float32)
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
-        return torch.full_like(indexes_buffer, fill_value=float(self.value), dtype=torch.float32, device=device)
+        return torch.full_like(
+            indexes_buffer,
+            fill_value=float(self.value),
+            dtype=torch.float32,
+            device=device,
+        )
 
 
 #
 class Identity(Value):
-
     """A Value that returns the sample index itself as the value."""
 
     #
@@ -217,19 +245,26 @@ class Identity(Value):
         super().__init__()
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
         return float(index)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
         return indexes_buffer
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
         return indexes_buffer.to(device)
@@ -237,7 +272,6 @@ class Identity(Value):
 
 #
 class RandomInt(Value):
-
     """
     A Value that returns a random integer within a specified range
     for each sample.
@@ -254,18 +288,20 @@ class RandomInt(Value):
         self.max_range: Value = max_range
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
         return float(
             random.randint(
-                a=int(self.min_range.__getitem__(index=index, sample_rate=sample_rate)),
-                b=int(self.max_range.__getitem__(index=index, sample_rate=sample_rate))
+                a=int(self.min_range.get_item(index=index, sample_rate=sample_rate)),
+                b=int(self.max_range.get_item(index=index, sample_rate=sample_rate)),
             )
         )
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
         """
         Returns a vectorized array of random integers (as floats).
         """
@@ -273,8 +309,12 @@ class RandomInt(Value):
         #
         ### Get the vectorized min and max boundaries. ###
         #
-        min_vals: NDArray[np.float32] = self.min_range.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        max_vals: NDArray[np.float32] = self.max_range.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        min_vals: NDArray[np.float32] = self.min_range.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        max_vals: NDArray[np.float32] = self.max_range.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
 
         #
         ### Vectorized version using numpy's random generator. ###
@@ -297,13 +337,16 @@ class RandomInt(Value):
         ### Generate random ints and cast back to float32 for the audio buffer. ###
         #
         return np.random.randint(
-            low=min_int,
-            high=max_int,
-            size=indexes_buffer.shape
+            low=min_int, high=max_int, size=indexes_buffer.shape
         ).astype(np.float32)
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
         """
         Returns differentiable random values for training.
         Min/max are trainable, but the random selection itself is not.
@@ -312,23 +355,30 @@ class RandomInt(Value):
         #
         ### Get the vectorized min and max boundaries. ###
         #
-        min_vals: Tensor = self.min_range.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        max_vals: Tensor = self.max_range.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+        min_vals: Tensor = self.min_range.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        max_vals: Tensor = self.max_range.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
 
         #
         ### Use continuous uniform distribution (trainable bounds). ###
         ### Round to integers but use smooth random for gradient flow. ###
         #
-        random_vals: Tensor = torch.rand_like(indexes_buffer, dtype=torch.float32, device=device)
+        random_vals: Tensor = torch.rand_like(
+            indexes_buffer, dtype=torch.float32, device=device
+        )
         #
         ### Scale to range and round (rounding breaks gradient but bounds are trainable). ###
         #
-        return torch.floor(min_vals + random_vals * (max_vals - min_vals + 1.0)).to(dtype=torch.float32, device=device)
+        return torch.floor(min_vals + random_vals * (max_vals - min_vals + 1.0)).to(
+            dtype=torch.float32, device=device
+        )
 
 
 #
 class RandomFloat(Value):
-
     """
     A Value that returns a random float within a specified range
     for each sample.
@@ -345,16 +395,18 @@ class RandomFloat(Value):
         self.max_range: Value = max_range
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
         return random.uniform(
-            a=float(self.min_range.__getitem__(index=index, sample_rate=sample_rate)),
-            b=float(self.max_range.__getitem__(index=index, sample_rate=sample_rate))
+            a=float(self.min_range.get_item(index=index, sample_rate=sample_rate)),
+            b=float(self.max_range.get_item(index=index, sample_rate=sample_rate)),
         )
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
         """
         Returns a vectorized array of random floats.
         This is a performance-critical override.
@@ -363,20 +415,27 @@ class RandomFloat(Value):
         #
         ### Get the vectorized min and max boundaries. ###
         #
-        min_vals: NDArray[np.float32] = self.min_range.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        max_vals: NDArray[np.float32] = self.max_range.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        min_vals: NDArray[np.float32] = self.min_range.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        max_vals: NDArray[np.float32] = self.max_range.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
 
         #
         ### Use numpy's vectorized uniform random number generator. ###
         #
         return np.random.uniform(
-            low=min_vals,
-            high=max_vals,
-            size=indexes_buffer.shape
+            low=min_vals, high=max_vals, size=indexes_buffer.shape
         ).astype(np.float32)
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
         """
         Returns differentiable random floats for training.
         Min/max are trainable.
@@ -385,20 +444,25 @@ class RandomFloat(Value):
         #
         ### Get the vectorized min and max boundaries. ###
         #
-        min_vals: Tensor = self.min_range.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        max_vals: Tensor = self.max_range.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+        min_vals: Tensor = self.min_range.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        max_vals: Tensor = self.max_range.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
 
         #
         ### Use uniform random distribution with trainable bounds. ###
         #
-        random_vals: Tensor = torch.rand_like(indexes_buffer, dtype=torch.float32, device=device)
+        random_vals: Tensor = torch.rand_like(
+            indexes_buffer, dtype=torch.float32, device=device
+        )
         #
         return min_vals + random_vals * (max_vals - min_vals)
 
 
 #
 class RandomChoice(Value):
-
     """A Value that randomly selects from a list of other Value objects."""
 
     #
@@ -411,13 +475,20 @@ class RandomChoice(Value):
         self.choices: list[Value] = choices
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        return random.choice(self.choices).__getitem__(index=index, sample_rate=sample_rate)
+        return random.choice(self.choices).get_item(
+            index=index, sample_rate=sample_rate
+        )
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
         """
         Returns a random choice for training.
         The selection is random but gradient flows through the chosen Value.
@@ -429,7 +500,9 @@ class RandomChoice(Value):
         #
         if len(self.choices) > 0:
             #
-            return self.choices[0].getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+            return self.choices[0].getitem_torch(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+            )
         #
         else:
             #
@@ -438,7 +511,6 @@ class RandomChoice(Value):
 
 #
 class WhiteNoise(Value):
-
     #
     def __init__(self, seed: int = 42, scale: float = 1.0):
 
@@ -455,11 +527,8 @@ class WhiteNoise(Value):
     #
     @staticmethod
     def vectorized_noise(
-        indexes_buffer: NDArray[np.float32],
-        seed: int,
-        scale: float
+        indexes_buffer: NDArray[np.float32], seed: int, scale: float
     ) -> NDArray[np.float32]:
-
         """
         Generates a deterministic, pseudo-random noise value for each index.
 
@@ -481,12 +550,16 @@ class WhiteNoise(Value):
         ### We use bitwise-AND for a fast modulo 2^32. ###
         #
         idx_int: NDArray[np.uint32] = indexes_buffer.astype(np.uint32)
-        noise_int: NDArray[np.uint32] = ((idx_int * seed + 12345) & 0xFFFFFFFF).astype(dtype=np.uint32)
+        noise_int: NDArray[np.uint32] = ((idx_int * seed + 12345) & 0xFFFFFFFF).astype(
+            dtype=np.uint32
+        )
 
         #
         ### Convert to float in range [-0.5, 0.5] ###
         #
-        noise_float: NDArray[np.float32] = ((noise_int.astype(np.float32) / 0xFFFFFFFF) - 0.5).astype(dtype=np.float32)
+        noise_float: NDArray[np.float32] = (
+            (noise_int.astype(np.float32) / 0xFFFFFFFF) - 0.5
+        ).astype(dtype=np.float32)
 
         #
         ### Scale to match original intent (e.g., approx -50 to 50, then / 5000) ###
@@ -494,12 +567,19 @@ class WhiteNoise(Value):
         return (noise_float * 100.0 * scale).astype(dtype=np.float32)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
         #
         return self.__class__.vectorized_noise(indexes_buffer, self.seed, self.scale)
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
         """
         Generates deterministic, differentiable noise for training.
         Uses LCG (Linear Congruential Generator) approach.
@@ -526,9 +606,9 @@ class WhiteNoise(Value):
 ### UTILS. ###
 #
 
+
 #
 def input_args_to_values(values: tuple[Value | list[Value], ...]) -> list[Value]:
-
     """
     A utility function to handle flexible *args inputs for multi-input classes
     (like Sum, Min, Max, Product).
@@ -558,7 +638,6 @@ def input_args_to_values(values: tuple[Value | list[Value], ...]) -> list[Value]
 
 #
 def c(v: float | int) -> Value:
-
     """Shorthand helper function to create a Constant Value."""
 
     #
@@ -572,9 +651,8 @@ def generate_harmonics(
     num_harmonics: int,
     amplitude_falloff: float,
     sample_rate: int,
-    base_amplitude: Value = Constant(1.0)
+    base_amplitude: Value = Constant(1.0),
 ) -> Value:
-
     """
     Utility to generate a band-limited sum of harmonic sine waves.
 
@@ -603,7 +681,6 @@ def generate_harmonics(
 
     #
     for n in range(1, num_harmonics + 1):
-
         #
         ### Calculate the frequency of the Nth harmonic. ###
         #
@@ -619,7 +696,9 @@ def generate_harmonics(
         #
         ### Calculate the amplitude for this harmonic. ###
         #
-        amp_value: Value = Product(base_amplitude, Constant(current_amplitude_multiplier))
+        amp_value: Value = Product(
+            base_amplitude, Constant(current_amplitude_multiplier)
+        )
 
         #
         ### Add the new Sin wave to our list. ###
@@ -628,7 +707,7 @@ def generate_harmonics(
             Sin(
                 value=time,
                 frequency=Constant(harmonic_freq_hz * pi2),
-                amplitude=amp_value
+                amplitude=amp_value,
             )
         )
 
@@ -656,9 +735,8 @@ def LFO(
     rate_hz: Value,
     waveform_class: Callable[..., Value],
     amplitude: Value = Constant(1.0),
-    delta: Value = Constant(0.0)
+    delta: Value = Constant(0.0),
 ) -> Value:
-
     """
     Utility to create a Low-Frequency Oscillator (LFO).
 
@@ -695,19 +773,17 @@ def LFO(
     ### Return the instantiated oscillator class. ###
     #
     return waveform_class(
-        value=time,
-        frequency=freq_val,
-        amplitude=amplitude,
-        delta=delta
+        value=time, frequency=freq_val, amplitude=amplitude, delta=delta
     )
+
 
 #
 ### BASIC OPERATION CLASSES ON SINGLE ITEMS. ###
 #
 
+
 #
 class Polynom(Value):
-
     """
     A Value that calculates a polynomial function:
     y = terms[0] + terms[1]*X + terms[2]*X^2 + ...
@@ -715,9 +791,7 @@ class Polynom(Value):
 
     #
     def __init__(
-        self,
-        X: Value,
-        terms: list[Value] = [Constant(0), Constant(1)]
+        self, X: Value, terms: list[Value] = [Constant(0), Constant(1)]
     ) -> None:
 
         #
@@ -729,41 +803,65 @@ class Polynom(Value):
         self.terms: list[Value] = terms
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        X_val: float = self.X.__getitem__(index=index, sample_rate=sample_rate)
+        X_val: float = self.X.get_item(index=index, sample_rate=sample_rate)
 
         #
-        return sum([
-            X_val**i * self.terms[i].__getitem__(index=index, sample_rate=sample_rate)
-            for i in range(len(self.terms))
-        ])
+        return sum(
+            [
+                X_val**i * self.terms[i].get_item(index=index, sample_rate=sample_rate)
+                for i in range(len(self.terms))
+            ]
+        )
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
-        X_val: NDArray[np.float32] = self.X.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        X_val: NDArray[np.float32] = self.X.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
 
         #
-        return np.sum([
-            np.multiply( np.pow(X_val, i), self.terms[i].getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate) )
-            for i in range(len(self.terms))
-        ])
+        return np.sum(
+            [
+                np.multiply(
+                    np.pow(X_val, i),
+                    self.terms[i].getitem_np(
+                        indexes_buffer=indexes_buffer, sample_rate=sample_rate
+                    ),
+                )
+                for i in range(len(self.terms))
+            ]
+        )
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
-        X_val: Tensor = self.X.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+        X_val: Tensor = self.X.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
 
         #
-        result: Tensor = torch.zeros_like(indexes_buffer, dtype=torch.float32, device=device)
+        result: Tensor = torch.zeros_like(
+            indexes_buffer, dtype=torch.float32, device=device
+        )
         #
         for i in range(len(self.terms)):
             #
-            term_val: Tensor = self.terms[i].getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+            term_val: Tensor = self.terms[i].getitem_torch(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+            )
             #
             result = result + torch.pow(X_val, float(i)) * term_val
 
@@ -773,7 +871,6 @@ class Polynom(Value):
 
 #
 class BasicScaling(Value):
-
     """A Value that applies a linear transformation: value * mult_scale + sum_scale."""
 
     #
@@ -788,34 +885,53 @@ class BasicScaling(Value):
         self.sum_scale: Value = sum_scale
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        v: float = self.value.__getitem__(index=index, sample_rate=sample_rate)
-        m: float = self.mult_scale.__getitem__(index=index, sample_rate=sample_rate)
-        s: float = self.sum_scale.__getitem__(index=index, sample_rate=sample_rate)
+        v: float = self.value.get_item(index=index, sample_rate=sample_rate)
+        m: float = self.mult_scale.get_item(index=index, sample_rate=sample_rate)
+        s: float = self.sum_scale.get_item(index=index, sample_rate=sample_rate)
 
         #
         return v * m + s
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
-        v: NDArray[np.float32] = self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        m: NDArray[np.float32] = self.mult_scale.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        s: NDArray[np.float32] = self.sum_scale.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        v: NDArray[np.float32] = self.value.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        m: NDArray[np.float32] = self.mult_scale.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        s: NDArray[np.float32] = self.sum_scale.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
 
         #
         return np.multiply(v, m) + s
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
-        v: Tensor = self.value.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        m: Tensor = self.mult_scale.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        s: Tensor = self.sum_scale.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+        v: Tensor = self.value.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        m: Tensor = self.mult_scale.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        s: Tensor = self.sum_scale.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
 
         #
         return v * m + s
@@ -823,14 +939,10 @@ class BasicScaling(Value):
 
 #
 class Abs(Value):
-
     """A Value that returns the absolute value of another Value."""
 
     #
-    def __init__(
-        self,
-        value: Value
-    ) -> None:
+    def __init__(self, value: Value) -> None:
 
         #
         super().__init__()
@@ -839,27 +951,41 @@ class Abs(Value):
         self.value: Value = value
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        return abs(self.value.__getitem__(index=index, sample_rate=sample_rate))
+        return abs(self.value.get_item(index=index, sample_rate=sample_rate))
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
-        return np.abs(self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate))
+        return np.abs(
+            self.value.getitem_np(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate
+            )
+        )
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
-        return torch.abs(self.value.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device))
+        return torch.abs(
+            self.value.getitem_torch(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+            )
+        )
 
 
 #
 class Clamp(Value):
-
     """
     A Value that constrains another Value between a min and max Value.
     Also known as Clip.
@@ -870,7 +996,7 @@ class Clamp(Value):
         self,
         value: Value,
         min_value: Value = Constant(0),
-        max_value: Value = Constant(1)
+        max_value: Value = Constant(1),
     ) -> None:
 
         #
@@ -882,41 +1008,59 @@ class Clamp(Value):
         self.max_value: Value = max_value
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
         return max(
-            self.min_value.__getitem__(index=index, sample_rate=sample_rate),
+            self.min_value.get_item(index=index, sample_rate=sample_rate),
             min(
-                self.max_value.__getitem__(index=index, sample_rate=sample_rate),
-                self.value.__getitem__(index=index, sample_rate=sample_rate)
-            )
+                self.max_value.get_item(index=index, sample_rate=sample_rate),
+                self.value.get_item(index=index, sample_rate=sample_rate),
+            ),
         )
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
         return np.clip(
-            self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate),
-            self.min_value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate),
-            self.max_value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+            self.value.getitem_np(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate
+            ),
+            self.min_value.getitem_np(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate
+            ),
+            self.max_value.getitem_np(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate
+            ),
         )
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
         return torch.clamp(
-            self.value.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device),
-            self.min_value.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device),
-            self.max_value.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+            self.value.getitem_torch(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+            ),
+            self.min_value.getitem_torch(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+            ),
+            self.max_value.getitem_torch(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+            ),
         )
 
 
 #
 class LowPass(Value):
-
     """
     A simple "clipper" Value that limits the maximum value.
     This is NOT an audio filter (like a Butterworth or RC filter).
@@ -924,11 +1068,7 @@ class LowPass(Value):
     """
 
     #
-    def __init__(
-        self,
-        value: Value,
-        max_value: Value = Constant(0)
-    ) -> None:
+    def __init__(self, value: Value, max_value: Value = Constant(0)) -> None:
 
         #
         super().__init__()
@@ -938,36 +1078,50 @@ class LowPass(Value):
         self.max_value: Value = max_value
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
         return min(
-            self.max_value.__getitem__(index=index, sample_rate=sample_rate),
-            self.value.__getitem__(index=index, sample_rate=sample_rate)
+            self.max_value.get_item(index=index, sample_rate=sample_rate),
+            self.value.get_item(index=index, sample_rate=sample_rate),
         )
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
         return np.minimum(
-            self.max_value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate),
-            self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+            self.max_value.getitem_np(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate
+            ),
+            self.value.getitem_np(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate
+            ),
         )
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
         return torch.minimum(
-            self.max_value.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device),
-            self.value.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+            self.max_value.getitem_torch(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+            ),
+            self.value.getitem_torch(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+            ),
         )
 
 
 #
 class HighPass(Value):
-
     """
     A simple "clipper" Value that limits the minimum value.
     This is NOT an audio filter (like a Butterworth or RC filter).
@@ -975,11 +1129,7 @@ class HighPass(Value):
     """
 
     #
-    def __init__(
-        self,
-        value: Value,
-        min_value: Value = Constant(0)
-    ) -> None:
+    def __init__(self, value: Value, min_value: Value = Constant(0)) -> None:
 
         #
         super().__init__()
@@ -989,36 +1139,50 @@ class HighPass(Value):
         self.min_value: Value = min_value
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
         return max(
-            self.min_value.__getitem__(index=index, sample_rate=sample_rate),
-            self.value.__getitem__(index=index, sample_rate=sample_rate)
+            self.min_value.get_item(index=index, sample_rate=sample_rate),
+            self.value.get_item(index=index, sample_rate=sample_rate),
         )
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
         return np.maximum(
-            self.min_value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate),
-            self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+            self.min_value.getitem_np(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate
+            ),
+            self.value.getitem_np(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate
+            ),
         )
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
         return torch.maximum(
-            self.min_value.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device),
-            self.value.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+            self.min_value.getitem_torch(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+            ),
+            self.value.getitem_torch(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+            ),
         )
 
 
 #
 class MaskTreshold(Value):
-
     """
     A Value that acts as a switch:
     if mask >= treshold, return mask_value.
@@ -1031,7 +1195,7 @@ class MaskTreshold(Value):
         value: Value,
         mask: Value,
         treshold_to_mask: Value = Constant(1),
-        mask_value: Value = Constant(0)
+        mask_value: Value = Constant(0),
     ) -> None:
 
         #
@@ -1044,45 +1208,68 @@ class MaskTreshold(Value):
         self.mask_value: Value = mask_value
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        mask_v: float = self.mask.__getitem__(index=index, sample_rate=sample_rate)
+        mask_v: float = self.mask.get_item(index=index, sample_rate=sample_rate)
 
         #
-        if mask_v >= self.treshold_to_mask.__getitem__(index=index, sample_rate=sample_rate):
-
+        if mask_v >= self.treshold_to_mask.get_item(
+            index=index, sample_rate=sample_rate
+        ):
             #
-            return self.mask_value.__getitem__(index=index, sample_rate=sample_rate)
+            return self.mask_value.get_item(index=index, sample_rate=sample_rate)
 
         #
         else:
-
             #
-            return self.value.__getitem__(index=index, sample_rate=sample_rate)
+            return self.value.get_item(index=index, sample_rate=sample_rate)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
-        base_value: NDArray[np.float32] = self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        masked_value: NDArray[np.float32] = self.mask_value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        base_value: NDArray[np.float32] = self.value.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        masked_value: NDArray[np.float32] = self.mask_value.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
 
         #
-        mask_v: NDArray[np.float32] = self.mask.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        treshold_v: NDArray[np.float32] = self.treshold_to_mask.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        mask_v: NDArray[np.float32] = self.mask.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        treshold_v: NDArray[np.float32] = self.treshold_to_mask.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
         return np.where(mask_v < treshold_v, base_value, masked_value)
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
-        base_value: Tensor = self.value.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        masked_value: Tensor = self.mask_value.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+        base_value: Tensor = self.value.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        masked_value: Tensor = self.mask_value.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
 
         #
-        mask_v: Tensor = self.mask.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        treshold_v: Tensor = self.treshold_to_mask.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+        mask_v: Tensor = self.mask.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        treshold_v: Tensor = self.treshold_to_mask.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
 
         #
         return torch.where(mask_v < treshold_v, base_value, masked_value)
@@ -1090,7 +1277,6 @@ class MaskTreshold(Value):
 
 #
 class TimeInterval(Value):
-
     """
     A Value that selects between two other Values based on the index (time).
     Returns `value_inside` if `min_sample_idx <= index <= max_sample_idx`.
@@ -1103,7 +1289,7 @@ class TimeInterval(Value):
         value_inside: Value,
         value_outside: Value = Constant(0),
         min_sample_idx: Value = Constant(0),
-        max_sample_idx: Value = Constant(1)
+        max_sample_idx: Value = Constant(1),
     ) -> None:
 
         #
@@ -1116,31 +1302,41 @@ class TimeInterval(Value):
         self.max_sample_idx: Value = max_sample_idx
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        if index < self.min_sample_idx.__getitem__(index=index, sample_rate=sample_rate):
+        if index < self.min_sample_idx.get_item(index=index, sample_rate=sample_rate):
             #
-            return self.value_outside.__getitem__(index=index, sample_rate=sample_rate)
+            return self.value_outside.get_item(index=index, sample_rate=sample_rate)
 
         #
-        elif index > self.max_sample_idx.__getitem__(index=index, sample_rate=sample_rate):
+        elif index > self.max_sample_idx.get_item(index=index, sample_rate=sample_rate):
             #
-            return self.value_outside.__getitem__(index=index, sample_rate=sample_rate)
+            return self.value_outside.get_item(index=index, sample_rate=sample_rate)
 
         #
-        return self.value_inside.__getitem__(index=index, sample_rate=sample_rate)
+        return self.value_inside.get_item(index=index, sample_rate=sample_rate)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
-        inside_values: NDArray[np.float32] = self.value_inside.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        outside_values: NDArray[np.float32] = self.value_outside.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        inside_values: NDArray[np.float32] = self.value_inside.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        outside_values: NDArray[np.float32] = self.value_outside.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
 
         #
-        min_idx: NDArray[np.float32] = self.min_sample_idx.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        max_idx: NDArray[np.float32] = self.max_sample_idx.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        min_idx: NDArray[np.float32] = self.min_sample_idx.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        max_idx: NDArray[np.float32] = self.max_sample_idx.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
 
         #
         ### Create mask for values inside the interval. ###
@@ -1151,15 +1347,28 @@ class TimeInterval(Value):
         return np.where(inside_mask, inside_values, outside_values)
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
-        inside_values: Tensor = self.value_inside.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        outside_values: Tensor = self.value_outside.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+        inside_values: Tensor = self.value_inside.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        outside_values: Tensor = self.value_outside.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
 
         #
-        min_idx: Tensor = self.min_sample_idx.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        max_idx: Tensor = self.max_sample_idx.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+        min_idx: Tensor = self.min_sample_idx.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        max_idx: Tensor = self.max_sample_idx.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
 
         #
         ### Create mask for values inside the interval. ###
@@ -1172,7 +1381,6 @@ class TimeInterval(Value):
 
 #
 class Modulo(Value):
-
     """
     A Value that computes the modulo (remainder) of another Value.
     Result = value % modulo_value
@@ -1183,11 +1391,7 @@ class Modulo(Value):
     """
 
     #
-    def __init__(
-        self,
-        value: Value,
-        modulo_value: Value = Constant(1.0)
-    ) -> None:
+    def __init__(self, value: Value, modulo_value: Value = Constant(1.0)) -> None:
 
         #
         super().__init__()
@@ -1197,11 +1401,11 @@ class Modulo(Value):
         self.modulo_value: Value = modulo_value
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        val_v: float = self.value.__getitem__(index=index, sample_rate=sample_rate)
-        mod_v: float = self.modulo_value.__getitem__(index=index, sample_rate=sample_rate)
+        val_v: float = self.value.get_item(index=index, sample_rate=sample_rate)
+        mod_v: float = self.modulo_value.get_item(index=index, sample_rate=sample_rate)
 
         #
         ### Handle division by zero. ###
@@ -1216,43 +1420,49 @@ class Modulo(Value):
         return val_v % mod_v
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
-        val_v: NDArray[np.float32] = self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        mod_v: NDArray[np.float32] = self.modulo_value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        val_v: NDArray[np.float32] = self.value.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        mod_v: NDArray[np.float32] = self.modulo_value.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
 
         #
         ### Use np.mod for vectorized modulo. ###
         ### We use np.where to prevent division by zero. ###
         #
-        return np.where(
-            mod_v == 0,
-            val_v,
-            np.mod(val_v, mod_v)
-        )
+        return np.where(mod_v == 0, val_v, np.mod(val_v, mod_v))
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
-        val_v: Tensor = self.value.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        mod_v: Tensor = self.modulo_value.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+        val_v: Tensor = self.value.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        mod_v: Tensor = self.modulo_value.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
 
         #
         ### Use torch.fmod for vectorized modulo. ###
         ### We use torch.where to prevent division by zero. ###
         #
-        return torch.where(
-            mod_v == 0,
-            val_v,
-            torch.fmod(val_v, mod_v)
-        )
+        return torch.where(mod_v == 0, val_v, torch.fmod(val_v, mod_v))
 
 
 #
 class Sequencer(Value):
-
     """
     A Value container that generates a sequence of "notes" or "events".
 
@@ -1273,7 +1483,7 @@ class Sequencer(Value):
         # followed by the unpacked arguments from the data tuple.
         # e.g.: factory(time, freq, start, dur)
         instrument_factory: Callable[..., Value],
-        note_data_list: list[tuple[Any, ...]]
+        note_data_list: list[tuple[Any, ...]],
     ) -> None:
 
         #
@@ -1298,36 +1508,48 @@ class Sequencer(Value):
         self.sum: Sum = Sum(notes)
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
         ### Proxy the call to the internal Sum object. ###
         #
-        return self.sum.__getitem__(index=index, sample_rate=sample_rate)
+        return self.sum.get_item(index=index, sample_rate=sample_rate)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
         ### Proxy the call to the internal Sum object. ###
         #
-        return self.sum.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        return self.sum.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
         ### Proxy the call to the internal Sum object. ###
         #
-        return self.sum.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+        return self.sum.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+
 
 #
 ### BASIC OPERATION CLASSES ON MULTIPLE ITEMS. ###
 #
 
+
 #
 class Min(Value):
-
     """A Value that returns the minimum value from a list of input Values."""
 
     #
@@ -1340,27 +1562,41 @@ class Min(Value):
         self.values: list[Value] = input_args_to_values(values=values)
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        return min([v.__getitem__(index=index, sample_rate=sample_rate) for v in self.values])
+        return min(
+            [v.get_item(index=index, sample_rate=sample_rate) for v in self.values]
+        )
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
-        arrays = [v.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate) for v in self.values]
+        arrays = [
+            v.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+            for v in self.values
+        ]
         #
         return np.minimum.reduce(arrays)
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
         ### Compute all values and stack them. ###
         #
         value_tensors: list[Tensor] = [
-            val.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+            val.getitem_torch(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+            )
             for val in self.values
         ]
 
@@ -1382,7 +1618,6 @@ class Min(Value):
 
 #
 class Max(Value):
-
     """A Value that returns the maximum value from a list of input Values."""
 
     #
@@ -1395,27 +1630,41 @@ class Max(Value):
         self.values: list[Value] = input_args_to_values(values=values)
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        return max([v.__getitem__(index=index, sample_rate=sample_rate) for v in self.values])
+        return max(
+            [v.get_item(index=index, sample_rate=sample_rate) for v in self.values]
+        )
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
-        arrays = [v.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate) for v in self.values]
+        arrays = [
+            v.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+            for v in self.values
+        ]
         #
         return np.maximum.reduce(arrays)
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
         ### Compute all values and stack them. ###
         #
         value_tensors: list[Tensor] = [
-            val.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+            val.getitem_torch(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+            )
             for val in self.values
         ]
 
@@ -1437,7 +1686,6 @@ class Max(Value):
 
 #
 class Sum(Value):
-
     """A Value that returns the sum of a list of input Values."""
 
     #
@@ -1450,27 +1698,41 @@ class Sum(Value):
         self.values: list[Value] = input_args_to_values(values=values)
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        return sum([v.__getitem__(index=index, sample_rate=sample_rate) for v in self.values])
+        return sum(
+            [v.get_item(index=index, sample_rate=sample_rate) for v in self.values]
+        )
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
-        arrays = [v.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate) for v in self.values]
+        arrays = [
+            v.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+            for v in self.values
+        ]
         #
         return np.sum(arrays, axis=0)
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
         ### Compute all values and stack them. ###
         #
         value_tensors: list[Tensor] = [
-            val.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+            val.getitem_torch(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+            )
             for val in self.values
         ]
 
@@ -1492,7 +1754,6 @@ class Sum(Value):
 
 #
 class PonderedSum(Value):
-
     """
     A Value that returns a weighted sum of (weight, value) pairs.
     Result = (weight1 * value1) + (weight2 * value2) + ...
@@ -1508,37 +1769,46 @@ class PonderedSum(Value):
         self.values_and_weights: list[tuple[Value, Value]] = values
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
         result: float = 0
 
         #
         for pond, val in self.values_and_weights:
-
             #
-            result += pond.__getitem__(index=index, sample_rate=sample_rate) * val.__getitem__(index=index, sample_rate=sample_rate)
+            result += pond.get_item(
+                index=index, sample_rate=sample_rate
+            ) * val.get_item(index=index, sample_rate=sample_rate)
 
         #
         return result
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
         result: NDArray[np.float32] = np.zeros_like(indexes_buffer, dtype=np.float32)
 
         #
         for pond, val in self.values_and_weights:
-
             #
-            result += pond.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate) * val.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+            result += pond.getitem_np(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate
+            ) * val.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
 
         #
         return result
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
         if len(self.values_and_weights) == 0:
@@ -1548,13 +1818,19 @@ class PonderedSum(Value):
         #
         ### Compute weighted sum. ###
         #
-        result: Tensor = torch.zeros_like(indexes_buffer, dtype=torch.float32, device=device)
+        result: Tensor = torch.zeros_like(
+            indexes_buffer, dtype=torch.float32, device=device
+        )
 
         #
-        for (weight, value) in self.values_and_weights:
+        for weight, value in self.values_and_weights:
             #
-            w_val: Tensor = weight.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-            v_val: Tensor = value.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+            w_val: Tensor = weight.getitem_torch(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+            )
+            v_val: Tensor = value.getitem_torch(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+            )
             #
             result = result + w_val * v_val
 
@@ -1564,7 +1840,6 @@ class PonderedSum(Value):
 
 #
 class Product(Value):
-
     """A Value that returns the product of a list of input Values."""
 
     #
@@ -1577,46 +1852,57 @@ class Product(Value):
         self.values: list[Value] = input_args_to_values(values=values)
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
         result: float = 1
 
         #
         for v in self.values:
-
             #
-            result *= v.__getitem__(index=index, sample_rate=sample_rate)
+            result *= v.get_item(index=index, sample_rate=sample_rate)
 
         #
         return result
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
         result: NDArray[np.float32] = np.ones_like(indexes_buffer, dtype=np.float32)
 
         #
         for v in self.values:
-
             #
-            result = np.multiply(result, v.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate))
+            result = np.multiply(
+                result,
+                v.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate),
+            )
 
         #
         return result
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
-        result: Tensor = torch.ones_like(indexes_buffer, dtype=torch.float32, device=device)
+        result: Tensor = torch.ones_like(
+            indexes_buffer, dtype=torch.float32, device=device
+        )
 
         #
         for v in self.values:
-
             #
-            result = result * v.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+            result = result * v.getitem_torch(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+            )
 
         #
         return result
@@ -1626,17 +1912,13 @@ class Product(Value):
 ### MORE COMPLEX MATHEMATICAL FUNCTIONS CLASSES. ###
 #
 
+
 #
 class Pow(Value):
-
     """A Value that calculates base ^ exponent."""
 
     #
-    def __init__(
-        self,
-        exponent: Value,
-        base: Value = Constant(value=math.e)
-    ) -> None:
+    def __init__(self, exponent: Value, base: Value = Constant(value=math.e)) -> None:
 
         #
         super().__init__()
@@ -1646,31 +1928,46 @@ class Pow(Value):
         self.base: Value = base
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        base_v: float = self.base.__getitem__(index=index, sample_rate=sample_rate)
-        exp_v: float = self.exponent.__getitem__(index=index, sample_rate=sample_rate)
+        base_v: float = self.base.get_item(index=index, sample_rate=sample_rate)
+        exp_v: float = self.exponent.get_item(index=index, sample_rate=sample_rate)
 
         #
-        return base_v ** exp_v
+        return base_v**exp_v
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
-        base_v: NDArray[np.float32] = self.base.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        exp_v: NDArray[np.float32] = self.exponent.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        base_v: NDArray[np.float32] = self.base.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        exp_v: NDArray[np.float32] = self.exponent.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
 
         #
         return np.power(base_v, exp_v)
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
-        base_v: Tensor = self.base.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        exp_v: Tensor = self.exponent.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+        base_v: Tensor = self.base.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        exp_v: Tensor = self.exponent.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
 
         #
         return torch.pow(base_v, exp_v)
@@ -1678,15 +1975,10 @@ class Pow(Value):
 
 #
 class Log(Value):
-
     """A Value that calculates log_base(value)."""
 
     #
-    def __init__(
-        self,
-        value: Value,
-        base: Value = Constant(value=math.e)
-    ) -> None:
+    def __init__(self, value: Value, base: Value = Constant(value=math.e)) -> None:
 
         #
         super().__init__()
@@ -1696,31 +1988,46 @@ class Log(Value):
         self.base: Value = base
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        base_v: float = self.base.__getitem__(index=index, sample_rate=sample_rate)
-        val_v: float = self.value.__getitem__(index=index, sample_rate=sample_rate)
+        base_v: float = self.base.get_item(index=index, sample_rate=sample_rate)
+        val_v: float = self.value.get_item(index=index, sample_rate=sample_rate)
 
         #
         return math.log(x=val_v, base=base_v)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
-        base_v: NDArray[np.float32] = self.base.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        val_v: NDArray[np.float32] = self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        base_v: NDArray[np.float32] = self.base.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        val_v: NDArray[np.float32] = self.value.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
 
         #
         return (np.log(val_v) / np.log(base_v)).astype(dtype=np.float32)
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
-        base_v: Tensor = self.base.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        val_v: Tensor = self.value.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+        base_v: Tensor = self.base.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        val_v: Tensor = self.value.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
 
         #
         return (torch.log(val_v) / torch.log(base_v)).to(dtype=torch.float32)
@@ -1728,7 +2035,6 @@ class Log(Value):
 
 #
 class Sin(Value):
-
     """
     A Value that generates a sine wave:
     amplitude * sin( (value * frequency) + delta )
@@ -1740,7 +2046,7 @@ class Sin(Value):
         value: Value,
         frequency: Value = Constant(1),
         amplitude: Value = Constant(1),
-        delta: Value = Constant(0)
+        delta: Value = Constant(0),
     ) -> None:
 
         #
@@ -1753,45 +2059,67 @@ class Sin(Value):
         self.delta: Value = delta
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        val_v: float = self.value.__getitem__(index=index, sample_rate=sample_rate)
-        fre_v: float = self.frequency.__getitem__(index=index, sample_rate=sample_rate)
-        amp_v: float = self.amplitude.__getitem__(index=index, sample_rate=sample_rate)
-        del_v: float = self.delta.__getitem__(index=index, sample_rate=sample_rate)
+        val_v: float = self.value.get_item(index=index, sample_rate=sample_rate)
+        fre_v: float = self.frequency.get_item(index=index, sample_rate=sample_rate)
+        amp_v: float = self.amplitude.get_item(index=index, sample_rate=sample_rate)
+        del_v: float = self.delta.get_item(index=index, sample_rate=sample_rate)
 
         #
-        return amp_v * math.sin( val_v * fre_v + del_v )
+        return amp_v * math.sin(val_v * fre_v + del_v)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
-        val_v: NDArray[np.float32] = self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        fre_v: NDArray[np.float32] = self.frequency.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        amp_v: NDArray[np.float32] = self.amplitude.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        del_v: NDArray[np.float32] = self.delta.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        val_v: NDArray[np.float32] = self.value.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        fre_v: NDArray[np.float32] = self.frequency.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        amp_v: NDArray[np.float32] = self.amplitude.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        del_v: NDArray[np.float32] = self.delta.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
 
         #
-        return np.multiply( amp_v, np.sin( np.multiply(val_v, fre_v) + del_v ) )
+        return np.multiply(amp_v, np.sin(np.multiply(val_v, fre_v) + del_v))
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
-        val_v: Tensor = self.value.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        fre_v: Tensor = self.frequency.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        amp_v: Tensor = self.amplitude.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        del_v: Tensor = self.delta.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+        val_v: Tensor = self.value.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        fre_v: Tensor = self.frequency.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        amp_v: Tensor = self.amplitude.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        del_v: Tensor = self.delta.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
 
         #
-        return amp_v * torch.sin( val_v * fre_v + del_v )
+        return amp_v * torch.sin(val_v * fre_v + del_v)
 
 
 #
 class Cos(Value):
-
     """
     A Value that generates a cosine wave:
     amplitude * cos( (value * frequency) + delta )
@@ -1803,7 +2131,7 @@ class Cos(Value):
         value: Value,
         frequency: Value = Constant(1),
         amplitude: Value = Constant(1),
-        delta: Value = Constant(0)
+        delta: Value = Constant(0),
     ) -> None:
 
         #
@@ -1816,45 +2144,67 @@ class Cos(Value):
         self.delta: Value = delta
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        val_v: float = self.value.__getitem__(index=index, sample_rate=sample_rate)
-        fre_v: float = self.frequency.__getitem__(index=index, sample_rate=sample_rate)
-        amp_v: float = self.amplitude.__getitem__(index=index, sample_rate=sample_rate)
-        del_v: float = self.delta.__getitem__(index=index, sample_rate=sample_rate)
+        val_v: float = self.value.get_item(index=index, sample_rate=sample_rate)
+        fre_v: float = self.frequency.get_item(index=index, sample_rate=sample_rate)
+        amp_v: float = self.amplitude.get_item(index=index, sample_rate=sample_rate)
+        del_v: float = self.delta.get_item(index=index, sample_rate=sample_rate)
 
         #
-        return amp_v * math.cos( val_v * fre_v + del_v )
+        return amp_v * math.cos(val_v * fre_v + del_v)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
-        val_v: NDArray[np.float32] = self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        fre_v: NDArray[np.float32] = self.frequency.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        amp_v: NDArray[np.float32] = self.amplitude.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        del_v: NDArray[np.float32] = self.delta.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        val_v: NDArray[np.float32] = self.value.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        fre_v: NDArray[np.float32] = self.frequency.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        amp_v: NDArray[np.float32] = self.amplitude.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        del_v: NDArray[np.float32] = self.delta.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
 
         #
-        return np.multiply( amp_v, np.cos( np.multiply(val_v, fre_v) + del_v ) )
+        return np.multiply(amp_v, np.cos(np.multiply(val_v, fre_v) + del_v))
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
-        val_v: Tensor = self.value.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        fre_v: Tensor = self.frequency.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        amp_v: Tensor = self.amplitude.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        del_v: Tensor = self.delta.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+        val_v: Tensor = self.value.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        fre_v: Tensor = self.frequency.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        amp_v: Tensor = self.amplitude.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        del_v: Tensor = self.delta.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
 
         #
-        return amp_v * torch.cos( val_v * fre_v + del_v )
+        return amp_v * torch.cos(val_v * fre_v + del_v)
 
 
 #
 class ExponentialADSR(Value):
-
     """
     A "truthful" one-shot Attack-Decay-Sustain-Release envelope
     with *exponential* curves.
@@ -1878,8 +2228,8 @@ class ExponentialADSR(Value):
         sustain_level: float = 0.7,
         release_time: float = 0.2,
         attack_curve: float = 0.5,  # Concave (fast) start
-        decay_curve: float = 2.0,   # Convex (natural) decay
-        release_curve: float = 2.0  # Convex (natural) release
+        decay_curve: float = 2.0,  # Convex (natural) decay
+        release_curve: float = 2.0,  # Convex (natural) release
     ) -> None:
 
         #
@@ -1908,10 +2258,10 @@ class ExponentialADSR(Value):
         self.release_end: float = self.note_duration + self.release_time
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
+        t: float = self.time.get_item(index=index, sample_rate=sample_rate)
         relative_time: float = t - self.note_start
 
         #
@@ -1937,7 +2287,9 @@ class ExponentialADSR(Value):
             #
             progress: float = (relative_time - self.attack_time) / self.decay_time
             #
-            return self.sustain_level + (1.0 - self.sustain_level) * math.pow(1.0 - progress, self.decay_curve)
+            return self.sustain_level + (1.0 - self.sustain_level) * math.pow(
+                1.0 - progress, self.decay_curve
+            )
 
         #
         ### Sustain phase. ###
@@ -1956,18 +2308,22 @@ class ExponentialADSR(Value):
             return self.sustain_level * math.pow(1.0 - progress, self.release_curve)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        t: NDArray[np.float32] = self.time.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
         #
         relative_time: NDArray[np.float32] = t - self.note_start
 
         #
         ### Gate: Create a mask for all samples inside the envelope's lifetime. ###
         #
-        gate_mask: NDArray[np.bool_] = (
-            (relative_time >= 0) & (relative_time <= self.release_end)
+        gate_mask: NDArray[np.bool_] = (relative_time >= 0) & (
+            relative_time <= self.release_end
         )
 
         #
@@ -1983,7 +2339,9 @@ class ExponentialADSR(Value):
         ## ATTACK. ##
         #
         attack_mask: NDArray[np.bool_] = relative_time < self.attack_end
-        attack_progress: NDArray[np.float32] = (relative_time / self.attack_time).astype(dtype=np.float32)
+        attack_progress: NDArray[np.float32] = (
+            relative_time / self.attack_time
+        ).astype(dtype=np.float32)
         #
         ## Ensure base is not negative (which happens if relative_time < 0). ##
         #
@@ -1994,28 +2352,39 @@ class ExponentialADSR(Value):
         ## DECAY. ##
         #
         decay_mask: NDArray[np.bool_] = relative_time < self.decay_end
-        decay_progress: NDArray[np.float32] = ((relative_time - self.attack_time) / self.decay_time).astype(dtype=np.float32)
+        decay_progress: NDArray[np.float32] = (
+            (relative_time - self.attack_time) / self.decay_time
+        ).astype(dtype=np.float32)
         #
         ## Ensure base is not negative (which happens if progress > 1.0). ##
         #
         decay_base = np.maximum(0.0, 1.0 - decay_progress)
-        decay_val: NDArray[np.float32] = (self.sustain_level + (1.0 - self.sustain_level) * np.power(decay_base, self.decay_curve)).astype(dtype=np.float32)
+        decay_val: NDArray[np.float32] = (
+            self.sustain_level
+            + (1.0 - self.sustain_level) * np.power(decay_base, self.decay_curve)
+        ).astype(dtype=np.float32)
 
         #
         ## SUSTAIN. ##
         #
         sustain_mask: NDArray[np.bool_] = relative_time < self.sustain_end
-        sustain_val: NDArray[np.float32] = np.full_like(relative_time, self.sustain_level)
+        sustain_val: NDArray[np.float32] = np.full_like(
+            relative_time, self.sustain_level
+        )
 
         #
         ## RELEASE. ##
         #
-        release_progress: NDArray[np.float32] = ((relative_time - self.note_duration) / self.release_time).astype(dtype=np.float32)
+        release_progress: NDArray[np.float32] = (
+            (relative_time - self.note_duration) / self.release_time
+        ).astype(dtype=np.float32)
         #
         ## Ensure base is not negative. ##
         #
         release_base = np.maximum(0.0, 1.0 - release_progress)
-        release_val: NDArray[np.float32] = (self.sustain_level * np.power(release_base, self.release_curve)).astype(dtype=np.float32)
+        release_val: NDArray[np.float32] = (
+            self.sustain_level * np.power(release_base, self.release_curve)
+        ).astype(dtype=np.float32)
 
         #
         ### Build the envelope with nested np.where. ###
@@ -2029,9 +2398,9 @@ class ExponentialADSR(Value):
                 np.where(
                     sustain_mask,
                     sustain_val,
-                    release_val  # The final 'else' case
-                )
-            )
+                    release_val,  # The final 'else' case
+                ),
+            ),
         )
 
         #
@@ -2040,10 +2409,17 @@ class ExponentialADSR(Value):
         return env * gate_mask
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
-        t: Tensor = self.time.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+        t: Tensor = self.time.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
         #
         relative_time: Tensor = t - self.note_start
 
@@ -2067,39 +2443,59 @@ class ExponentialADSR(Value):
         ## ATTACK. ##
         #
         attack_mask: Tensor = relative_time < self.attack_end
-        attack_progress: Tensor = (relative_time / self.attack_time).to(dtype=torch.float32)
+        attack_progress: Tensor = (relative_time / self.attack_time).to(
+            dtype=torch.float32
+        )
         #
         ## Ensure base is not negative (which happens if relative_time < 0). ##
         #
-        attack_base = torch.maximum(torch.tensor(0.0, dtype=torch.float32, device=device), attack_progress)
+        attack_base = torch.maximum(
+            torch.tensor(0.0, dtype=torch.float32, device=device), attack_progress
+        )
         attack_val: Tensor = torch.pow(attack_base, self.attack_curve)
 
         #
         ## DECAY. ##
         #
         decay_mask: Tensor = relative_time < self.decay_end
-        decay_progress: Tensor = ((relative_time - self.attack_time) / self.decay_time).to(dtype=torch.float32)
+        decay_progress: Tensor = (
+            (relative_time - self.attack_time) / self.decay_time
+        ).to(dtype=torch.float32)
         #
         ## Ensure base is not negative (which happens if progress > 1.0). ##
         #
-        decay_base = torch.maximum(torch.tensor(0.0, dtype=torch.float32, device=device), 1.0 - decay_progress)
-        decay_val: Tensor = (self.sustain_level + (1.0 - self.sustain_level) * torch.pow(decay_base, self.decay_curve)).to(dtype=torch.float32)
+        decay_base = torch.maximum(
+            torch.tensor(0.0, dtype=torch.float32, device=device), 1.0 - decay_progress
+        )
+        decay_val: Tensor = (
+            self.sustain_level
+            + (1.0 - self.sustain_level) * torch.pow(decay_base, self.decay_curve)
+        ).to(dtype=torch.float32)
 
         #
         ## SUSTAIN. ##
         #
         sustain_mask: Tensor = relative_time < self.sustain_end
-        sustain_val: Tensor = torch.full_like(relative_time, self.sustain_level, device=device)
+        sustain_val: Tensor = torch.full_like(
+            relative_time, self.sustain_level, device=device
+        )
 
         #
         ## RELEASE. ##
         #
-        release_progress: Tensor = ((relative_time - self.note_duration) / self.release_time).to(dtype=torch.float32)
+        release_progress: Tensor = (
+            (relative_time - self.note_duration) / self.release_time
+        ).to(dtype=torch.float32)
         #
         ## Ensure base is not negative. ##
         #
-        release_base = torch.maximum(torch.tensor(0.0, dtype=torch.float32, device=device), 1.0 - release_progress)
-        release_val: Tensor = (self.sustain_level * torch.pow(release_base, self.release_curve)).to(dtype=torch.float32)
+        release_base = torch.maximum(
+            torch.tensor(0.0, dtype=torch.float32, device=device),
+            1.0 - release_progress,
+        )
+        release_val: Tensor = (
+            self.sustain_level * torch.pow(release_base, self.release_curve)
+        ).to(dtype=torch.float32)
 
         #
         ### Build the envelope with nested torch.where. ###
@@ -2113,9 +2509,9 @@ class ExponentialADSR(Value):
                 torch.where(
                     sustain_mask,
                     sustain_val,
-                    release_val  # The final 'else' case
-                )
-            )
+                    release_val,  # The final 'else' case
+                ),
+            ),
         )
 
         #
@@ -2126,7 +2522,6 @@ class ExponentialADSR(Value):
 
 #
 class Triangle(Value):
-
     """
     A Value that generates a "naive" triangle wave.
 
@@ -2150,9 +2545,8 @@ class Triangle(Value):
         value: Value,
         frequency: Value = Constant(1),
         amplitude: Value = Constant(1),
-        delta: Value = Constant(0)
+        delta: Value = Constant(0),
     ) -> None:
-
         """
         Initializes the Triangle oscillator.
 
@@ -2173,13 +2567,13 @@ class Triangle(Value):
         self.delta: Value = delta
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        val_v: float = self.value.__getitem__(index=index, sample_rate=sample_rate)
-        fre_v: float = self.frequency.__getitem__(index=index, sample_rate=sample_rate)
-        amp_v: float = self.amplitude.__getitem__(index=index, sample_rate=sample_rate)
-        del_v: float = self.delta.__getitem__(index=index, sample_rate=sample_rate)
+        val_v: float = self.value.get_item(index=index, sample_rate=sample_rate)
+        fre_v: float = self.frequency.get_item(index=index, sample_rate=sample_rate)
+        amp_v: float = self.amplitude.get_item(index=index, sample_rate=sample_rate)
+        del_v: float = self.delta.get_item(index=index, sample_rate=sample_rate)
 
         #
         ### Calculate the phase. ###
@@ -2198,13 +2592,23 @@ class Triangle(Value):
         return amp_v * triangle_value
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
-        val_v: NDArray[np.float32] = self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        fre_v: NDArray[np.float32] = self.frequency.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        amp_v: NDArray[np.float32] = self.amplitude.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        del_v: NDArray[np.float32] = self.delta.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        val_v: NDArray[np.float32] = self.value.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        fre_v: NDArray[np.float32] = self.frequency.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        amp_v: NDArray[np.float32] = self.amplitude.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        del_v: NDArray[np.float32] = self.delta.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
 
         #
         ### Calculate the phase. ###
@@ -2214,7 +2618,9 @@ class Triangle(Value):
         #
         ### Triangle wave formula: 2 * |2 * (phase - floor(phase + 0.5))| - 1 ###
         #
-        triangle_value: NDArray[np.float32] = (2.0 * np.abs(2.0 * (phase - np.floor(phase + 0.5))) - 1.0).astype(dtype=np.float32)
+        triangle_value: NDArray[np.float32] = (
+            2.0 * np.abs(2.0 * (phase - np.floor(phase + 0.5))) - 1.0
+        ).astype(dtype=np.float32)
 
         #
         ### Apply amplitude scaling. ###
@@ -2222,13 +2628,26 @@ class Triangle(Value):
         return np.multiply(amp_v, triangle_value)
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
-        val_v: Tensor = self.value.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        fre_v: Tensor = self.frequency.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        amp_v: Tensor = self.amplitude.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        del_v: Tensor = self.delta.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+        val_v: Tensor = self.value.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        fre_v: Tensor = self.frequency.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        amp_v: Tensor = self.amplitude.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        del_v: Tensor = self.delta.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
 
         #
         ### Calculate the phase. ###
@@ -2238,7 +2657,9 @@ class Triangle(Value):
         #
         ### Triangle wave formula: 2 * |2 * (phase - floor(phase + 0.5))| - 1 ###
         #
-        triangle_value: Tensor = (2.0 * torch.abs(2.0 * (phase - torch.floor(phase + 0.5))) - 1.0).to(dtype=torch.float32)
+        triangle_value: Tensor = (
+            2.0 * torch.abs(2.0 * (phase - torch.floor(phase + 0.5))) - 1.0
+        ).to(dtype=torch.float32)
 
         #
         ### Apply amplitude scaling. ###
@@ -2248,7 +2669,6 @@ class Triangle(Value):
 
 #
 class Square(Value):
-
     """
     A Value that generates a "naive" square wave with a variable duty cycle.
 
@@ -2269,9 +2689,8 @@ class Square(Value):
         frequency: Value = Constant(1),
         amplitude: Value = Constant(1),
         delta: Value = Constant(0),
-        duty_cycle: Value = Constant(0.5)
+        duty_cycle: Value = Constant(0.5),
     ) -> None:
-
         """
         Initializes the Square oscillator.
 
@@ -2295,14 +2714,14 @@ class Square(Value):
         self.duty_cycle: Value = duty_cycle
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        val_v: float = self.value.__getitem__(index=index, sample_rate=sample_rate)
-        fre_v: float = self.frequency.__getitem__(index=index, sample_rate=sample_rate)
-        amp_v: float = self.amplitude.__getitem__(index=index, sample_rate=sample_rate)
-        del_v: float = self.delta.__getitem__(index=index, sample_rate=sample_rate)
-        duty_v: float = self.duty_cycle.__getitem__(index=index, sample_rate=sample_rate)
+        val_v: float = self.value.get_item(index=index, sample_rate=sample_rate)
+        fre_v: float = self.frequency.get_item(index=index, sample_rate=sample_rate)
+        amp_v: float = self.amplitude.get_item(index=index, sample_rate=sample_rate)
+        del_v: float = self.delta.get_item(index=index, sample_rate=sample_rate)
+        duty_v: float = self.duty_cycle.get_item(index=index, sample_rate=sample_rate)
 
         #
         ### Calculate the phase and normalize to [0, 1). ###
@@ -2322,14 +2741,26 @@ class Square(Value):
             return -amp_v
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
-        val_v: NDArray[np.float32] = self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        fre_v: NDArray[np.float32] = self.frequency.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        amp_v: NDArray[np.float32] = self.amplitude.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        del_v: NDArray[np.float32] = self.delta.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        duty_v: NDArray[np.float32] = self.duty_cycle.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        val_v: NDArray[np.float32] = self.value.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        fre_v: NDArray[np.float32] = self.frequency.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        amp_v: NDArray[np.float32] = self.amplitude.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        del_v: NDArray[np.float32] = self.delta.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        duty_v: NDArray[np.float32] = self.duty_cycle.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
 
         #
         ### Calculate the phase and normalize to [0, 1). ###
@@ -2343,14 +2774,29 @@ class Square(Value):
         return np.where(normalized_phase < duty_v, amp_v, -amp_v)
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
-        val_v: Tensor = self.value.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        fre_v: Tensor = self.frequency.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        amp_v: Tensor = self.amplitude.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        del_v: Tensor = self.delta.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        duty_v: Tensor = self.duty_cycle.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+        val_v: Tensor = self.value.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        fre_v: Tensor = self.frequency.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        amp_v: Tensor = self.amplitude.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        del_v: Tensor = self.delta.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        duty_v: Tensor = self.duty_cycle.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
 
         #
         ### Calculate the phase and normalize to [0, 1). ###
@@ -2366,7 +2812,6 @@ class Square(Value):
 
 #
 class Sawtooth(Value):
-
     """
     A Value that generates a "naive" sawtooth wave.
 
@@ -2377,7 +2822,7 @@ class Sawtooth(Value):
         - **Reason:** Like the square wave, this has an instantaneous
             discontinuity (the "drop") which causes massive aliasing.
         - **Good Use:** Excellent for LFOs.
-        """
+    """
 
     #
     def __init__(
@@ -2386,9 +2831,8 @@ class Sawtooth(Value):
         frequency: Value = Constant(1),
         amplitude: Value = Constant(1),
         delta: Value = Constant(0),
-        direction: Value = Constant(1)  # 1 for rising, -1 for falling
+        direction: Value = Constant(1),  # 1 for rising, -1 for falling
     ) -> None:
-
         """
         Initializes the Sawtooth oscillator.
 
@@ -2400,7 +2844,7 @@ class Sawtooth(Value):
             direction: A Value (e.g., Constant(1) or Constant(-1)) that determines the slope.
                         >= 0 gives a rising sawtooth.
                         < 0 gives a falling sawtooth.
-            """
+        """
 
         #
         super().__init__()
@@ -2413,14 +2857,14 @@ class Sawtooth(Value):
         self.direction: Value = direction
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        val_v: float = self.value.__getitem__(index=index, sample_rate=sample_rate)
-        fre_v: float = self.frequency.__getitem__(index=index, sample_rate=sample_rate)
-        amp_v: float = self.amplitude.__getitem__(index=index, sample_rate=sample_rate)
-        del_v: float = self.delta.__getitem__(index=index, sample_rate=sample_rate)
-        dir_v: float = self.direction.__getitem__(index=index, sample_rate=sample_rate)
+        val_v: float = self.value.get_item(index=index, sample_rate=sample_rate)
+        fre_v: float = self.frequency.get_item(index=index, sample_rate=sample_rate)
+        amp_v: float = self.amplitude.get_item(index=index, sample_rate=sample_rate)
+        del_v: float = self.delta.get_item(index=index, sample_rate=sample_rate)
+        dir_v: float = self.direction.get_item(index=index, sample_rate=sample_rate)
 
         #
         ### Calculate the phase and normalize to [0, 1). ###
@@ -2449,14 +2893,26 @@ class Sawtooth(Value):
         return amp_v * sawtooth_value
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
-        val_v: NDArray[np.float32] = self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        fre_v: NDArray[np.float32] = self.frequency.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        amp_v: NDArray[np.float32] = self.amplitude.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        del_v: NDArray[np.float32] = self.delta.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        dir_v: NDArray[np.float32] = self.direction.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        val_v: NDArray[np.float32] = self.value.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        fre_v: NDArray[np.float32] = self.frequency.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        amp_v: NDArray[np.float32] = self.amplitude.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        del_v: NDArray[np.float32] = self.delta.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        dir_v: NDArray[np.float32] = self.direction.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
 
         #
         ### Calculate the phase and normalize to [0, 1). ###
@@ -2467,9 +2923,15 @@ class Sawtooth(Value):
         #
         ### Sawtooth wave: linear rise from -1 to 1 (or fall). ###
         #
-        rising_sawtooth: NDArray[np.float32] = (2.0 * normalized_phase - 1.0).astype(dtype=np.float32)
-        falling_sawtooth: NDArray[np.float32] = (1.0 - 2.0 * normalized_phase).astype(dtype=np.float32)
-        sawtooth_value: NDArray[np.float32] = np.where(dir_v >= 0, rising_sawtooth, falling_sawtooth)
+        rising_sawtooth: NDArray[np.float32] = (2.0 * normalized_phase - 1.0).astype(
+            dtype=np.float32
+        )
+        falling_sawtooth: NDArray[np.float32] = (1.0 - 2.0 * normalized_phase).astype(
+            dtype=np.float32
+        )
+        sawtooth_value: NDArray[np.float32] = np.where(
+            dir_v >= 0, rising_sawtooth, falling_sawtooth
+        )
 
         #
         ### Apply amplitude scaling. ###
@@ -2477,14 +2939,29 @@ class Sawtooth(Value):
         return np.multiply(amp_v, sawtooth_value)
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
-        val_v: Tensor = self.value.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        fre_v: Tensor = self.frequency.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        amp_v: Tensor = self.amplitude.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        del_v: Tensor = self.delta.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        dir_v: Tensor = self.direction.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+        val_v: Tensor = self.value.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        fre_v: Tensor = self.frequency.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        amp_v: Tensor = self.amplitude.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        del_v: Tensor = self.delta.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        dir_v: Tensor = self.direction.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
 
         #
         ### Calculate the phase and normalize to [0, 1). ###
@@ -2496,8 +2973,12 @@ class Sawtooth(Value):
         ### Sawtooth wave: linear rise from -1 to 1 (or fall). ###
         #
         rising_sawtooth: Tensor = (2.0 * normalized_phase - 1.0).to(dtype=torch.float32)
-        falling_sawtooth: Tensor = (1.0 - 2.0 * normalized_phase).to(dtype=torch.float32)
-        sawtooth_value: Tensor = torch.where(dir_v >= 0, rising_sawtooth, falling_sawtooth)
+        falling_sawtooth: Tensor = (1.0 - 2.0 * normalized_phase).to(
+            dtype=torch.float32
+        )
+        sawtooth_value: Tensor = torch.where(
+            dir_v >= 0, rising_sawtooth, falling_sawtooth
+        )
 
         #
         ### Apply amplitude scaling. ###
@@ -2507,7 +2988,6 @@ class Sawtooth(Value):
 
 #
 class ExponentialDecay(Value):
-
     """
     A simple, one-shot exponential decay envelope.
     Perfect for percussion (Kick, Snare, HiHat).
@@ -2521,7 +3001,7 @@ class ExponentialDecay(Value):
         self,
         time: Value,
         start_time: float,
-        decay_rate: float = 15.0  # e.g., 15 for snare, 8 for kick
+        decay_rate: float = 15.0,  # e.g., 15 for snare, 8 for kick
     ) -> None:
 
         #
@@ -2533,10 +3013,10 @@ class ExponentialDecay(Value):
         self.decay_rate: float = decay_rate
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
+        t: float = self.time.get_item(index=index, sample_rate=sample_rate)
         relative_time: float = t - self.start_time
 
         #
@@ -2552,17 +3032,21 @@ class ExponentialDecay(Value):
         return math.exp(-relative_time * self.decay_rate)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        t: NDArray[np.float32] = self.time.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
         #
         relative_time: NDArray[np.float32] = t - self.start_time
 
         #
         ### Gate: Create a mask for all samples at or after the start. ###
         #
-        gate_mask: NDArray[np.bool_] = (relative_time >= 0)
+        gate_mask: NDArray[np.bool_] = relative_time >= 0
 
         #
         if not np.any(gate_mask):
@@ -2575,7 +3059,9 @@ class ExponentialDecay(Value):
         #
         ### Calculate decay for all samples using the safe time. ###
         #
-        decay_envelope: NDArray[np.float32] = np.exp(-safe_relative_time * self.decay_rate).astype(dtype=np.float32)
+        decay_envelope: NDArray[np.float32] = np.exp(
+            -safe_relative_time * self.decay_rate
+        ).astype(dtype=np.float32)
 
         #
         ### Apply gate mask to zero out samples before the start_time. ###
@@ -2583,10 +3069,17 @@ class ExponentialDecay(Value):
         return decay_envelope * gate_mask
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
-        t: Tensor = self.time.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+        t: Tensor = self.time.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
         #
         relative_time: Tensor = t - self.start_time
 
@@ -2601,12 +3094,16 @@ class ExponentialDecay(Value):
             return torch.zeros_like(indexes_buffer, dtype=torch.float32, device=device)
 
         #
-        safe_relative_time: Tensor = torch.maximum(torch.tensor(0.0, dtype=torch.float32, device=device), relative_time)
+        safe_relative_time: Tensor = torch.maximum(
+            torch.tensor(0.0, dtype=torch.float32, device=device), relative_time
+        )
 
         #
         ### Calculate decay for all samples using the safe time. ###
         #
-        decay_envelope: Tensor = torch.exp(-safe_relative_time * self.decay_rate).to(dtype=torch.float32)
+        decay_envelope: Tensor = torch.exp(-safe_relative_time * self.decay_rate).to(
+            dtype=torch.float32
+        )
 
         #
         ### Apply gate mask to zero out samples before the start_time. ###
@@ -2616,23 +3113,22 @@ class ExponentialDecay(Value):
 
 #
 class BandLimitedSawtooth(Value):
-
     """
-    A "good listening" sawtooth wave built from a fixed number of harmonics.
+        A "good listening" sawtooth wave built from a fixed number of harmonics.
 
-    "Truthness" / "Good Listening" Analysis:
-        - "Truthness": This is a "truthful" model of additive synthesis
-            used to create a band-limited sawtooth wave.
-        - "Good Listening": **GOOD**.
-        - **Reason:** This class avoids the "naive" formula by summing
-            `Sin` waves, following the model of the `WobbleBass` class
-.
-            This is a "fixed-harmonic-limit" oscillator.
-        - **Compromise:** This is not *perfectly* band-limited (which
-            would require checking `frequency * n` against `sample_rate`
-            for every sample). Instead, it uses a fixed `num_harmonics`,
-            which is a "good listening" compromise that is vectorizable
-            and supports dynamic frequency (e.g., vibrato).
+        "Truthness" / "Good Listening" Analysis:
+            - "Truthness": This is a "truthful" model of additive synthesis
+                used to create a band-limited sawtooth wave.
+            - "Good Listening": **GOOD**.
+            - **Reason:** This class avoids the "naive" formula by summing
+                `Sin` waves, following the model of the `WobbleBass` class
+    .
+                This is a "fixed-harmonic-limit" oscillator.
+            - **Compromise:** This is not *perfectly* band-limited (which
+                would require checking `frequency * n` against `sample_rate`
+                for every sample). Instead, it uses a fixed `num_harmonics`,
+                which is a "good listening" compromise that is vectorizable
+                and supports dynamic frequency (e.g., vibrato).
     """
 
     #
@@ -2641,7 +3137,7 @@ class BandLimitedSawtooth(Value):
         time: Value,
         frequency: Value,  # Frequency in Hz
         amplitude: Value = Constant(1.0),
-        num_harmonics: int = 15
+        num_harmonics: int = 15,
     ) -> None:
 
         #
@@ -2655,12 +3151,12 @@ class BandLimitedSawtooth(Value):
         self.pi2: float = 2 * math.pi
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        t_v: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
-        f_v: float = self.frequency.__getitem__(index=index, sample_rate=sample_rate)
-        a_v: float = self.amplitude.__getitem__(index=index, sample_rate=sample_rate)
+        t_v: float = self.time.get_item(index=index, sample_rate=sample_rate)
+        f_v: float = self.frequency.get_item(index=index, sample_rate=sample_rate)
+        a_v: float = self.amplitude.get_item(index=index, sample_rate=sample_rate)
 
         #
         output: float = 0.0
@@ -2669,32 +3165,44 @@ class BandLimitedSawtooth(Value):
             #
             phase: float = t_v * f_v * n * self.pi2
             #
-            output += (math.sin(phase) / n)
+            output += math.sin(phase) / n
 
         #
         ### Normalize (approx. 2/pi) and apply amplitude. ###
         #
-        return (output * 0.6366 * a_v)
+        return output * 0.6366 * a_v
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
-        t_v: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        f_v: NDArray[np.float32] = self.frequency.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        a_v: NDArray[np.float32] = self.amplitude.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        t_v: NDArray[np.float32] = self.time.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        f_v: NDArray[np.float32] = self.frequency.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        a_v: NDArray[np.float32] = self.amplitude.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
 
         #
-        output_array: NDArray[np.float32] = np.zeros_like(indexes_buffer, dtype=np.float32)
+        output_array: NDArray[np.float32] = np.zeros_like(
+            indexes_buffer, dtype=np.float32
+        )
 
         #
         ### Sum the harmonics. ###
         #
         for n in range(1, self.num_harmonics + 1):
             #
-            phase: NDArray[np.float32] = (t_v * f_v * n * self.pi2).astype(dtype=np.float32)
+            phase: NDArray[np.float32] = (t_v * f_v * n * self.pi2).astype(
+                dtype=np.float32
+            )
             #
-            output_array += (np.sin(phase) / n)
+            output_array += np.sin(phase) / n
 
         #
         ### Normalize (approx. 2/pi) and apply amplitude. ###
@@ -2702,15 +3210,28 @@ class BandLimitedSawtooth(Value):
         return (output_array * 0.6366 * a_v).astype(dtype=np.float32)
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
-        t_v: Tensor = self.time.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        f_v: Tensor = self.frequency.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        a_v: Tensor = self.amplitude.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+        t_v: Tensor = self.time.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        f_v: Tensor = self.frequency.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        a_v: Tensor = self.amplitude.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
 
         #
-        output_array: Tensor = torch.zeros_like(indexes_buffer, dtype=torch.float32, device=device)
+        output_array: Tensor = torch.zeros_like(
+            indexes_buffer, dtype=torch.float32, device=device
+        )
 
         #
         ### Sum the harmonics. ###
@@ -2729,7 +3250,6 @@ class BandLimitedSawtooth(Value):
 
 #
 class BandLimitedSquare(Value):
-
     """
     A "good listening" square wave built from a fixed number of harmonics.
 
@@ -2748,7 +3268,7 @@ class BandLimitedSquare(Value):
         time: Value,
         frequency: Value,  # Frequency in Hz
         amplitude: Value = Constant(1.0),
-        num_harmonics: int = 15
+        num_harmonics: int = 15,
     ) -> None:
 
         #
@@ -2762,12 +3282,12 @@ class BandLimitedSquare(Value):
         self.pi2: float = 2 * math.pi
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        t_v: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
-        f_v: float = self.frequency.__getitem__(index=index, sample_rate=sample_rate)
-        a_v: float = self.amplitude.__getitem__(index=index, sample_rate=sample_rate)
+        t_v: float = self.time.get_item(index=index, sample_rate=sample_rate)
+        f_v: float = self.frequency.get_item(index=index, sample_rate=sample_rate)
+        a_v: float = self.amplitude.get_item(index=index, sample_rate=sample_rate)
 
         #
         output: float = 0.0
@@ -2778,23 +3298,33 @@ class BandLimitedSquare(Value):
             #
             phase: float = t_v * f_v * harmonic * self.pi2
             #
-            output += (math.sin(phase) / harmonic)
+            output += math.sin(phase) / harmonic
 
         #
         ### Normalize (approx. 4/pi) and apply amplitude. ###
         #
-        return (output * 0.7854 * a_v)
+        return output * 0.7854 * a_v
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
-        t_v: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        f_v: NDArray[np.float32] = self.frequency.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-        a_v: NDArray[np.float32] = self.amplitude.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        t_v: NDArray[np.float32] = self.time.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        f_v: NDArray[np.float32] = self.frequency.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        a_v: NDArray[np.float32] = self.amplitude.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
 
         #
-        output_array: NDArray[np.float32] = np.zeros_like(indexes_buffer, dtype=np.float32)
+        output_array: NDArray[np.float32] = np.zeros_like(
+            indexes_buffer, dtype=np.float32
+        )
 
         #
         ### Sum the harmonics. ###
@@ -2803,9 +3333,11 @@ class BandLimitedSquare(Value):
             #
             harmonic: int = 2 * n - 1  # Only odd harmonics
             #
-            phase: NDArray[np.float32] = (t_v * f_v * harmonic * self.pi2).astype(dtype=np.float32)
+            phase: NDArray[np.float32] = (t_v * f_v * harmonic * self.pi2).astype(
+                dtype=np.float32
+            )
             #
-            output_array += (np.sin(phase) / harmonic)
+            output_array += np.sin(phase) / harmonic
 
         #
         ### Normalize (approx. 4/pi) and apply amplitude. ###
@@ -2813,15 +3345,28 @@ class BandLimitedSquare(Value):
         return (output_array * 0.7854 * a_v).astype(dtype=np.float32)
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
-        t_v: Tensor = self.time.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        f_v: Tensor = self.frequency.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        a_v: Tensor = self.amplitude.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+        t_v: Tensor = self.time.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        f_v: Tensor = self.frequency.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        a_v: Tensor = self.amplitude.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
 
         #
-        output_array: Tensor = torch.zeros_like(indexes_buffer, dtype=torch.float32, device=device)
+        output_array: Tensor = torch.zeros_like(
+            indexes_buffer, dtype=torch.float32, device=device
+        )
 
         #
         ### Sum the harmonics. ###
@@ -2842,7 +3387,6 @@ class BandLimitedSquare(Value):
 
 #
 class ADSR2(Value):
-
     """
     A "truthful" one-shot Attack-Decay-Sustain-Release envelope.
 
@@ -2866,7 +3410,7 @@ class ADSR2(Value):
         attack_time: float = 0.05,
         decay_time: float = 0.1,
         sustain_level: float = 0.7,
-        release_time: float = 0.2
+        release_time: float = 0.2,
     ) -> None:
 
         #
@@ -2886,14 +3430,14 @@ class ADSR2(Value):
         #
         self.attack_end: float = self.attack_time
         self.decay_end: float = self.attack_time + self.decay_time
-        self.sustain_end: float = self.note_duration # This is the "note off" event
+        self.sustain_end: float = self.note_duration  # This is the "note off" event
         self.release_end: float = self.note_duration + self.release_time
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
+        t: float = self.time.get_item(index=index, sample_rate=sample_rate)
         relative_time: float = t - self.note_start
 
         #
@@ -2931,23 +3475,29 @@ class ADSR2(Value):
         #
         else:
             #
-            release_progress: float = (relative_time - self.note_duration) / self.release_time
+            release_progress: float = (
+                relative_time - self.note_duration
+            ) / self.release_time
             #
             return self.sustain_level * (1.0 - release_progress)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        t: NDArray[np.float32] = self.time.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
         #
         relative_time: NDArray[np.float32] = t - self.note_start
 
         #
         ### Gate: Create a mask for all samples inside the envelope's lifetime. ###
         #
-        gate_mask: NDArray[np.bool_] = (
-            (relative_time >= 0) & (relative_time <= self.release_end)
+        gate_mask: NDArray[np.bool_] = (relative_time >= 0) & (
+            relative_time <= self.release_end
         )
 
         #
@@ -2963,18 +3513,28 @@ class ADSR2(Value):
 
         #
         decay_mask: NDArray[np.bool_] = relative_time < self.decay_end
-        decay_progress: NDArray[np.float32] = (relative_time - self.attack_time) / self.decay_time
-        decay_val: NDArray[np.float32] = (1.0 - (1.0 - self.sustain_level) * decay_progress).astype(dtype=np.float32)
+        decay_progress: NDArray[np.float32] = (
+            relative_time - self.attack_time
+        ) / self.decay_time
+        decay_val: NDArray[np.float32] = (
+            1.0 - (1.0 - self.sustain_level) * decay_progress
+        ).astype(dtype=np.float32)
 
         #
         sustain_mask: NDArray[np.bool_] = relative_time < self.sustain_end
-        sustain_val: NDArray[np.float32] = np.full_like(relative_time, self.sustain_level)
+        sustain_val: NDArray[np.float32] = np.full_like(
+            relative_time, self.sustain_level
+        )
 
         #
         ### The final 'else' is the release phase. ###
         #
-        release_progress: NDArray[np.float32] = (relative_time - self.note_duration) / self.release_time
-        release_val: NDArray[np.float32] = (self.sustain_level * (1.0 - release_progress)).astype(dtype=np.float32)
+        release_progress: NDArray[np.float32] = (
+            relative_time - self.note_duration
+        ) / self.release_time
+        release_val: NDArray[np.float32] = (
+            self.sustain_level * (1.0 - release_progress)
+        ).astype(dtype=np.float32)
 
         #
         ### Build the envelope with nested np.where. ###
@@ -2988,21 +3548,28 @@ class ADSR2(Value):
                 np.where(
                     sustain_mask,
                     sustain_val,
-                    release_val  # The final 'else' case
-                )
-            )
+                    release_val,  # The final 'else' case
+                ),
+            ),
         )
 
-         #
+        #
         ### Apply the main gate mask to ensure output is 0 outside the envelope. ###
         #
         return env * gate_mask
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
-        t: Tensor = self.time.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+        t: Tensor = self.time.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
         #
         relative_time: Tensor = t - self.note_start
 
@@ -3027,17 +3594,25 @@ class ADSR2(Value):
         #
         decay_mask: Tensor = relative_time < self.decay_end
         decay_progress: Tensor = (relative_time - self.attack_time) / self.decay_time
-        decay_val: Tensor = (1.0 - (1.0 - self.sustain_level) * decay_progress).to(dtype=torch.float32)
+        decay_val: Tensor = (1.0 - (1.0 - self.sustain_level) * decay_progress).to(
+            dtype=torch.float32
+        )
 
         #
         sustain_mask: Tensor = relative_time < self.sustain_end
-        sustain_val: Tensor = torch.full_like(relative_time, self.sustain_level, device=device)
+        sustain_val: Tensor = torch.full_like(
+            relative_time, self.sustain_level, device=device
+        )
 
         #
         ### The final 'else' is the release phase. ###
         #
-        release_progress: Tensor = (relative_time - self.note_duration) / self.release_time
-        release_val: Tensor = (self.sustain_level * (1.0 - release_progress)).to(dtype=torch.float32)
+        release_progress: Tensor = (
+            relative_time - self.note_duration
+        ) / self.release_time
+        release_val: Tensor = (self.sustain_level * (1.0 - release_progress)).to(
+            dtype=torch.float32
+        )
 
         #
         ### Build the envelope with nested torch.where. ###
@@ -3051,9 +3626,9 @@ class ADSR2(Value):
                 torch.where(
                     sustain_mask,
                     sustain_val,
-                    release_val  # The final 'else' case
-                )
-            )
+                    release_val,  # The final 'else' case
+                ),
+            ),
         )
 
         #
@@ -3064,7 +3639,6 @@ class ADSR2(Value):
 
 #
 class Distortion(Value):
-
     """
     Guitar distortion effect using `tanh` soft clipping.
 
@@ -3078,7 +3652,6 @@ class Distortion(Value):
 
     #
     def __init__(self, value: Value, drive: float = 5.0) -> None:
-
         """
         Initializes the distortion effect.
 
@@ -3096,12 +3669,14 @@ class Distortion(Value):
         self.drive: float = drive
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
         ### Apply gain (drive). ###
         #
-        x: float = self.value.__getitem__(index=index, sample_rate=sample_rate) * self.drive
+        x: float = (
+            self.value.get_item(index=index, sample_rate=sample_rate) * self.drive
+        )
 
         #
         ### Soft clipping using tanh. ###
@@ -3109,13 +3684,18 @@ class Distortion(Value):
         return math.tanh(x) * 0.5
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
         ### Get the input signal buffer and apply gain (drive). ###
         #
         x: NDArray[np.float32] = (
-            self.value.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate) * self.drive
+            self.value.getitem_np(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate
+            )
+            * self.drive
         )
 
         #
@@ -3124,11 +3704,20 @@ class Distortion(Value):
         return (np.tanh(x) * 0.5).astype(dtype=np.float32)
 
     #
-    def getitem_torch(self, indexes_buffer: Tensor, sample_rate: int, device: str | torch.device = "cpu") -> Tensor:
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
 
         #
-        x: Tensor = self.value.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
-        gain: Tensor = self.gain.getitem_torch(indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device)
+        x: Tensor = self.value.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        gain: Tensor = self.gain.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
 
         #
         ### Amplify the signal. ###
@@ -3145,9 +3734,9 @@ class Distortion(Value):
 ### SYSTEM: MUSIC THEORY & COMPOSITION ###
 #
 
+
 #
 def midi_note_to_freq(note_number: int) -> float:
-
     """Converts MIDI note number to frequency (A4 = 69 = 440Hz)."""
 
     #
@@ -3157,11 +3746,7 @@ def midi_note_to_freq(note_number: int) -> float:
 
 
 #
-def get_chord_frequencies(
-    root_freq: float,
-    quality: str = "major"
-) -> list[float]:
-
+def get_chord_frequencies(root_freq: float, quality: str = "major") -> list[float]:
     """
     Returns a list of frequencies for a chord based on a root frequency.
     This is a simplified frequency-ratio based approach (Just Intonation-ish),
@@ -3172,8 +3757,8 @@ def get_chord_frequencies(
     #
     ### Semitone multipliers. ###
     #
-    semitone: float = 2.0 ** (1.0/12.0)
-    
+    semitone: float = 2.0 ** (1.0 / 12.0)
+
     #
     intervals: list[int] = []
 
@@ -3182,11 +3767,11 @@ def get_chord_frequencies(
     #
     if quality == "major":
         #
-        intervals = [0, 4, 7] # Root, Major 3rd, Perfect 5th
+        intervals = [0, 4, 7]  # Root, Major 3rd, Perfect 5th
     #
     elif quality == "minor":
         #
-        intervals = [0, 3, 7] # Root, Minor 3rd, Perfect 5th
+        intervals = [0, 3, 7]  # Root, Minor 3rd, Perfect 5th
     #
     elif quality == "diminished":
         #
@@ -3210,40 +3795,38 @@ def get_chord_frequencies(
     #
     else:
         #
-        intervals = [0, 4, 7] # Default to major
+        intervals = [0, 4, 7]  # Default to major
 
     #
     ### Return the chord frequencies. ###
     #
-    return [root_freq * (semitone ** i) for i in intervals]
+    return [root_freq * (semitone**i) for i in intervals]
 
 
 #
 def SimpleMelody(
     time: Value,
     instrument_factory: callable,
-    notes: list[tuple[float, float]], # (frequency, duration)
+    notes: list[tuple[float, float]],  # (frequency, duration)
     start_time: float = 0.0,
-    gap: float = 0.0
+    gap: float = 0.0,
 ) -> Value:
-
     """
     A simplified sequencer for monophonic melodies.
     Automatically calculates start times based on note durations.
-    
+
     Args:
         notes: List of (frequency, duration) tuples.
     """
-    
+
     #
     note_data_list: list[tuple[float, float, float]] = []
     current_time: float = start_time
-    
+
     #
     ### Build the note data list. ###
     #
     for freq, dur in notes:
-
         #
         ### Assuming factory signature is (time, freq, start, dur, [amp/other]) ###
         ### We'll pass freq, start, dur. The factory needs to handle these. ###
@@ -3252,34 +3835,28 @@ def SimpleMelody(
         note_data_list.append((freq, current_time, dur))
         #
         current_time += dur + gap
-        
+
     #
     ### Return the sequencer. ###
     #
     return Sequencer(
-        time,
-        instrument_factory=instrument_factory,
-        note_data_list=note_data_list
+        time, instrument_factory=instrument_factory, note_data_list=note_data_list
     )
+
 
 #
 ### SYSTEM: FORMANT SYNTHESIS ###
 #
 
+
 #
 class Formant:
-
     """
     Data structure for a formant resonance.
     """
 
     #
-    def __init__(
-        self,
-        freq: float,
-        gain_db: float,
-        q: float
-    ) -> None:
+    def __init__(self, freq: float, gain_db: float, q: float) -> None:
 
         #
         self.freq: float = freq
@@ -3292,6 +3869,7 @@ class Formant:
         #
         return f"Formant(freq={self.freq}, gain={self.gain}, q={self.q})"
 
+
 #
 def generate_formant_harmonics(
     time: Value,
@@ -3300,9 +3878,8 @@ def generate_formant_harmonics(
     num_harmonics: int,
     sample_rate: int,
     base_amplitude: Value = Constant(1.0),
-    phase_shift: bool = True
+    phase_shift: bool = True,
 ) -> Value:
-
     """
     Generates harmonics shaped by a set of formants (resonances).
     This simulates the body resonance of an instrument (like a violin or cello).
@@ -3312,10 +3889,9 @@ def generate_formant_harmonics(
     harmonics_list: list[Value] = []
     nyquist_limit: float = sample_rate / 2.0
     pi2: float = 2 * math.pi
-    
+
     #
     for n in range(1, num_harmonics + 1):
-
         #
         ### Calculate harmonic frequency. ###
         #
@@ -3332,7 +3908,7 @@ def generate_formant_harmonics(
         ### We sum the response of all formants at this frequency. ###
         #
         combined_gain: float = 0.0
-        
+
         #
         for f in formants:
             #
@@ -3340,7 +3916,7 @@ def generate_formant_harmonics(
             ### gain = 1 / sqrt( (1 - (f/f_c)^2)^2 + (f/(f_c*Q))^2 ) ###
             #
             f_ratio = harmonic_freq_hz / f.freq
-            denom = math.sqrt( (1 - f_ratio**2)**2 + (f_ratio / f.q)**2 )
+            denom = math.sqrt((1 - f_ratio**2) ** 2 + (f_ratio / f.q) ** 2)
             #
             if denom > 0:
                 combined_gain += f.gain / denom
@@ -3348,7 +3924,7 @@ def generate_formant_harmonics(
         #
         ### Normalize/Scale gain to avoid clipping if many formants overlap. ###
         #
-        # combined_gain = min(combined_gain, 2.0) 
+        # combined_gain = min(combined_gain, 2.0)
 
         #
         ### Apply 1/n sawtooth falloff as the "source" excitation. ###
@@ -3372,7 +3948,7 @@ def generate_formant_harmonics(
                 value=time,
                 frequency=Constant(harmonic_freq_hz * pi2),
                 amplitude=Product(base_amplitude, Constant(final_amp)),
-                delta=delta
+                delta=delta,
             )
         )
 

@@ -3,6 +3,7 @@
 #
 import lib_value as lv
 import math
+
 #
 import numpy as np
 from numpy.typing import NDArray
@@ -10,7 +11,6 @@ from numpy.typing import NDArray
 
 #
 class ADSR_Piano(lv.Value):
-
     """
     Envelope generator: Attack, Decay, Sustain, Release.
 
@@ -35,7 +35,7 @@ class ADSR_Piano(lv.Value):
         decay: float = 0.1,
         sustain_level: float = 0.7,
         release: float = 0.3,
-        note_duration: float = 1.0
+        note_duration: float = 1.0,
     ) -> None:
 
         #
@@ -52,10 +52,10 @@ class ADSR_Piano(lv.Value):
         self.total_cycle_time: float = note_duration + release
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
+        t: float = self.time.get_item(index=index, sample_rate=sample_rate)
         #
         t_mod: float = t % self.total_cycle_time
 
@@ -93,12 +93,16 @@ class ADSR_Piano(lv.Value):
             return 0.0
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
         ### Get the time buffer and apply the looping modulo operator. ###
         #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        t: NDArray[np.float32] = self.time.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
         #
         t_mod: NDArray[np.float32] = np.mod(t, self.total_cycle_time)
 
@@ -111,7 +115,9 @@ class ADSR_Piano(lv.Value):
         #
         decay_mask: NDArray[np.bool_] = t_mod < (self.attack + self.decay)
         decay_progress: NDArray[np.float32] = (t_mod - self.attack) / self.decay
-        decay_val: NDArray[np.float32] = (1.0 - (1.0 - self.sustain_level) * decay_progress).astype(dtype=np.float32)
+        decay_val: NDArray[np.float32] = (
+            1.0 - (1.0 - self.sustain_level) * decay_progress
+        ).astype(dtype=np.float32)
 
         #
         sustain_mask: NDArray[np.bool_] = t_mod < self.note_duration
@@ -120,8 +126,12 @@ class ADSR_Piano(lv.Value):
         #
         ### The final 'else' is the release phase. ###
         #
-        release_progress: NDArray[np.float32] = ((t_mod - self.note_duration) / self.release).astype(dtype=np.float32)
-        release_val: NDArray[np.float32] = (self.sustain_level * (1.0 - release_progress)).astype(dtype=np.float32)
+        release_progress: NDArray[np.float32] = (
+            (t_mod - self.note_duration) / self.release
+        ).astype(dtype=np.float32)
+        release_val: NDArray[np.float32] = (
+            self.sustain_level * (1.0 - release_progress)
+        ).astype(dtype=np.float32)
 
         #
         ### Build the envelope with nested np.where ###
@@ -136,15 +146,14 @@ class ADSR_Piano(lv.Value):
                 np.where(
                     sustain_mask,
                     sustain_val,
-                    release_val  # The final 'else' case
-                )
-            )
+                    release_val,  # The final 'else' case
+                ),
+            ),
         )
 
 
 #
 class Vibrato(lv.Value):
-
     """
     Generates a *frequency value* modulated by an LFO (vibrato).
 
@@ -166,9 +175,8 @@ class Vibrato(lv.Value):
         time: lv.Value,
         base_frequency: float,
         vibrato_rate: float = 5.0,  # The LFO frequency in Hz
-        vibrato_depth: float = 0.015 # The modulation amount (e.g., 1.5%)
+        vibrato_depth: float = 0.015,  # The modulation amount (e.g., 1.5%)
     ) -> None:
-
         """
         Initializes the vibrato frequency generator.
 
@@ -190,10 +198,10 @@ class Vibrato(lv.Value):
         self.pi2: float = 2 * math.pi
 
     #
-    def __getitem__(self, index: int, sample_rate: int) -> float:
+    def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        t: float = self.time.__getitem__(index=index, sample_rate=sample_rate)
+        t: float = self.time.get_item(index=index, sample_rate=sample_rate)
 
         #
         ### Calculate the LFO value (a sine wave oscillating between -1 and 1). ###
@@ -206,12 +214,16 @@ class Vibrato(lv.Value):
         return self.base_frequency * (1.0 + self.vibrato_depth * modulation)
 
     #
-    def getitem_np(self, indexes_buffer: NDArray[np.float32], sample_rate: int) -> NDArray[np.float32]:
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
 
         #
         ### Get the time buffer. ###
         #
-        t: NDArray[np.float32] = self.time.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
+        t: NDArray[np.float32] = self.time.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
 
         #
         ### Calculate the LFO value (a sine wave oscillating between -1 and 1). ###
@@ -221,4 +233,6 @@ class Vibrato(lv.Value):
         #
         ### Apply modulation to the base frequency. ###
         #
-        return (self.base_frequency * (1.0 + self.vibrato_depth * modulation)).astype(dtype=np.float32)
+        return (self.base_frequency * (1.0 + self.vibrato_depth * modulation)).astype(
+            dtype=np.float32
+        )

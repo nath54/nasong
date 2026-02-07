@@ -2,10 +2,13 @@
 ### Import Modules. ###
 #
 from typing import Callable
+
 #
 import torch
+
 #
 import argparse
+
 #
 import lib_import as li
 import lib_config as lc
@@ -19,9 +22,8 @@ def main(
     output_filename: str = "output.wav",
     sample_rate: int = 44100,
     use_torch: bool = False,
-    device: str | torch.device = ls.get_device()
+    device: str | torch.device = ls.get_device(),
 ) -> None:
-
     """
     Main function to orchestrate the sound generation and saving process.
     """
@@ -40,9 +42,9 @@ def main(
         config=lc.Config(
             sample_rate=sample_rate,
             total_duration=duration,
-            output_filename=output_filename
+            output_filename=output_filename,
         ),
-        value_of_time=function_of_time
+        value_of_time=function_of_time,
     )
 
     #
@@ -51,7 +53,6 @@ def main(
 
 #
 if __name__ == "__main__":
-
     #
     ### Initialize cli arguments parser ###
     #
@@ -60,11 +61,19 @@ if __name__ == "__main__":
     #
     ### Specify Arguments. ###
     #
-    parser.add_argument('-i', type=str, required=True, help='Path to the python song description.')
-    parser.add_argument('-o', type=str, default="output.wav", help='Path to the generated file.')
-    parser.add_argument('-s', type=int, default=44100, help='Sample Rate')
-    parser.add_argument('-t', action="store_true", default=False, help='Use torch for rendering.')
-    parser.add_argument('-d', type=str, default="cpu", help='Device to use for rendering.')
+    parser.add_argument(
+        "-i", type=str, required=True, help="Path to the python song description."
+    )
+    parser.add_argument(
+        "-o", type=str, default="output.wav", help="Path to the generated file."
+    )
+    parser.add_argument("-s", type=int, default=44100, help="Sample Rate")
+    parser.add_argument(
+        "-t", action="store_true", default=False, help="Use torch for rendering."
+    )
+    parser.add_argument(
+        "-d", type=str, default="cpu", help="Device to use for rendering."
+    )
 
     #
     ### Parse Arguments. ###
@@ -75,9 +84,9 @@ if __name__ == "__main__":
     ### Call Main. ###
     #
     main(
-        sound_file = args.i,
-        output_filename = args.o,
-        sample_rate = args.s,
-        use_torch = args.t,
-        device = args.d
+        sound_file=args.i,
+        output_filename=args.o,
+        sample_rate=args.s,
+        use_torch=args.t,
+        device=args.d,
     )

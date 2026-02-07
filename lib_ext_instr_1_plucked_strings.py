@@ -2,6 +2,7 @@
 ### Import Modules. ###
 #
 import math
+
 #
 import lib_value as lv
 
@@ -10,14 +11,14 @@ import lib_value as lv
 ### CATEGORY: PLUCKED STRINGS ###
 #
 
+
 def GuitarString(
     time: lv.Value,
     frequency: float,
     start_time: float,
     duration: float = 3.0,
-    brightness: float = 1.0
+    brightness: float = 1.0,
 ) -> lv.Value:
-
     """
     Refactored GuitarString.
     Builds graph from lib_value components.
@@ -36,8 +37,8 @@ def GuitarString(
         decay_time=duration - 0.002,
         sustain_level=0.0,
         release_time=0.01,
-        attack_curve=1.0,     # Linear attack
-        decay_curve=1.5       # Approx exp(-t*1.2)
+        attack_curve=1.0,  # Linear attack
+        decay_curve=1.5,  # Approx exp(-t*1.2)
     )
 
     #
@@ -56,9 +57,7 @@ def GuitarString(
     #
     ### Brightness decay: exp(-t * 2 * brightness)  ###
     #
-    brightness_env: lv.Value = lv.ExponentialDecay(
-        time, start_time, 2.0 * brightness
-    )
+    brightness_env: lv.Value = lv.ExponentialDecay(time, start_time, 2.0 * brightness)
 
     #
     ### Apply brightness decay to harmonics per original logic  ###
@@ -76,17 +75,13 @@ def GuitarString(
         lv.Product(h3, df_2),
         lv.Product(h4, df_3),
         lv.Product(h5, df_4),
-        lv.Product(h6, df_5)
+        lv.Product(h6, df_5),
     )
 
     #
     ### Final = 0.25 * AmpEnv * Signal ###
     #
-    return lv.Product(
-        lv.c(0.25),
-        amp_env,
-        signal
-    )
+    return lv.Product(lv.c(0.25), amp_env, signal)
 
 
 #
@@ -95,9 +90,8 @@ def GuitarString2(
     frequency: float,
     start_time: float,
     duration: float,
-    amplitude: float = 0.4
+    amplitude: float = 0.4,
 ) -> lv.Value:
-
     """
     Refactored GuitarString2.
     Builds graph from lib_value components.
@@ -112,11 +106,11 @@ def GuitarString2(
         note_start=start_time,
         note_duration=duration,
         attack_time=0.01,
-        decay_time=duration - 0.11, # 0.1s release
-        sustain_level=0.0, # Decays to 0
+        decay_time=duration - 0.11,  # 0.1s release
+        sustain_level=0.0,  # Decays to 0
         release_time=0.1,
         attack_curve=1.0,
-        decay_curve=1.2 # Approx exp(-t*0.5)
+        decay_curve=1.2,  # Approx exp(-t*0.5)
     )
 
     #
@@ -131,7 +125,7 @@ def GuitarString2(
     #
     ### Noise: Fixed with WhiteNoise  ###
     #
-    noise: lv.Value = lv.WhiteNoise(seed=12345, scale=1/5000.0)
+    noise: lv.Value = lv.WhiteNoise(seed=12345, scale=1 / 5000.0)
 
     #
     signal: lv.Value = lv.Sum(h1, h2, h3, noise)
@@ -139,11 +133,7 @@ def GuitarString2(
     #
     ### Final = Amplitude * AmpEnv * Signal ###
     #
-    return lv.Product(
-        lv.c(amplitude),
-        amp_env,
-        signal
-    )
+    return lv.Product(lv.c(amplitude), amp_env, signal)
 
 
 #
@@ -152,9 +142,8 @@ def AcousticString(
     frequency: float,
     pluck_time: float,
     amplitude: float = 0.3,
-    decay_rate: float = 2.0
+    decay_rate: float = 2.0,
 ) -> lv.Value:
-
     """
     Refactored AcousticString.
     Builds graph from lib_value components.
@@ -164,9 +153,7 @@ def AcousticString(
     #
     ### Envelope: 0.005s attack  ###
     #
-    attack_env: lv.Value = lv.ADSR2(
-        time, pluck_time, 0.005, 0.005, 0.001, 1.0, 0.001
-    )
+    attack_env: lv.Value = lv.ADSR2(time, pluck_time, 0.005, 0.005, 0.001, 1.0, 0.001)
     #
     decay_env: lv.Value = lv.ExponentialDecay(time, pluck_time, decay_rate)
     #
@@ -175,9 +162,7 @@ def AcousticString(
     #
     ### Gate: 3.0s hard gate  ###
     #
-    gate_env: lv.Value = lv.ADSR2(
-        time, pluck_time, 3.0, 0.001, 0.001, 1.0, 0.001
-    )
+    gate_env: lv.Value = lv.ADSR2(time, pluck_time, 3.0, 0.001, 0.001, 1.0, 0.001)
 
     #
     ### Oscillator: 5 harmonics, using `time` (t)  ###
@@ -193,7 +178,7 @@ def AcousticString(
     #
     ### Noise: Fixed with WhiteNoise  ###
     #
-    noise: lv.Value = lv.WhiteNoise(seed=8191, scale=1/8000.0)
+    noise: lv.Value = lv.WhiteNoise(seed=8191, scale=1 / 8000.0)
 
     #
     signal: lv.Value = lv.Sum(h1, h2, h3, h4, h5, noise)
@@ -201,12 +186,7 @@ def AcousticString(
     #
     ### Final = Amplitude * Gate * AmpEnv * Signal ###
     #
-    return lv.Product(
-        lv.c(amplitude),
-        gate_env,
-        amp_env,
-        signal
-    )
+    return lv.Product(lv.c(amplitude), gate_env, amp_env, signal)
 
 
 #
@@ -215,9 +195,8 @@ def Fingerpicking(
     bass_note: float,
     chord_notes: list[float],
     start_time: float,
-    pattern_duration: float = 2.0
+    pattern_duration: float = 2.0,
 ) -> lv.Value:
-
     """
     Refactored Fingerpicking.
     This "container"  is now a `lv.Sequencer`.
@@ -229,12 +208,8 @@ def Fingerpicking(
     #
     ### Bass notes  ###
     #
-    note_data_list.append(
-        (bass_note, start_time, 0.35, 1.5)
-    )
-    note_data_list.append(
-        (bass_note, start_time + pattern_duration/2, 0.35, 1.5)
-    )
+    note_data_list.append((bass_note, start_time, 0.35, 1.5))
+    note_data_list.append((bass_note, start_time + pattern_duration / 2, 0.35, 1.5))
 
     #
     ### Treble notes  ###
@@ -243,14 +218,12 @@ def Fingerpicking(
     #
     for i, note_idx in enumerate([0, 1, 2, 1, 0, 1, 2, 1]):
         #
-        if i % 2 == 1: # Off-beats
+        if i % 2 == 1:  # Off-beats
             #
             pluck_time: float = start_time + i * eighth
             note: float = chord_notes[note_idx % len(chord_notes)]
             #
-            note_data_list.append(
-                (note, pluck_time, 0.25, 2.0)
-            )
+            note_data_list.append((note, pluck_time, 0.25, 2.0))
 
     #
     ### Factory function to create the notes ###
@@ -263,20 +236,14 @@ def Fingerpicking(
 
     #
     return lv.Sequencer(
-        time,
-        instrument_factory=acoustic_string_factory,
-        note_data_list=note_data_list
+        time, instrument_factory=acoustic_string_factory, note_data_list=note_data_list
     )
 
 
 #
 def Strum(
-    time: lv.Value,
-    frequencies: list[float],
-    start_time: float,
-    duration: float = 2.5
+    time: lv.Value, frequencies: list[float], start_time: float, duration: float = 2.5
 ) -> lv.Value:
-
     """
     Refactored Strum.
     This "container"  is now a `lv.Sequencer`.
@@ -295,7 +262,7 @@ def Strum(
         ### Note Data: (frequency, start_time, duration, brightness) ###
         #
         note_data_list.append(
-            (freq, start_time + offset, duration, 1.0) # Default brightness
+            (freq, start_time + offset, duration, 1.0)  # Default brightness
         )
 
     #
@@ -309,7 +276,5 @@ def Strum(
 
     #
     return lv.Sequencer(
-        time,
-        instrument_factory=guitar_string_factory,
-        note_data_list=note_data_list
+        time, instrument_factory=guitar_string_factory, note_data_list=note_data_list
     )

@@ -2,12 +2,15 @@
 ### Import Modules. ###
 #
 from typing import Callable
+
 #
 import torch
-from torch import Tensor 
+from torch import Tensor
+
 #
 import numpy as np
 from numpy.typing import NDArray
+
 #
 # from tqdm import tqdm
 #
@@ -31,12 +34,9 @@ def get_device() -> str | torch.device:
 
 #
 class Song:
-
     #
     def __init__(
-        self,
-        config: lc.Config,
-        value_of_time: Callable[[lv.Value], lv.Value]
+        self, config: lc.Config, value_of_time: Callable[[lv.Value], lv.Value]
     ) -> None:
 
         #
@@ -49,8 +49,8 @@ class Song:
         #
         time_val: lv.Value = lv.BasicScaling(
             value=lv.Identity(),
-            mult_scale=lv.Constant(1/self.config.sample_rate),
-            sum_scale=lv.Constant(0)
+            mult_scale=lv.Constant(1 / self.config.sample_rate),
+            sum_scale=lv.Constant(0),
         )
 
         #
@@ -62,7 +62,9 @@ class Song:
         #
         idx_buffer: NDArray[np.float32] = np.arange(0, tot_samples, 1, dtype=np.float32)
         #
-        audio_data: NDArray[np.float32] = audio_value.getitem_np(indexes_buffer=idx_buffer, sample_rate=self.config.sample_rate)
+        audio_data: NDArray[np.float32] = audio_value.getitem_np(
+            indexes_buffer=idx_buffer, sample_rate=self.config.sample_rate
+        )
 
         #
         return audio_data
@@ -73,8 +75,8 @@ class Song:
         #
         time_val: lv.Value = lv.BasicScaling(
             value=lv.Identity(),
-            mult_scale=lv.Constant(1/self.config.sample_rate),
-            sum_scale=lv.Constant(0)
+            mult_scale=lv.Constant(1 / self.config.sample_rate),
+            sum_scale=lv.Constant(0),
         )
 
         #
@@ -84,15 +86,23 @@ class Song:
         tot_samples: int = int(self.config.sample_rate * self.config.total_duration)
 
         #
-        idx_buffer: Tensor = torch.arange(tot_samples, dtype=torch.float32, device=device)
+        idx_buffer: Tensor = torch.arange(
+            tot_samples, dtype=torch.float32, device=device
+        )
         #
-        audio_data: Tensor = audio_value.getitem_torch(indexes_buffer=idx_buffer, sample_rate=self.config.sample_rate, device=device)
+        audio_data: Tensor = audio_value.getitem_torch(
+            indexes_buffer=idx_buffer,
+            sample_rate=self.config.sample_rate,
+            device=device,
+        )
 
         #
         return audio_data
 
     #
-    def export_to_wav(self, use_torch: bool = False, device: str | torch.device = get_device()) -> None:
+    def export_to_wav(
+        self, use_torch: bool = False, device: str | torch.device = get_device()
+    ) -> None:
 
         #
         audio_data: NDArray[np.float32]
@@ -107,12 +117,13 @@ class Song:
             audio_data = self.render()
 
         #
-        prepared_audio_signal: NDArray[np.int16] = lw.WavUtils.prepare_signal(audio_data=audio_data)
+        prepared_audio_signal: NDArray[np.int16] = lw.WavUtils.prepare_signal(
+            audio_data=audio_data
+        )
 
         #
         lw.WavUtils.save_wav_file(
             filename=self.config.output_filename,
             sample_rate=self.config.sample_rate,
-            audio_data=prepared_audio_signal
+            audio_data=prepared_audio_signal,
         )
-    
