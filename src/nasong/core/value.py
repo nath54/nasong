@@ -186,6 +186,14 @@ class ParameterContext:
 
 
 #
+class _FloatWrapper(float):
+    """Wraps a float to provide a .item() method for compatibility with Torch-style code."""
+
+    def item(self):
+        return self
+
+
+#
 class ValueTrainableParameter(Value):
     """
     A Value that can be trained.
@@ -213,35 +221,26 @@ class ValueTrainableParameter(Value):
             if ctx.capture:
                 # Training mode restriction: must have torch
                 if not HAS_TORCH:
-                    # If we are capturing for training, we likely need torch.
-                    # But maybe we just want to inspect structure.
-                    # For now, let's assume if capturing, we want to train, so we keep torch behavior if possible.
                     pass
 
                 if name is None:
                     # Auto-generate name based on order/counter if needed
-                    # But for now, just store ref
                     pass
 
                 ctx.captured_params.append(self)
 
             elif ctx.parameters:
                 # Inference/Injection mode
-                # Try to find value in context parameters
-
                 injected_value = None
 
                 if name and name in ctx.parameters:
                     injected_value = ctx.parameters[name]
                 else:
-                    # Fallback to positional injection if using list?
-                    # Current impl uses dict. If name missing, cant inject by name.
-                    # We could support list injection based on capture order if needed.
                     pass
 
                 if injected_value is not None:
                     # We found a value! Use it and force NO-TORCH mode for this instance (inference)
-                    self.value = float(injected_value)
+                    self.value = _FloatWrapper(injected_value)
                     use_torch_local = False
 
         # If no injected value, use initial
@@ -249,7 +248,7 @@ class ValueTrainableParameter(Value):
             if use_torch_local:
                 self.value = torch.tensor(initial_value, dtype=torch.float32)
             else:
-                self.value = float(initial_value)
+                self.value = _FloatWrapper(initial_value)
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
