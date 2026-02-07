@@ -31,15 +31,17 @@ import nasong.core.value as lv
 
 
 #
-def main(
+
+
+def run_generation(
     sound_file: str,
     output_filename: str = "output.wav",
     sample_rate: int = 44100,
     use_torch: bool = False,
-    device: str | torch.device = ls.get_device(),
+    device: str | torch.device = "cpu",
 ) -> None:
     """
-    Main function to orchestrate the sound generation and saving process.
+    Orchestrate the sound generation and saving process.
     """
 
     #
@@ -52,6 +54,13 @@ def main(
     function_of_time: Callable[[lv.Value], lv.Value] = getattr(sound_file_obj, "song")
 
     #
+    if use_torch:
+        if not HAS_TORCH:
+            print("Warning: Torch requested but not available. Falling back to NumPy.")
+            use_torch = False
+        elif isinstance(device, str):
+            device = torch.device(device)
+
     song: ls.Song = ls.Song(
         config=lc.Config(
             sample_rate=sample_rate,
@@ -65,28 +74,45 @@ def main(
     song.export_to_wav(use_torch=use_torch, device=device)
 
 
-#
-if __name__ == "__main__":
+def main():
     #
     ### Initialize cli arguments parser ###
     #
-    parser: argparse.ArgumentParser = argparse.ArgumentParser()
+    parser: argparse.ArgumentParser = argparse.ArgumentParser(
+        description="Nasong: Generate audio from Python song descriptions."
+    )
 
     #
     ### Specify Arguments. ###
     #
     parser.add_argument(
-        "-i", type=str, required=True, help="Path to the python song description."
+        "input_file", type=str, nargs="?", help="Path to the python song description."
     )
     parser.add_argument(
-        "-o", type=str, default="output.wav", help="Path to the generated file."
+        "-i",
+        "--input",
+        type=str,
+        help="Path to the python song description (alternative).",
     )
-    parser.add_argument("-s", type=int, default=44100, help="Sample Rate")
     parser.add_argument(
-        "-t", action="store_true", default=False, help="Use torch for rendering."
+        "-o",
+        "--output",
+        type=str,
+        default="output.wav",
+        help="Path to the generated file.",
     )
     parser.add_argument(
-        "-d", type=str, default="cpu", help="Device to use for rendering."
+        "-s", "--sample-rate", type=int, default=44100, help="Sample Rate"
+    )
+    parser.add_argument(
+        "-t",
+        "--torch",
+        action="store_true",
+        default=False,
+        help="Use torch for rendering.",
+    )
+    parser.add_argument(
+        "-d", "--device", type=str, default="cpu", help="Device to use for rendering."
     )
 
     #
@@ -94,13 +120,26 @@ if __name__ == "__main__":
     #
     args: argparse.Namespace = parser.parse_args()
 
+    # Handle input file from positional or flag
+    input_path = args.input_file or args.input
+
+    if not input_path:
+        parser.print_help()
+        return
+
     #
-    ### Call Main. ###
+    ### Call Generation Logic. ###
     #
-    main(
-        sound_file=args.i,
-        output_filename=args.o,
-        sample_rate=args.s,
-        use_torch=args.t,
-        device=args.d,
+    run_generation(
+        sound_file=input_path,
+        output_filename=args.output,
+        sample_rate=args.sample_rate,
+        use_torch=args.torch,
+        device=args.device,
     )
+
+
+#
+
+if __name__ == "__main__":
+    main()
