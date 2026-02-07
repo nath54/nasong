@@ -7,6 +7,8 @@ Nasong is a Python-based music synthesizer and sequencer that allows you to crea
 - **Programmatic Music Generation**: Define songs and instruments using Python code.
 - **Custom Instruments**: Create your own instruments by defining their waveforms and envelopes.
 - **Built-in Library**: Includes a library of basic instruments (strings, winds, percussion, synths) and effects.
+- **Trainable Instruments**: Differentiable instruments that can learn parameters from target audio samples.
+- **Experiment Tracking**: Built-in system to track training runs, metrics, and parameters.
 - **High Quality Output**: Generates standard WAV files.
 
 ## Philosophy & Core Concepts
@@ -30,7 +32,7 @@ At the heart of Nasong is the `Value` class.
 
 ## Constraints
 
-- **Not Real-Time**: Nasong is a "music compiler". You write code, run the script to render a WAV file, and then listen. It is not designed for live performance or real-time jamming.
+- **Not Real-Time**: Nasong is a "music compiler". You write code, runs the script to render a WAV file, and then listen. It is not designed for live performance or real-time jamming.
 - **Requires Coding**: You need to be comfortable with Python to use it effectively.
 - **Render Time**: Complex songs with many voices and heavy processing (like convolution reverb) may take some time to render.
 
@@ -46,50 +48,122 @@ At the heart of Nasong is the `Value` class.
     ```bash
     pip install -e .
     ```
-    *Note: PyTorch is an optional dependency for GPU acceleration. If you want to use it, install it separately following instructions at [pytorch.org](https://pytorch.org).*
+    *Note: PyTorch is an optional dependency for GPU acceleration and training. If you want to use it, install it separately following instructions at [pytorch.org](https://pytorch.org).*
+
+This installation exposes the following CLI commands:
+- `nasong`: Generate music.
+- `nasong-vis`: Visualize audio.
+- `nasong-train`: Train instruments.
+- `nasong-monitor`: Manage experiments.
 
 ## Usage
 
-Nasong provides two command-line tools: `nasong` (for generation) and `nasong-vis` (for visualization).
+### 1. Creating a Nasong File
 
-### Generating Music
+A "Nasong file" is simply a Python script (e.g., `my_song.py`) that exports the logic for your music.
 
-Use the `nasong` command to render a song example to a WAV file.
+**Required Structure:**
+Your script **MUST** define two things:
+1.  **`duration`**: A variable (float/int) specifying the total length in seconds.
+2.  **`song(time)`**: A function that takes a `time` Value and returns the final audio output `Value`.
+
+**Example Template:**
+```python
+import nasong.core.value as lv
+from nasong.instruments.synth import SimpleSynth
+
+# 1. Define Duration
+duration = 10.0  # seconds
+
+# 2. Define Song Function
+def song(time: lv.Value) -> lv.Value:
+    # Build your audio graph here
+    # 'time' is the global time ramp signal provided by the renderer
+    
+    # Example: A simple 440Hz sine wave
+    intro = SimpleSynth(time, frequency=lv.Constant(440))
+    
+    return intro
+```
+
+### 2. Generating Music (`nasong`)
+
+Use the `nasong` command to compile your song into audio.
 
 ```bash
-nasong -i song_examples/song_electronic_synth.py -o output.wav
+nasong my_song.py -o output.wav
 ```
 
 **Arguments:**
-- `-i`: Path to the Python song description file (Required).
-- `-o`: Output WAV filename (Default: `output.wav`).
-- `-s`: Sample rate in Hz (Default: 44100).
-- `-t`: Use PyTorch for rendering (requires Torch installed).
-- `-d`: Device to use (e.g., `cpu`, `cuda`).
+- `input_file`: Path to the Python song description file.
+- `-o`, `--output`: Output WAV filename (Default: `output.wav`).
+- `-s`, `--sample-rate`: Sample rate in Hz (Default: 44100).
+- `-t`, `--torch`: Use PyTorch for rendering (requires Torch installed).
+- `-d`, `--device`: Device to use (e.g., `cpu`, `cuda`).
 
-### Visualizing Audio
+### 3. Visualizing Audio (`nasong-vis`)
 
-Use `nasong-vis` to analyze or plot waveforms/spectrograms of generated audio.
+Analyze or plot waveforms/spectrograms of generated audio.
 
 ```bash
 nasong-vis -i output.wav --analyze --plot spectrogram
 ```
 
-**Arguments:**
-- `-i`: Input WAV file or Python song file.
-- `-o`: Output image filename (for plots).
-- `--analyze`: Print audio analysis metrics (RMS, peak, etc.).
-- `--plot`: Type of plot (`waveform`, `spectrogram`, `spectrum`, `all`).
+### 4. Training Instruments (`nasong-train`)
 
-### Using as a Library
+You can train generative instruments to match a target audio sample (e.g., make a synth sound like a specific recording).
 
-You can import Nasong instruments and core classes in your own Python scripts:
+```bash
+nasong-train --instrument named_fm --target my_sample.wav --epochs 1000
+```
+
+This will:
+- Run an optimization loop using PyTorch.
+- Log metrics (loss, duration) to `~/.nasong/experiments/`.
+- Save the learned parameters to `params.json`.
+
+### 5. Monitoring Experiments (`nasong-monitor`)
+
+Manage your training experiments.
+
+- **List experiments**:
+  ```bash
+  nasong-monitor list
+  ```
+- **Show details**:
+  ```bash
+  nasong-monitor show <experiment_id>
+  ```
+- **Delete experiment**:
+  ```bash
+  nasong-monitor delete <experiment_id>
+  ```
+
+## Experiment Tracking & Inference
+
+Nasong allows you to use trained instruments in your songs **without** needing PyTorch installed. The system effectively "compiles" the trained parameters into the instrument.
+
+### Using Trained Instruments
+
+Use the `load_trained_instrument` helper to load an instrument with its trained parameters pre-injected.
 
 ```python
+from nasong.trainable.inference import load_trained_instrument
 import nasong.core.value as lv
-from nasong.instruments.synth import SynthLead
 
-# Define your song logic...
+# 1. Load instrument from Experiment ID (get this from nasong-monitor list)
+# This returns a callable function identical to the original blueprint but with defaults updated.
+my_instrument = load_trained_instrument("a1b2c3d4") 
+
+# 2. Use it in your song graph
+# It behaves exactly like a normal instrument
+def song(time: lv.Value) -> lv.Value:
+    return my_instrument(
+        time=time, 
+        frequency=lv.Constant(440), 
+        start_time=0.0, 
+        duration=1.0
+    )
 ```
 
 ## Project Structure
@@ -97,8 +171,6 @@ from nasong.instruments.synth import SynthLead
 - `src/nasong/core/`: Core libraries (Values, Song, Wav, config).
 - `src/nasong/instruments/`: Built-in instrument library.
 - `src/nasong/scripts/`: CLI entry points.
+- `src/nasong/trainable/`: Training logic and trainable instrument definitions.
 - `song_examples/`: Example song definitions.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+- `tests/`: Automated tests.
