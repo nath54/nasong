@@ -1,0 +1,21 @@
+instrument_name: "bowed"
+target_wav: "example_songs_for_training/violin_and_cello_duo_in_B-Flat_Major_BI._244_II._Andantino.wav"
+output_dir: "trained_models/torchcrepe_bowed_violin_cello"
+device: "cuda" # Recommend GPU for Crepe
+epochs: 500
+learning_rate: 0.05
+
+audio:
+  start_time: 0.0
+  duration: 10.0
+  sample_rate: 44100 # Crepe will work with its internal 16k, training uses 44.1k
+
+note_detection:
+  method: "torchcrepe"
+  crepe_model: "full" # 'tiny', 'small', 'medium', 'large', 'full'
+  crepe_step_size: 10 # ms
+  crepe_confidence_threshold: 0.8
+
+spectral_loss:
+  fft_sizes: [2048, 1024, 512, 128] # Added 128 for detail
+  high_freq_emphasis: 2.5

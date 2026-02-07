@@ -1,0 +1,22 @@
+instrument_name: "sawtooth"
+target_wav: "example_songs_for_training/electro_synth_Kill_Me_Slow.wav"
+output_dir: "trained_models/config_audioflux_sawtooth_electro"
+device: "cuda"
+epochs: 100
+learning_rate: 0.01
+
+audio:
+  start_time: 0.0
+  duration: 10.0
+  sample_rate: 44100
+
+note_detection:
+  method: "audioflux"
+  audioflux_type: "YIN" # or 'PEF'
+  audioflux_min_freq: 50.0
+  audioflux_max_freq: 2000.0
+  audioflux_slide_length: 1024
+
+spectral_loss:
+  fft_sizes: [2048, 1024, 512]
+  high_freq_emphasis: 2.0

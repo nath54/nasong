@@ -118,7 +118,7 @@ def evaluate_audio(audio_path: str, methods: List[str] = None) -> Dict[str, Any]
 
     return results
 
-def visualize_spectrograms(target_path, trained_path, output_dir, instrument_name):
+def visualize_spectrograms(target_path, trained_path, output_dir, instrument_name, split_name: str = "train"):
     """
     Generate and save a side-by-side spectrogram comparison.
     """
@@ -144,7 +144,7 @@ def visualize_spectrograms(target_path, trained_path, output_dir, instrument_nam
     plt.ylabel("Frequency (Hz)")
     plt.xlabel("Time (s)")
 
-    save_path = os.path.join(output_dir, f"comparison_{instrument_name}.png")
+    save_path = os.path.join(output_dir, f"comparison_{instrument_name}_{split_name}.png")
     plt.tight_layout()
     plt.savefig(save_path)
     plt.close()
@@ -199,6 +199,8 @@ def process_experiment(exp_dir: str, output_dir: Optional[str] = None, methods: 
     # 3. Viz
     visualize_spectrograms(target_path, trained_path, output_dir, instrument_name)
     print(f"   ✅ Saved spectrogram comparison")
+
+    # TODO: vizualize for test and validation splits
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate and visualize Nasong training results.")

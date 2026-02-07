@@ -1,0 +1,54 @@
+audio:
+  duration: 10.0
+  sample_rate: 44100
+  start_time: 0.0
+batch_duration: 5.0
+batch_overlap: 1.0
+device: cuda
+epochs: 100
+instrument_name: bowed
+learning_rate: 0.01
+note_detection:
+  audioflux_max_freq: 2000.0
+  audioflux_min_freq: 50.0
+  audioflux_radix2_exp: 12
+  audioflux_slide_length: 1024
+  audioflux_type: PEF
+  bp_frame_threshold: 0.3
+  bp_max_freq: 2000.0
+  bp_min_freq: 50.0
+  bp_min_note_len: 58.0
+  bp_onset_threshold: 0.5
+  crepe_confidence_threshold: 0.8
+  crepe_model: medium
+  crepe_step_size: 10
+  legacy_frame_len: 0.02
+  legacy_hop_len: 0.01
+  legacy_max_freq: 4000.0
+  legacy_max_pitches: 3
+  legacy_min_freq: 50.0
+  legacy_num_notes: 1
+  legacy_onset_threshold: 0.3
+  legacy_use_onset: true
+  librosa_fmax: 2000.0
+  librosa_fmin: 50.0
+  librosa_frame_length: 2048
+  librosa_hop_length: 512
+  method: librosa
+  onnx_path: models/nmp.onnx
+output_dir: trained_models/librosa_bowed_violin_cello
+save_config: true
+save_history: true
+save_interval: 10
+spectral_loss:
+  fft_sizes:
+  - 2048
+  - 1024
+  - 512
+  high_freq_emphasis: 2.0
+  hop_length: 512
+  n_fft: 2048
+target_wav: example_songs_for_training/violin_and_cello_duo_in_B-Flat_Major_BI._244_II._Andantino.wav
+test_duration: 5.0
+train_duration: 10.0
+val_duration: 5.0

@@ -372,13 +372,15 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
              c = e
         final_audio = np.concatenate(audio_chunks)
 
+    # TODO: save predicted audio for test and val
+
     wavfile.write(os.path.join(config.output_dir, f"{config.instrument_name}_trained.wav"), sr, (final_audio * 32767).astype(np.int16))
     wavfile.write(os.path.join(config.output_dir, f"{config.instrument_name}_target.wav"), sr, (train_audio * 32767).astype(np.int16))
     if len(val_audio) > 0:
         wavfile.write(os.path.join(config.output_dir, f"{config.instrument_name}_val_target.wav"), sr, (val_audio * 32767).astype(np.int16))
     if len(test_audio) > 0:
         wavfile.write(os.path.join(config.output_dir, f"{config.instrument_name}_test_target.wav"), sr, (test_audio * 32767).astype(np.int16))
-    print(f"Saved target audio to: {target_path}")
+    print(f"Saved target audio to: {config.output_dir}")
     # 4. Save Params
     param_dict = {}
     for i, param in enumerate(all_params):

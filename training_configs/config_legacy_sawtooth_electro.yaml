@@ -1,0 +1,23 @@
+instrument_name: "sawtooth"
+target_wav: "example_songs_for_training/electro_synth_Kill_Me_Slow.wav"
+output_dir: "trained_models/legacy_sawtooth_electro"
+device: "cuda"
+epochs: 100
+learning_rate: 0.01
+
+audio:
+  start_time: 0.0
+  duration: 10.0
+  sample_rate: 44100
+
+note_detection:
+  method: "legacy"
+  legacy_num_notes: 1
+  legacy_use_onset: true
+  legacy_frame_len: 0.02
+  legacy_hop_len: 0.01
+  legacy_onset_threshold: 0.3
+
+spectral_loss:
+  fft_sizes: [2048, 1024, 512]
+  high_freq_emphasis: 2.0

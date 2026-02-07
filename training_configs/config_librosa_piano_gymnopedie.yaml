@@ -1,0 +1,22 @@
+instrument_name: "piano"
+target_wav: "example_songs_for_training/piano_Gymnopédie_No._1.wav"
+output_dir: "trained_models/librosa_piano_gymnopedie"
+device: "cuda"
+epochs: 100
+learning_rate: 0.01
+
+audio:
+  start_time: 0.0
+  duration: 10.0 # Reduced from 20.0 to avoid OOM
+  sample_rate: 44100
+
+note_detection:
+  method: "librosa"
+  librosa_fmin: 50.0
+  librosa_fmax: 2000.0
+  librosa_frame_length: 2048 # For pyin
+  librosa_hop_length: 512
+
+spectral_loss:
+  fft_sizes: [2048, 1024, 512]
+  high_freq_emphasis: 2.0
