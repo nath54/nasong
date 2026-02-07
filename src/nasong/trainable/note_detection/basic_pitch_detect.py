@@ -32,20 +32,21 @@ class BasicPitchDetector(NoteDetector):
             # basic-pitch handles downloading the model if not present.
             # We enforce ONNX serialization to avoid TensorFlow dependency.
             # predict expects a list of paths
+            # basic-pitch 0.4.0 takes single audio_path, no model_serialization arg
             model_output, midi_data, note_events = predict(
-                [tmp_path],
+                tmp_path,
                 onset_threshold=self.config.get('bp_onset_threshold', 0.5),
-                frame_threshold=self.config.get('bp_frame_threshold', 0.3),  # Corrected line number or param
+                frame_threshold=self.config.get('bp_frame_threshold', 0.3),
                 minimum_note_length=self.config.get('bp_min_note_len', 58.0),
                 minimum_frequency=self.config.get('bp_min_freq', 50.0),
-                maximum_frequency=self.config.get('bp_max_freq', 2000.0),
-                model_serialization="onnx" # Explicitly request ONNX
+                maximum_frequency=self.config.get('bp_max_freq', 2000.0)
             )
 
             if not note_events:
                 return []
-
-            file_events = note_events[0]
+            
+            # note_events is returned directly as list of tuples in 0.4.0
+            file_events = note_events
 
         except Exception as e:
             # Check if basic-pitch error is related to missing ONNX runtime
