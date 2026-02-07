@@ -33,6 +33,7 @@ src/nasong/scripts/train_cli.py
 src/nasong/scripts/vis_tool.py
 src/nasong/trainable/__init__.py
 src/nasong/trainable/extract.py
+src/nasong/trainable/inference.py
 src/nasong/trainable/train.py
 src/nasong/trainable/instruments/__init__.py
 src/nasong/trainable/instruments/atmospheric.py
