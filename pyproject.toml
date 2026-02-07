@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nasong"
+version = "0.1.0"
+description = "A powerful audio generation library and application."
+authors = [
+  { name="Nathan Cerisara", email="nathan.cerisara@example.com" },
+]
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy",
+    "scipy",
+    "matplotlib",
+]
+
+[project.scripts]
+nasong = "nasong.scripts.main:main"
+nasong-vis = "nasong.scripts.vis_tool:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -4,8 +4,31 @@
 from typing import Callable
 
 #
-import torch
-from torch import Tensor
+try:
+    import torch
+    from torch import Tensor
+
+    HAS_TORCH = True
+except (ImportError, OSError):
+    HAS_TORCH = False
+
+    class Tensor:
+        pass
+
+    class torch:
+        class device:
+            def __init__(self, *args):
+                pass
+
+        class cuda:
+            @staticmethod
+            def is_available():
+                return False
+
+        @staticmethod
+        def is_available():
+            return False
+
 
 #
 import numpy as np
@@ -14,9 +37,9 @@ from numpy.typing import NDArray
 #
 # from tqdm import tqdm
 #
-import lib_config as lc
-import lib_value as lv
-import lib_wav as lw
+import nasong.core.config as lc
+import nasong.core.value as lv
+import nasong.core.wav as lw
 
 
 #

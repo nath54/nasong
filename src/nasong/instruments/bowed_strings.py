@@ -5,7 +5,7 @@ import math
 import random
 
 #
-import lib_value as lv
+import nasong.core.value as lv
 
 
 #

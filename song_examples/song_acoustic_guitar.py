@@ -1,10 +1,10 @@
 #
 ### Import Modules. ###
 #
-import lib_value as lv
+import nasong.core.value as lv
 
 #
-from lib_ext_instr_1_plucked_strings import Strum, GuitarString
+from nasong.instruments.plucked_strings import Strum, GuitarString
 
 #
 ### Specify duration (in seconds). ###

@@ -4,16 +4,30 @@
 from typing import Callable
 
 #
-import torch
+try:
+    import torch
+
+    HAS_TORCH = True
+except (ImportError, OSError):
+    HAS_TORCH = False
+
+    class torch:
+        class device:
+            def __init__(self, *args):
+                pass
+
+        def is_available():
+            return False
+
 
 #
 import argparse
 
 #
-import lib_import as li
-import lib_config as lc
-import lib_song as ls
-import lib_value as lv
+import nasong.core.utils as li
+import nasong.core.config as lc
+import nasong.core.song as ls
+import nasong.core.value as lv
 
 
 #

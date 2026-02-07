@@ -18,9 +18,8 @@ import torch.optim as optim
 import scipy.io.wavfile as wavfile
 
 #
-import lib_value as lv
-import lib_extr_instr_to_learn as learnable
-import lib_song as ls
+import nasong.core.value as lv
+import nasong.trainable.extract as learnable
 
 
 #
@@ -397,7 +396,7 @@ def collect_trainable_parameters(
                         for sub_item in item:
                             if isinstance(sub_item, lv.Value):
                                 collect_trainable_parameters(sub_item, params)
-        except:
+        except Exception:
             continue
 
     return params

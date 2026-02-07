@@ -12,8 +12,16 @@ import numpy as np
 from numpy.typing import NDArray
 
 #
-import torch
-from torch import Tensor
+try:
+    import torch
+    from torch import Tensor
+
+    HAS_TORCH = True
+except (ImportError, OSError):
+    HAS_TORCH = False
+
+    class Tensor:
+        pass  # Mock for runtime type hints
 
 
 #

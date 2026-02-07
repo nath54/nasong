@@ -1,0 +1,3 @@
+[console_scripts]
+nasong = nasong.scripts.main:main
+nasong-vis = nasong.scripts.vis_tool:main

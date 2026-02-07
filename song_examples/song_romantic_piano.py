@@ -1,10 +1,10 @@
 #
 ### Import Modules. ###
 #
-import lib_value as lv
+import nasong.core.value as lv
 
 #
-from lib_ext_instr_1_keyboards import PianoNote
+from nasong.instruments.keyboards import PianoNote
 
 
 #

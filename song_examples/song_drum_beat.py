@@ -1,13 +1,13 @@
 #
 ### Import Modules. ###
 #
-import lib_value as lv
+import nasong.core.value as lv
 
 #
-from lib_ext_instr_1_bass import DeepBass
+from nasong.instruments.bass import DeepBass
 
 #
-from lib_ext_percus_1 import KickDrum, SnareDrum, HiHat, CrashCymbal
+from nasong.instruments.percussion import KickDrum, SnareDrum, HiHat, CrashCymbal
 
 
 #

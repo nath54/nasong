@@ -6,10 +6,10 @@ import sys
 import numpy as np
 from scipy.io import wavfile  # type: ignore
 
-import lib_vis as lv
-import lib_import as li
-import lib_config as lc
-import lib_song as ls
+import nasong.core.vis as lv
+import nasong.core.utils as li
+import nasong.core.config as lc
+import nasong.core.song as ls
 
 
 def load_audio(input_path: str, sample_rate: int = 44100) -> tuple[np.ndarray, int]:

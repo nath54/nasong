@@ -1,10 +1,10 @@
 #
 ### Import Modules. ###
 #
-import lib_value as lv
+import nasong.core.value as lv
 
 #
-from lib_ext_synth_1 import SynthBass, SynthPad, SynthLead
+from nasong.instruments.synth import SynthBass, SynthPad, SynthLead
 
 #
 ### Specify duration (in seconds). ###

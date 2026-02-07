@@ -1,12 +1,10 @@
 #
 ### Import Modules. ###
 #
-import lib_value as lv
-import lib_song as ls
-import lib_config as lc
+import nasong.core.value as lv
 
 #
-from lib_ext_instr_1_bowed_strings import Violin, Cello
+from nasong.instruments.bowed_strings import Violin, Cello
 
 #
 ### Specify duration (in seconds). ###
@@ -57,7 +55,7 @@ def song(time: lv.Value) -> lv.Value:
         (587.33, 1.5),
     ]
 
-    violin_seq = lv.SimpleMelody(
+    lv.SimpleMelody(
         time, instrument_factory=Violin, notes=violin_notes, start_time=0.5, gap=0.0
     )
 
