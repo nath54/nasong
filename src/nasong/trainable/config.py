@@ -72,6 +72,15 @@ class TrainingConfig:
     note_detection: NoteDetectionConfig = field(default_factory=NoteDetectionConfig)
     spectral_loss: SpectralLossConfig = field(default_factory=SpectralLossConfig)
 
+    # Splitting and Batching
+    train_duration: float = 10.0 # Duration to use for training
+    val_duration: float = 5.0 # Duration for validation
+    test_duration: float = 5.0 # Duration for testing
+    batch_duration: float = 5.0 # Max duration per training batch
+    batch_overlap: float = 1.0 # overlap in seconds
+    save_config: bool = True
+    save_history: bool = True
+
     @staticmethod
     def from_yaml(path: str) -> 'TrainingConfig':
         """Load configuration from a YAML file."""

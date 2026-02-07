@@ -155,6 +155,14 @@ This generates:
 - `evaluation.json`: Detailed note detection metrics.
 - `comparison_<instrument>.png`: Side-by-side spectrograms.
 
+### 7. Leaderboards (`nasong-leaderboard`)
+
+Generate a global leaderboard comparing all trained models.
+
+```bash
+nasong-leaderboard --output results_analysis/leaderboards.md
+```
+
 ## Experiment Tracking & Inference
 
 Nasong allows you to use trained instruments in your songs **without** needing PyTorch installed. The system effectively "compiles" the trained parameters into the instrument.

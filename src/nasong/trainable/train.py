@@ -171,187 +171,220 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
     print(f"=== Training {config.instrument_name} on {config.target_wav} ===")
 
     # Load target audio
-    print(f"Loading audio segment ({config.audio.start_time}s - {config.audio.start_time + config.audio.duration}s)...")
-    target_audio, sr = load_wav_segment(
+    # Determine total duration
+    total_duration = config.train_duration + config.val_duration + config.test_duration
+    if total_duration <= 0:
+        total_duration = config.audio.duration
+
+    print(f"Loading total audio segment ({config.audio.start_time}s - {config.audio.start_time + total_duration}s)...")
+    full_audio, sr = load_wav_segment(
         config.target_wav,
         config.audio.start_time,
-        config.audio.duration,
+        total_duration,
         config.audio.sample_rate
     )
 
-    target_tensor = torch.from_numpy(target_audio).to(
-        dtype=torch.float32, device=config.device
-    )
+    # Split Audio
+    train_end_sample = int(config.train_duration * sr)
+    val_end_sample = train_end_sample + int(config.val_duration * sr)
 
-    # Extract note parameters using configured detector
-    print(f"Detecting notes using {config.note_detection.method}...")
+    train_audio = full_audio[:train_end_sample]
+    val_audio = full_audio[train_end_sample:val_end_sample] if config.val_duration > 0 else np.array([])
+    test_audio = full_audio[val_end_sample:] if config.test_duration > 0 else np.array([])
 
+    print(f"Split sizes: Train={len(train_audio)/sr:.2f}s, Val={len(val_audio)/sr:.2f}s, Test={len(test_audio)/sr:.2f}s")
+
+    # Run Detection on FULL audio (better context)
+    print(f"Detecting notes using {config.note_detection.method} on full audio...")
     detector = create_note_detector(config.note_detection)
+    all_notes = detector.detect(full_audio, sr)
 
-    # Note: detectors might need full audio or handle segmentation internally.
-    # Current LegacyDetector expects the segment.
-    # Librosa can handle segment. BasicPitch works best on segments too if short.
-    note_params = detector.detect(target_audio, sr)
-
-    print("Detected notes:")
-    if not note_params:
-        print("  No notes detected! Using default C4.")
-        note_params = [{
+    print(f"Detected {len(all_notes)} notes.")
+    if not all_notes and config.note_detection.method == 'legacy':
+         # Fallback for legacy
+         all_notes = [{
             "frequencies": [261.63],
             "start_time": 0.0,
-            "duration": config.audio.duration * 0.9
+            "duration": total_duration * 0.9
         }]
 
-    for i, note in enumerate(note_params):
-        freq_str = ", ".join([f"{f:.1f}Hz" for f in note["frequencies"]])
-        print(
-            f"  Note {i + 1}: [{freq_str}], start={note['start_time']:.2f}s, dur={note['duration']:.2f}s"
-        )
+    # Filter notes for TRAIN split
+    train_notes = []
+    for note in all_notes:
+        # Keep notes that start within train window
+        if note['start_time'] < config.train_duration:
+            # Clip duration if it extends beyond
+            # Actually, standard is allow decay. But here we just classify.
+            train_notes.append(note)
 
-    # Create trainable note parameters
-    print("\nInitializing trainable note parameters...")
+    print(f"Training notes: {len(train_notes)}")
+
+    # Initialize Trainable Parameters
+    # Convert filtered notes to ValueTrainableParameter
     trainable_notes = []
+    for note in train_notes:
+         freq_params = [lv.ValueTrainableParameter(f) for f in note["frequencies"]]
+         trainable_notes.append({
+             "frequencies": freq_params,
+             "start_time": lv.ValueTrainableParameter(note["start_time"]),
+             "duration": lv.ValueTrainableParameter(note["duration"]),
+         })
 
-    # Optional: Filter detected notes to fit segment if they exceed bounds?
-    # For now assume detector returns relative to the segment start or correct times.
-    # Note: Detectors return time relative to the START of the provided audio segment.
-    # The audio segment already starts at 0.0 relative to itself.
-
-    for note in note_params:
-        freq_list = note["frequencies"]
-        # Basic Pitch might return a chord as separate notes with same start time.
-        # Legacy returns groups.
-        # We handle separate notes naturally by adding multiple entries.
-
-        freq_params = [lv.ValueTrainableParameter(f) for f in freq_list]
-        trainable_notes.append(
-            {
-                "frequencies": freq_params,
-                "start_time": lv.ValueTrainableParameter(note["start_time"]),
-                "duration": lv.ValueTrainableParameter(note["duration"]),
-            }
-        )
-
-    # Build instrument synthesis graph
-    print(f"Building {config.instrument_name} synthesis graph...")
+    # Build Instrument Graph (Training)
+    print(f"Building {config.instrument_name} synthesis graph (Training)...")
     instrument_blueprint = learnable.get_trainable_instrument(config.instrument_name)
 
-    time_val = lv.BasicScaling(
-        value=lv.Identity(),
-        mult_scale=lv.Constant(1 / sr),
-        sum_scale=lv.Constant(0),
-    )
+    # We need a synthesis graph that can handle the full duration or be batched.
+    # If we batch, we need to slice time.
+    # Standard Nasong `time` goes 0..T.
+    # The note `start_time` is relative to 0.
 
-    note_values = []
+    # Building ONE big graph for training set to manage parameters
+    # Memory optimization: The graph structure itself is cheap. Rendering big buffers is expensive.
+
+    time_val = lv.BasicScaling(value=lv.Identity(), mult_scale=lv.Constant(1/sr), sum_scale=lv.Constant(0))
+
+    note_vals = []
     for tn in trainable_notes:
         if config.instrument_name in ["kick", "snare", "hihat_closed", "hihat_open"]:
-            note_val = instrument_blueprint(
-                time=time_val, start_time=tn["start_time"].value.item()
-            )
-            note_values.append(note_val)
+            nv = instrument_blueprint(time=time_val, start_time=tn["start_time"].value.item())
+            note_vals.append(nv)
         else:
             chord_voices = []
-            for freq_param in tn["frequencies"]:
-                voice = instrument_blueprint(
-                    time=time_val,
-                    frequency=freq_param,
-                    start_time=tn["start_time"].value.item(),
-                    duration=tn["duration"].value.item(),
-                )
-                chord_voices.append(voice)
+            for fp in tn["frequencies"]:
+                 # IMPORTANT: To share parameters, we pass the parameter object!
+                 voice = instrument_blueprint(
+                     time=time_val, frequency=fp,
+                     start_time=tn["start_time"].value.item(),
+                     duration=tn["duration"].value.item()
+                 )
+                 chord_voices.append(voice)
+            if len(chord_voices) == 1: note_vals.append(chord_voices[0])
+            else: note_vals.append(lv.Product(lv.Sum(chord_voices), lv.Constant(1.0/len(chord_voices))))
 
-            if len(chord_voices) == 1:
-                note_values.append(chord_voices[0])
-            else:
-                note_values.append(
-                    lv.Product(
-                        lv.Sum(chord_voices), lv.Constant(1.0 / len(chord_voices))
-                    )
-                )
-
-    if not note_values:
-        print("Error: No notes to synthesize.")
+    if not note_vals:
+        print("Error: No training notes.")
         return {}
 
-    if len(note_values) == 1:
-        synth_output = note_values[0]
-    else:
-        synth_output = lv.Sum(note_values)
+    synth_output = lv.Sum(note_vals) if len(note_vals) > 1 else note_vals[0]
 
-    print("Collecting trainable parameters...")
+    # Collect Params
+    print("Collecting parameters...")
     all_params = collect_trainable_parameters(synth_output)
-
+    # Add note params explicitly
     for tn in trainable_notes:
-        for freq_param in tn["frequencies"]:
-            all_params.append(freq_param.value)
+        for fp in tn["frequencies"]: all_params.append(fp.value)
         all_params.append(tn["start_time"].value)
         all_params.append(tn["duration"].value)
 
     all_params = list(set(all_params))
-    for param in all_params:
-        param.requires_grad = True
-
+    for p in all_params: p.requires_grad = True
     print(f"Total trainable parameters: {len(all_params)}")
 
     optimizer = optim.Adam(all_params, lr=config.learning_rate)
+    history = {"losses": [], "epochs": [], "validation_losses": []}
 
-    print(f"\nStarting training for {config.epochs} epochs...")
-    history = {"losses": [], "epochs": []}
+    # BATCH SETUP
+    batch_size_samples = int(config.batch_duration * sr)
+    overlap_samples = int(config.batch_overlap * sr)
+    stride = batch_size_samples - overlap_samples
+    if stride <= 0: stride = batch_size_samples // 2
+
+    train_tensor = torch.from_numpy(train_audio).to(device=config.device)
+
+    print(f"Starting training for {config.epochs} epochs (Batch: {config.batch_duration}s, Overlap: {config.batch_overlap}s)...")
 
     for epoch in range(config.epochs):
         optimizer.zero_grad()
+        epoch_loss = 0.0
+        batches = 0
 
-        idx_buffer = torch.arange(
-            len(target_tensor), dtype=torch.float32, device=config.device
-        )
-        synthesized = synth_output.getitem_torch(idx_buffer, sr, device=config.device)
+        # Iterate windows
+        current_sample = 0
+        while current_sample < len(train_tensor):
+            end_sample = min(current_sample + batch_size_samples, len(train_tensor))
+            if end_sample - current_sample < 1024: break # Skip tiny last batch
 
-        loss = multi_resolution_spectral_loss(
-            synthesized,
-            target_tensor,
-            sample_rate=sr,
-            fft_sizes=config.spectral_loss.fft_sizes,
-            high_freq_emphasis=config.spectral_loss.high_freq_emphasis
-        )
+            # Slice Target
+            target_batch = train_tensor[current_sample:end_sample]
 
-        loss.backward()
+            # Index buffer for synthesis (absolute time)
+            # nasong uses float index? No, getitem_torch uses indices.
+            # We enable the graph to render specifically for these indices.
+            idx_buffer = torch.arange(current_sample, end_sample, dtype=torch.float32, device=config.device)
+
+            # Render
+            # This efficiently only computes for this time window!
+            synthesized = synth_output.getitem_torch(idx_buffer, sr, device=config.device)
+
+            loss = multi_resolution_spectral_loss(
+                synthesized, target_batch, sr,
+                config.spectral_loss.fft_sizes,
+                config.spectral_loss.high_freq_emphasis
+            )
+
+            loss.backward()
+            epoch_loss += loss.item()
+            batches += 1
+
+            current_sample += stride
+
         optimizer.step()
 
-        history["losses"].append(loss.item())
+        avg_loss = epoch_loss / max(1, batches)
+        history["losses"].append(avg_loss)
         history["epochs"].append(epoch)
 
         if epoch % 10 == 0 or epoch == config.epochs - 1:
-            print(f"Epoch {epoch:3d}/{config.epochs} | Spectral Loss: {loss.item():.6f}")
+            print(f"Epoch {epoch:3d}/{config.epochs} | Avg Loss: {avg_loss:.6f}")
 
     print("\n=== Training Complete ===")
 
+    # Save Artifacts
     os.makedirs(config.output_dir, exist_ok=True)
 
-    final_idx = torch.arange(len(target_tensor), dtype=torch.float32, device=config.device)
-    final_audio = (
-        synth_output.getitem_torch(final_idx, sr, device=config.device)
-        .detach()
-        .cpu()
-        .numpy()
-    )
+    # 1. Config
+    if config.save_config:
+        config.to_yaml(os.path.join(config.output_dir, "config.yaml"))
 
-    output_path = os.path.join(config.output_dir, f"{config.instrument_name}_trained.wav")
-    wavfile.write(output_path, sr, (final_audio * 32767).astype(np.int16))
-    print(f"Saved synthesized audio to: {output_path}")
+    # 2. History
+    if config.save_history:
+        import json
+        with open(os.path.join(config.output_dir, "history.json"), "w") as f:
+            json.dump(history, f, indent=2)
 
-    target_path = os.path.join(config.output_dir, f"{config.instrument_name}_target.wav")
-    wavfile.write(target_path, sr, (target_audio * 32767).astype(np.int16))
+    # 3. Save Audio (Train Split)
+    # Render Full Train
+    final_idx = torch.arange(len(train_tensor), dtype=torch.float32, device=config.device)
+    # Be careful of GPU memory on full render!
+    # If OOM, we should chunk render.
+    try:
+        final_audio = synth_output.getitem_torch(final_idx, sr, device=config.device).detach().cpu().numpy()
+    except RuntimeError:
+        print("Warning: Full render OOM. Rendering in chunks...")
+        audio_chunks = []
+        c = 0
+        while c < len(train_tensor):
+             e = min(c + sr*5, len(train_tensor))
+             idx = torch.arange(c, e, dtype=torch.float32, device=config.device)
+             chunk = synth_output.getitem_torch(idx, sr, device=config.device).detach().cpu().numpy()
+             audio_chunks.append(chunk)
+             c = e
+        final_audio = np.concatenate(audio_chunks)
+
+    wavfile.write(os.path.join(config.output_dir, f"{config.instrument_name}_trained.wav"), sr, (final_audio * 32767).astype(np.int16))
+    wavfile.write(os.path.join(config.output_dir, f"{config.instrument_name}_target.wav"), sr, (train_audio * 32767).astype(np.int16))
+    if len(val_audio) > 0:
+        wavfile.write(os.path.join(config.output_dir, f"{config.instrument_name}_val_target.wav"), sr, (val_audio * 32767).astype(np.int16))
+    if len(test_audio) > 0:
+        wavfile.write(os.path.join(config.output_dir, f"{config.instrument_name}_test_target.wav"), sr, (test_audio * 32767).astype(np.int16))
     print(f"Saved target audio to: {target_path}")
-
+    # 4. Save Params
     param_dict = {}
     for i, param in enumerate(all_params):
         param_dict[f"param_{i}"] = param.detach().cpu().item()
-
-    import json
-    param_path = os.path.join(config.output_dir, f"{config.instrument_name}_params.json")
-    with open(param_path, "w") as f:
+    with open(os.path.join(config.output_dir, f"{config.instrument_name}_params.json"), "w") as f:
         json.dump(param_dict, f, indent=2)
-    print(f"Saved parameters to: {param_path}")
 
     return history
 

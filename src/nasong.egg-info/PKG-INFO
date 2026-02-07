@@ -11,6 +11,9 @@ License-File: LICENSE
 Requires-Dist: numpy
 Requires-Dist: scipy
 Requires-Dist: matplotlib
+Requires-Dist: pandas
+Requires-Dist: PyYAML
+Requires-Dist: tabulate
 Dynamic: license-file
 
 # Nasong
@@ -169,6 +172,14 @@ nasong-evaluate --models-dir trained_models
 This generates:
 - `evaluation.json`: Detailed note detection metrics.
 - `comparison_<instrument>.png`: Side-by-side spectrograms.
+
+### 7. Leaderboards (`nasong-leaderboard`)
+
+Generate a global leaderboard comparing all trained models.
+
+```bash
+nasong-leaderboard --output results_analysis/leaderboards.md
+```
 
 ## Experiment Tracking & Inference
 

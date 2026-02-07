@@ -28,6 +28,7 @@ src/nasong/instruments/winds.py
 src/nasong/scripts/__init__.py
 src/nasong/scripts/evaluate.py
 src/nasong/scripts/experiment_manager.py
+src/nasong/scripts/leaderboard.py
 src/nasong/scripts/main.py
 src/nasong/scripts/monitor_cli.py
 src/nasong/scripts/train_cli.py

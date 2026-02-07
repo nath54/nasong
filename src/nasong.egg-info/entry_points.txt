@@ -1,6 +1,7 @@
 [console_scripts]
 nasong = nasong.scripts.main:main
 nasong-evaluate = nasong.scripts.evaluate:main
+nasong-leaderboard = nasong.scripts.leaderboard:main
 nasong-monitor = nasong.scripts.monitor_cli:main
 nasong-train = nasong.scripts.train_cli:main
 nasong-vis = nasong.scripts.vis_tool:main
