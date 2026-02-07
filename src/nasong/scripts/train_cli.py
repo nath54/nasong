@@ -9,7 +9,7 @@ import nasong.trainable.extract as learnable
 from nasong.trainable.train import (
     load_wav_segment,
     spectral_loss,
-    extract_note_parameters,
+    # extract_note_parameters,
 )
 from nasong.scripts.experiment_manager import ExperimentManager
 
