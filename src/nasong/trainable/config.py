@@ -1,14 +1,15 @@
-from dataclasses import dataclass, field, fields, is_dataclass
+from dataclasses import dataclass, field
 import dataclasses
-from typing import List, Dict, Any, Optional
+from typing import List
 import yaml
-import os
+
 
 @dataclass
 class AudioConfig:
     start_time: float = 0.0
     duration: float = 5.0
     sample_rate: int = 44100
+
 
 @dataclass
 class NoteDetectionConfig:
@@ -39,12 +40,12 @@ class NoteDetectionConfig:
     librosa_hop_length: int = 512
 
     # TorchCrepe Params
-    crepe_model: str = "medium"  # tiny, small, medium, large, full
+    crepe_model: str = "full"  # tiny, small, medium, large, full
     crepe_step_size: int = 10  # ms
     crepe_confidence_threshold: float = 0.8
 
     # AudioFlux Params
-    audioflux_type: str = "PEF" # PEF, YIN
+    audioflux_type: str = "PEF"  # PEF, YIN
     audioflux_min_freq: float = 50.0
     audioflux_max_freq: float = 2000.0
     audioflux_slide_length: int = 1024
@@ -57,6 +58,7 @@ class SpectralLossConfig:
     hop_length: int = 512
     high_freq_emphasis: float = 2.0
     fft_sizes: List[int] = field(default_factory=lambda: [2048, 1024, 512])
+
 
 @dataclass
 class TrainingConfig:
@@ -73,18 +75,18 @@ class TrainingConfig:
     spectral_loss: SpectralLossConfig = field(default_factory=SpectralLossConfig)
 
     # Splitting and Batching
-    train_duration: float = 10.0 # Duration to use for training
-    val_duration: float = 5.0 # Duration for validation
-    test_duration: float = 5.0 # Duration for testing
-    batch_duration: float = 5.0 # Max duration per training batch
-    batch_overlap: float = 1.0 # overlap in seconds
+    train_duration: float = 10.0  # Duration to use for training
+    val_duration: float = 5.0  # Duration for validation
+    test_duration: float = 5.0  # Duration for testing
+    batch_duration: float = 5.0  # Max duration per training batch
+    batch_overlap: float = 1.0  # overlap in seconds
     save_config: bool = True
     save_history: bool = True
 
     @staticmethod
-    def from_yaml(path: str) -> 'TrainingConfig':
+    def from_yaml(path: str) -> "TrainingConfig":
         """Load configuration from a YAML file."""
-        with open(path, 'r') as f:
+        with open(path, "r") as f:
             data = yaml.safe_load(f)
 
         # Recursive helper to load nested dataclasses
@@ -99,21 +101,21 @@ class TrainingConfig:
             for field_obj in dataclasses.fields(cls):
                 if dataclasses.is_dataclass(field_obj.type):
                     config_dict = filtered_data.get(field_obj.name, {})
-                    filtered_data[field_obj.name] = load_dataclass(field_obj.type, config_dict)
+                    filtered_data[field_obj.name] = load_dataclass(
+                        field_obj.type, config_dict
+                    )
 
             return cls(**filtered_data)
 
-        import dataclasses
         return load_dataclass(TrainingConfig, data)
 
     def to_yaml(self, path: str):
         """Save configuration to a YAML file."""
-        import dataclasses
 
         def as_dict(obj):
             if dataclasses.is_dataclass(obj):
                 return {k: as_dict(v) for k, v in dataclasses.asdict(obj).items()}
             return obj
 
-        with open(path, 'w') as f:
+        with open(path, "w") as f:
             yaml.dump(as_dict(self), f, default_flow_style=False)

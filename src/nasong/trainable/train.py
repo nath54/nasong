@@ -17,6 +17,7 @@ from nasong.trainable.note_detection.create import create_note_detector
 ### UTILITY FUNCTIONS ###
 #
 
+
 def load_wav_segment(
     wav_path: str,
     start_time: float = 0.0,
@@ -59,6 +60,7 @@ def load_wav_segment(
         segment = np.pad(segment, (0, duration_samples - len(segment)), mode="constant")
 
     return segment.astype(np.float32), sample_rate
+
 
 def spectral_loss(
     synthesized: Tensor,
@@ -105,6 +107,7 @@ def spectral_loss(
 
     return total_loss
 
+
 def multi_resolution_spectral_loss(
     synthesized: Tensor,
     target: Tensor,
@@ -125,6 +128,7 @@ def multi_resolution_spectral_loss(
         total_loss = total_loss + loss
 
     return total_loss / len(fft_sizes)
+
 
 def collect_trainable_parameters(
     value: lv.Value, params: List[Tensor] = None
@@ -164,30 +168,33 @@ def collect_trainable_parameters(
 ### TRAINING FUNCTION ###
 #
 
+
 def render_audio_in_chunks(
     synth_output: lv.Value,
     total_samples: int,
     sr: int,
     device: str,
     start_sample: int = 0,
-    chunk_size_sec: float = 5.0
+    chunk_size_sec: float = 5.0,
 ) -> NDArray[np.float32]:
     """Render audio in chunks to avoid OOM."""
     chunk_size_samples = int(chunk_size_sec * sr)
     audio_chunks = []
-    
+
     current = start_sample
     end_total = start_sample + total_samples
-    
+
     while current < end_total:
         end = min(current + chunk_size_samples, end_total)
         # indices relative to global time for the graph
         idx = torch.arange(current, end, dtype=torch.float32, device=device)
-        
-        chunk = synth_output.getitem_torch(idx, sr, device=device).detach().cpu().numpy()
+
+        chunk = (
+            synth_output.getitem_torch(idx, sr, device=device).detach().cpu().numpy()
+        )
         audio_chunks.append(chunk)
         current = end
-        
+
     return np.concatenate(audio_chunks)
 
 
@@ -203,12 +210,14 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
     if total_duration <= 0:
         total_duration = config.audio.duration
 
-    print(f"Loading total audio segment ({config.audio.start_time}s - {config.audio.start_time + total_duration}s)...")
+    print(
+        f"Loading total audio segment ({config.audio.start_time}s - {config.audio.start_time + total_duration}s)..."
+    )
     full_audio, sr = load_wav_segment(
         config.target_wav,
         config.audio.start_time,
         total_duration,
-        config.audio.sample_rate
+        config.audio.sample_rate,
     )
 
     # Split Audio
@@ -216,10 +225,18 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
     val_end_sample = train_end_sample + int(config.val_duration * sr)
 
     train_audio = full_audio[:train_end_sample]
-    val_audio = full_audio[train_end_sample:val_end_sample] if config.val_duration > 0 else np.array([])
-    test_audio = full_audio[val_end_sample:] if config.test_duration > 0 else np.array([])
+    val_audio = (
+        full_audio[train_end_sample:val_end_sample]
+        if config.val_duration > 0
+        else np.array([])
+    )
+    test_audio = (
+        full_audio[val_end_sample:] if config.test_duration > 0 else np.array([])
+    )
 
-    print(f"Split sizes: Train={len(train_audio)/sr:.2f}s, Val={len(val_audio)/sr:.2f}s, Test={len(test_audio)/sr:.2f}s")
+    print(
+        f"Split sizes: Train={len(train_audio) / sr:.2f}s, Val={len(val_audio) / sr:.2f}s, Test={len(test_audio) / sr:.2f}s"
+    )
 
     # Run Detection on FULL audio (better context)
     print(f"Detecting notes using {config.note_detection.method} on full audio...")
@@ -227,19 +244,21 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
     all_notes = detector.detect(full_audio, sr)
 
     print(f"Detected {len(all_notes)} notes.")
-    if not all_notes and config.note_detection.method == 'legacy':
-         # Fallback for legacy
-         all_notes = [{
-            "frequencies": [261.63],
-            "start_time": 0.0,
-            "duration": total_duration * 0.9
-        }]
+    if not all_notes and config.note_detection.method == "legacy":
+        # Fallback for legacy
+        all_notes = [
+            {
+                "frequencies": [261.63],
+                "start_time": 0.0,
+                "duration": total_duration * 0.9,
+            }
+        ]
 
     # Filter notes for TRAIN split
     train_notes = []
     for note in all_notes:
         # Keep notes that start within train window
-        if note['start_time'] < config.train_duration:
+        if note["start_time"] < config.train_duration:
             # Clip duration if it extends beyond
             # Actually, standard is allow decay. But here we just classify.
             train_notes.append(note)
@@ -250,12 +269,14 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
     # Convert filtered notes to ValueTrainableParameter
     trainable_notes = []
     for note in train_notes:
-         freq_params = [lv.ValueTrainableParameter(f) for f in note["frequencies"]]
-         trainable_notes.append({
-             "frequencies": freq_params,
-             "start_time": lv.ValueTrainableParameter(note["start_time"]),
-             "duration": lv.ValueTrainableParameter(note["duration"]),
-         })
+        freq_params = [lv.ValueTrainableParameter(f) for f in note["frequencies"]]
+        trainable_notes.append(
+            {
+                "frequencies": freq_params,
+                "start_time": lv.ValueTrainableParameter(note["start_time"]),
+                "duration": lv.ValueTrainableParameter(note["duration"]),
+            }
+        )
 
     # Build Instrument Graph (Training)
     print(f"Building {config.instrument_name} synthesis graph (Training)...")
@@ -269,25 +290,36 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
     # Building ONE big graph for training set to manage parameters
     # Memory optimization: The graph structure itself is cheap. Rendering big buffers is expensive.
 
-    time_val = lv.BasicScaling(value=lv.Identity(), mult_scale=lv.Constant(1/sr), sum_scale=lv.Constant(0))
+    time_val = lv.BasicScaling(
+        value=lv.Identity(), mult_scale=lv.Constant(1 / sr), sum_scale=lv.Constant(0)
+    )
 
     note_vals = []
     for tn in trainable_notes:
         if config.instrument_name in ["kick", "snare", "hihat_closed", "hihat_open"]:
-            nv = instrument_blueprint(time=time_val, start_time=tn["start_time"].value.item())
+            nv = instrument_blueprint(
+                time=time_val, start_time=tn["start_time"].value.item()
+            )
             note_vals.append(nv)
         else:
             chord_voices = []
             for fp in tn["frequencies"]:
-                 # IMPORTANT: To share parameters, we pass the parameter object!
-                 voice = instrument_blueprint(
-                     time=time_val, frequency=fp,
-                     start_time=tn["start_time"].value.item(),
-                     duration=tn["duration"].value.item()
-                 )
-                 chord_voices.append(voice)
-            if len(chord_voices) == 1: note_vals.append(chord_voices[0])
-            else: note_vals.append(lv.Product(lv.Sum(chord_voices), lv.Constant(1.0/len(chord_voices))))
+                # IMPORTANT: To share parameters, we pass the parameter object!
+                voice = instrument_blueprint(
+                    time=time_val,
+                    frequency=fp,
+                    start_time=tn["start_time"].value.item(),
+                    duration=tn["duration"].value.item(),
+                )
+                chord_voices.append(voice)
+            if len(chord_voices) == 1:
+                note_vals.append(chord_voices[0])
+            else:
+                note_vals.append(
+                    lv.Product(
+                        lv.Sum(chord_voices), lv.Constant(1.0 / len(chord_voices))
+                    )
+                )
 
     if not note_vals:
         print("Error: No training notes.")
@@ -300,12 +332,14 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
     all_params = collect_trainable_parameters(synth_output)
     # Add note params explicitly
     for tn in trainable_notes:
-        for fp in tn["frequencies"]: all_params.append(fp.value)
+        for fp in tn["frequencies"]:
+            all_params.append(fp.value)
         all_params.append(tn["start_time"].value)
         all_params.append(tn["duration"].value)
 
     all_params = list(set(all_params))
-    for p in all_params: p.requires_grad = True
+    for p in all_params:
+        p.requires_grad = True
     print(f"Total trainable parameters: {len(all_params)}")
 
     optimizer = optim.Adam(all_params, lr=config.learning_rate)
@@ -315,11 +349,14 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
     batch_size_samples = int(config.batch_duration * sr)
     overlap_samples = int(config.batch_overlap * sr)
     stride = batch_size_samples - overlap_samples
-    if stride <= 0: stride = batch_size_samples // 2
+    if stride <= 0:
+        stride = batch_size_samples // 2
 
     train_tensor = torch.from_numpy(train_audio).to(device=config.device)
 
-    print(f"Starting training for {config.epochs} epochs (Batch: {config.batch_duration}s, Overlap: {config.batch_overlap}s)...")
+    print(
+        f"Starting training for {config.epochs} epochs (Batch: {config.batch_duration}s, Overlap: {config.batch_overlap}s)..."
+    )
 
     for epoch in range(config.epochs):
         optimizer.zero_grad()
@@ -330,7 +367,8 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
         current_sample = 0
         while current_sample < len(train_tensor):
             end_sample = min(current_sample + batch_size_samples, len(train_tensor))
-            if end_sample - current_sample < 1024: break # Skip tiny last batch
+            if end_sample - current_sample < 1024:
+                break  # Skip tiny last batch
 
             # Slice Target
             target_batch = train_tensor[current_sample:end_sample]
@@ -338,16 +376,22 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
             # Index buffer for synthesis (absolute time)
             # nasong uses float index? No, getitem_torch uses indices.
             # We enable the graph to render specifically for these indices.
-            idx_buffer = torch.arange(current_sample, end_sample, dtype=torch.float32, device=config.device)
+            idx_buffer = torch.arange(
+                current_sample, end_sample, dtype=torch.float32, device=config.device
+            )
 
             # Render
             # This efficiently only computes for this time window!
-            synthesized = synth_output.getitem_torch(idx_buffer, sr, device=config.device)
+            synthesized = synth_output.getitem_torch(
+                idx_buffer, sr, device=config.device
+            )
 
             loss = multi_resolution_spectral_loss(
-                synthesized, target_batch, sr,
+                synthesized,
+                target_batch,
+                sr,
                 config.spectral_loss.fft_sizes,
-                config.spectral_loss.high_freq_emphasis
+                config.spectral_loss.high_freq_emphasis,
             )
 
             loss.backward()
@@ -377,35 +421,53 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
     # 2. History
     if config.save_history:
         import json
+
         with open(os.path.join(config.output_dir, "history.json"), "w") as f:
             json.dump(history, f, indent=2)
 
     # 3. Save Audio (All Splits)
     print("Rendering audio for all splits...")
-    
+
     # helper to save split
     def save_split_audio(audio_data, suffix, target_audio=None):
-        if len(audio_data) == 0: return
-        
+        if len(audio_data) == 0:
+            return
+
         path = os.path.join(config.output_dir, f"{config.instrument_name}_{suffix}.wav")
         wavfile.write(path, sr, (audio_data * 32767).astype(np.int16))
-        
+
         if target_audio is not None and len(target_audio) > 0:
-            target_path = os.path.join(config.output_dir, f"{config.instrument_name}_{suffix}_target.wav")
+            target_path = os.path.join(
+                config.output_dir, f"{config.instrument_name}_{suffix}_target.wav"
+            )
             wavfile.write(target_path, sr, (target_audio * 32767).astype(np.int16))
 
     # Render TRAIN
-    train_pred = render_audio_in_chunks(synth_output, len(train_audio), sr, config.device, start_sample=0)
+    train_pred = render_audio_in_chunks(
+        synth_output, len(train_audio), sr, config.device, start_sample=0
+    )
     save_split_audio(train_pred, "trained", train_audio)
 
     # Render VAL
     if len(val_audio) > 0:
-        val_pred = render_audio_in_chunks(synth_output, len(val_audio), sr, config.device, start_sample=train_end_sample)
+        val_pred = render_audio_in_chunks(
+            synth_output,
+            len(val_audio),
+            sr,
+            config.device,
+            start_sample=train_end_sample,
+        )
         save_split_audio(val_pred, "val_trained", val_audio)
 
     # Render TEST
     if len(test_audio) > 0:
-        test_pred = render_audio_in_chunks(synth_output, len(test_audio), sr, config.device, start_sample=val_end_sample)
+        test_pred = render_audio_in_chunks(
+            synth_output,
+            len(test_audio),
+            sr,
+            config.device,
+            start_sample=val_end_sample,
+        )
         save_split_audio(test_pred, "test_trained", test_audio)
 
     print(f"Saved audio artifacts to: {config.output_dir}")
@@ -413,7 +475,9 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
     param_dict = {}
     for i, param in enumerate(all_params):
         param_dict[f"param_{i}"] = param.detach().cpu().item()
-    with open(os.path.join(config.output_dir, f"{config.instrument_name}_params.json"), "w") as f:
+    with open(
+        os.path.join(config.output_dir, f"{config.instrument_name}_params.json"), "w"
+    ) as f:
         json.dump(param_dict, f, indent=2)
 
     return history
@@ -424,14 +488,19 @@ def main():
         description="Train Nasong instruments with configurable note detection."
     )
 
-    parser.add_argument("wav_file", nargs='?', help="Path to input WAV file")
+    parser.add_argument("wav_file", nargs="?", help="Path to input WAV file")
     parser.add_argument("--config", "-c", type=str, help="Path to YAML config file")
 
     # Overrides
     parser.add_argument("--instrument", "-i", type=str, help="Instrument name")
     parser.add_argument("--epochs", "-e", type=int, help="Number of epochs")
     parser.add_argument("--lr", type=float, help="Learning rate")
-    parser.add_argument("--method", "-m", type=str, help="Note detection method (legacy, basic_pitch_onnx, librosa, torchcrepe)")
+    parser.add_argument(
+        "--method",
+        "-m",
+        type=str,
+        help="Note detection method (legacy, basic_pitch_onnx, librosa, torchcrepe)",
+    )
     parser.add_argument("--output-dir", "-o", type=str, help="Output directory")
     parser.add_argument("--device", type=str, help="Device (cpu/cuda)")
 
@@ -443,13 +512,20 @@ def main():
         config = TrainingConfig.from_yaml(args.config)
 
         # Apply overrides
-        if args.instrument: config.instrument_name = args.instrument
-        if args.wav_file: config.target_wav = args.wav_file
-        if args.epochs: config.epochs = args.epochs
-        if args.lr: config.learning_rate = args.lr
-        if args.method: config.note_detection.method = args.method
-        if args.output_dir: config.output_dir = args.output_dir
-        if args.device: config.device = args.device
+        if args.instrument:
+            config.instrument_name = args.instrument
+        if args.wav_file:
+            config.target_wav = args.wav_file
+        if args.epochs:
+            config.epochs = args.epochs
+        if args.lr:
+            config.learning_rate = args.lr
+        if args.method:
+            config.note_detection.method = args.method
+        if args.output_dir:
+            config.output_dir = args.output_dir
+        if args.device:
+            config.device = args.device
 
     else:
         if not args.wav_file:
@@ -464,15 +540,19 @@ def main():
             epochs=args.epochs if args.epochs else 100,
             learning_rate=args.lr if args.lr else 0.01,
             output_dir=args.output_dir if args.output_dir else "trained_models",
-            device=args.device if args.device else "cpu"
+            device=args.device if args.device else "cpu",
         )
         if args.method:
             config.note_detection.method = args.method
 
+        # Fallback to CPU if CUDA is not available
+        if config.device == "cuda" and not torch.cuda.is_available():
+            config.device = "cpu"
+
     # Validate
     if not os.path.exists(config.target_wav):
-         print(f"Error: Target WAV file not found: {config.target_wav}")
-         return
+        print(f"Error: Target WAV file not found: {config.target_wav}")
+        return
 
     # Run
     train_instrument(config)
