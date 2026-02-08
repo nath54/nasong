@@ -1,7 +1,9 @@
 import nasong.core.all_values as lv
 
 
-def TrainableKick(time: lv.Value, start_time: float) -> lv.Value:
+def TrainableKick(
+    time: lv.Value, start_time: float, name_prefix: str = "kick"
+) -> lv.Value:
     """
     Trainable kick drum.
 
@@ -13,12 +15,14 @@ def TrainableKick(time: lv.Value, start_time: float) -> lv.Value:
     """
 
     # Trainable parameters
-    base_freq = lv.ValueTrainableParameter(60.0)  # Hz
-    freq_sweep_amount = lv.ValueTrainableParameter(40.0)  # Hz
-    decay_rate = lv.ValueTrainableParameter(15.0)
-    noise_amount = lv.ValueTrainableParameter(0.1)
-    click_amount = lv.ValueTrainableParameter(0.3)
-    amplitude = lv.ValueTrainableParameter(0.8)
+    base_freq = lv.ValueTrainableParameter(60.0, name=f"{name_prefix}_base_freq")  # Hz
+    freq_sweep_amount = lv.ValueTrainableParameter(
+        40.0, name=f"{name_prefix}_sweep_amt"
+    )  # Hz
+    decay_rate = lv.ValueTrainableParameter(15.0, name=f"{name_prefix}_decay")
+    noise_amount = lv.ValueTrainableParameter(0.1, name=f"{name_prefix}_noise")
+    click_amount = lv.ValueTrainableParameter(0.3, name=f"{name_prefix}_click")
+    amplitude = lv.ValueTrainableParameter(0.8, name=f"{name_prefix}_amp")
 
     # Envelope for overall amplitude
     env = lv.ExponentialDecay(
@@ -57,16 +61,18 @@ def TrainableKick(time: lv.Value, start_time: float) -> lv.Value:
     return lv.Product(mixed, env, amplitude)
 
 
-def TrainableSnare(time: lv.Value, start_time: float) -> lv.Value:
+def TrainableSnare(
+    time: lv.Value, start_time: float, name_prefix: str = "snare"
+) -> lv.Value:
     """
     Trainable snare drum.
     """
 
     # Trainable parameters
-    tone_freq = lv.ValueTrainableParameter(200.0)
-    decay_rate = lv.ValueTrainableParameter(20.0)
-    noise_amount = lv.ValueTrainableParameter(0.6)
-    amplitude = lv.ValueTrainableParameter(0.6)
+    tone_freq = lv.ValueTrainableParameter(200.0, name=f"{name_prefix}_tone_freq")
+    decay_rate = lv.ValueTrainableParameter(20.0, name=f"{name_prefix}_decay")
+    noise_amount = lv.ValueTrainableParameter(0.6, name=f"{name_prefix}_noise")
+    amplitude = lv.ValueTrainableParameter(0.6, name=f"{name_prefix}_amp")
 
     # Envelope
     env = lv.ExponentialDecay(
@@ -90,16 +96,18 @@ def TrainableSnare(time: lv.Value, start_time: float) -> lv.Value:
 
 
 def TrainableHiHat(
-    time: lv.Value, start_time: float, is_open: bool = False
+    time: lv.Value, start_time: float, is_open: bool = False, name_prefix: str = "hihat"
 ) -> lv.Value:
     """
     Trainable hi-hat (closed or open).
     """
 
     # Trainable parameters
-    base_decay = lv.ValueTrainableParameter(30.0 if not is_open else 10.0)
-    amplitude = lv.ValueTrainableParameter(0.4)
-    brightness = lv.ValueTrainableParameter(1.0)
+    base_decay = lv.ValueTrainableParameter(
+        30.0 if not is_open else 10.0, name=f"{name_prefix}_decay"
+    )
+    amplitude = lv.ValueTrainableParameter(0.4, name=f"{name_prefix}_amp")
+    brightness = lv.ValueTrainableParameter(1.0, name=f"{name_prefix}_bright")
 
     # Envelope
     env = lv.ExponentialDecay(

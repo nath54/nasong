@@ -2,7 +2,11 @@ import nasong.core.all_values as lv
 
 
 def TrainableBass(
-    time: lv.Value, frequency: lv.Value, start_time: float, duration: float
+    time: lv.Value,
+    frequency: lv.Value,
+    start_time: float,
+    duration: float,
+    name_prefix: str = "bass",
 ) -> lv.Value:
     """
     Trainable bass synthesizer.
@@ -11,13 +15,15 @@ def TrainableBass(
     """
 
     # Trainable parameters
-    amplitude = lv.ValueTrainableParameter(0.6)
-    attack_time = lv.ValueTrainableParameter(0.005)
-    decay_time = lv.ValueTrainableParameter(0.2)
-    sustain_level = lv.ValueTrainableParameter(0.6)
-    release_time = lv.ValueTrainableParameter(0.1)
-    sub_amount = lv.ValueTrainableParameter(0.3)  # Sub-octave amount
-    distortion_amount = lv.ValueTrainableParameter(1.5)
+    amplitude = lv.ValueTrainableParameter(0.6, name=f"{name_prefix}_amp")
+    attack_time = lv.ValueTrainableParameter(0.005, name=f"{name_prefix}_attack")
+    decay_time = lv.ValueTrainableParameter(0.2, name=f"{name_prefix}_decay")
+    sustain_level = lv.ValueTrainableParameter(0.6, name=f"{name_prefix}_sustain")
+    release_time = lv.ValueTrainableParameter(0.1, name=f"{name_prefix}_release")
+    sub_amount = lv.ValueTrainableParameter(
+        0.3, name=f"{name_prefix}_sub"
+    )  # Sub-octave amount
+    distortion_amount = lv.ValueTrainableParameter(1.5, name=f"{name_prefix}_dist")
 
     # Punchy envelope
     env = lv.ExponentialADSR(

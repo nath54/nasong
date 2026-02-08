@@ -208,13 +208,25 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
 
     # Initialize Trainable Parameters
     trainable_notes = []
-    for note in train_notes:
-        freq_params = [lv.ValueTrainableParameter(f) for f in note["frequencies"]]
+    for i, note in enumerate(train_notes):
+        note_prefix = f"note_{i}"
+
+        freq_params = []
+        for j, f in enumerate(note["frequencies"]):
+            freq_params.append(
+                lv.ValueTrainableParameter(f, name=f"{note_prefix}_freq_{j}")
+            )
+
         trainable_notes.append(
             {
                 "frequencies": freq_params,
-                "start_time": lv.ValueTrainableParameter(note["start_time"]),
-                "duration": lv.ValueTrainableParameter(note["duration"]),
+                "start_time": lv.ValueTrainableParameter(
+                    note["start_time"], name=f"{note_prefix}_start"
+                ),
+                "duration": lv.ValueTrainableParameter(
+                    note["duration"], name=f"{note_prefix}_dur"
+                ),
+                "prefix": note_prefix,
             }
         )
 
@@ -228,19 +240,48 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
 
     note_vals = []
     for tn in trainable_notes:
+        prefix = tn["prefix"]
+
         if config.instrument_name in ["kick", "snare", "hihat_closed", "hihat_open"]:
-            nv = instrument_blueprint(
-                time=time_val, start_time=float(tn["start_time"].value)
-            )
+            # Percussion instruments
+            # Note: "kick", "snare" usually take (time, start_time)
+            # "hihat_closed"/"hihat_open" might map to TrainableHiHat with is_open flag
+
+            # We need to check signature or handle specific mapping if get_trainable_instrument
+            # returns the raw function.
+            # Assuming get_trainable_instrument returns the function directly.
+
+            if config.instrument_name == "hihat_open":
+                nv = instrument_blueprint(
+                    time=time_val,
+                    start_time=float(tn["start_time"].value),
+                    is_open=True,
+                    name_prefix=prefix,
+                )
+            elif config.instrument_name == "hihat_closed":
+                nv = instrument_blueprint(
+                    time=time_val,
+                    start_time=float(tn["start_time"].value),
+                    is_open=False,
+                    name_prefix=prefix,
+                )
+            else:
+                nv = instrument_blueprint(
+                    time=time_val,
+                    start_time=float(tn["start_time"].value),
+                    name_prefix=prefix,
+                )
             note_vals.append(nv)
         else:
             chord_voices = []
-            for fp in tn["frequencies"]:
+            for j, fp in enumerate(tn["frequencies"]):
+                voice_prefix = f"{prefix}_v{j}"
                 voice = instrument_blueprint(
                     time=time_val,
                     frequency=fp,
                     start_time=float(tn["start_time"].value),
                     duration=float(tn["duration"].value),
+                    name_prefix=voice_prefix,
                 )
                 chord_voices.append(voice)
             if len(chord_voices) == 1:

@@ -2,7 +2,11 @@ import nasong.core.all_values as lv
 
 
 def TrainablePlucked(
-    time: lv.Value, frequency: lv.Value, start_time: float, duration: float
+    time: lv.Value,
+    frequency: lv.Value,
+    start_time: float,
+    duration: float,
+    name_prefix: str = "plucked",
 ) -> lv.Value:
     """
     Trainable plucked string instrument (guitar, harp-like).
@@ -11,10 +15,12 @@ def TrainablePlucked(
     """
 
     # Trainable parameters
-    amplitude = lv.ValueTrainableParameter(0.4)
-    pluck_decay = lv.ValueTrainableParameter(8.0)
-    _brightness = lv.ValueTrainableParameter(0.7)  # Controls harmonic falloff
-    attack_time = lv.ValueTrainableParameter(0.001)
+    amplitude = lv.ValueTrainableParameter(0.4, name=f"{name_prefix}_amp")
+    pluck_decay = lv.ValueTrainableParameter(8.0, name=f"{name_prefix}_decay")
+    _brightness = lv.ValueTrainableParameter(
+        0.7, name=f"{name_prefix}_bright"
+    )  # Controls harmonic falloff
+    attack_time = lv.ValueTrainableParameter(0.001, name=f"{name_prefix}_attack")
 
     # Very fast attack (pluck)
     env = lv.ExponentialADSR(
@@ -44,19 +50,23 @@ def TrainablePlucked(
 
 
 def TrainablePiano(
-    time: lv.Value, frequency: lv.Value, start_time: float, duration: float
+    time: lv.Value,
+    frequency: lv.Value,
+    start_time: float,
+    duration: float,
+    name_prefix: str = "piano",
 ) -> lv.Value:
     """
     Simplified trainable piano-like instrument.
     """
 
     # Trainable parameters
-    amplitude = lv.ValueTrainableParameter(0.5)
-    attack_time = lv.ValueTrainableParameter(0.002)
-    decay_time = lv.ValueTrainableParameter(0.3)
-    sustain_level = lv.ValueTrainableParameter(0.4)
-    release_time = lv.ValueTrainableParameter(0.5)
-    brightness = lv.ValueTrainableParameter(0.8)
+    amplitude = lv.ValueTrainableParameter(0.5, name=f"{name_prefix}_amp")
+    attack_time = lv.ValueTrainableParameter(0.002, name=f"{name_prefix}_attack")
+    decay_time = lv.ValueTrainableParameter(0.3, name=f"{name_prefix}_decay")
+    sustain_level = lv.ValueTrainableParameter(0.4, name=f"{name_prefix}_sustain")
+    release_time = lv.ValueTrainableParameter(0.5, name=f"{name_prefix}_release")
+    brightness = lv.ValueTrainableParameter(0.8, name=f"{name_prefix}_bright")
 
     # Fast attack, medium decay
     env = lv.ExponentialADSR(
@@ -93,7 +103,11 @@ def TrainablePiano(
 
 
 def TrainableBowed(
-    time: lv.Value, frequency: lv.Value, start_time: float, duration: float
+    time: lv.Value,
+    frequency: lv.Value,
+    start_time: float,
+    duration: float,
+    name_prefix: str = "bowed",
 ) -> lv.Value:
     """
     Trainable bowed string (violin/cello-like).
@@ -102,13 +116,15 @@ def TrainableBowed(
     """
 
     # Trainable parameters
-    amplitude = lv.ValueTrainableParameter(0.4)
-    attack_time = lv.ValueTrainableParameter(0.1)
-    decay_time = lv.ValueTrainableParameter(0.2)
-    sustain_level = lv.ValueTrainableParameter(0.9)
-    release_time = lv.ValueTrainableParameter(0.3)
-    vibrato_rate = lv.ValueTrainableParameter(5.0)  # Hz
-    vibrato_depth = lv.ValueTrainableParameter(0.02)  # Fraction of frequency
+    amplitude = lv.ValueTrainableParameter(0.4, name=f"{name_prefix}_amp")
+    attack_time = lv.ValueTrainableParameter(0.1, name=f"{name_prefix}_attack")
+    decay_time = lv.ValueTrainableParameter(0.2, name=f"{name_prefix}_decay")
+    sustain_level = lv.ValueTrainableParameter(0.9, name=f"{name_prefix}_sustain")
+    release_time = lv.ValueTrainableParameter(0.3, name=f"{name_prefix}_release")
+    vibrato_rate = lv.ValueTrainableParameter(5.0, name=f"{name_prefix}_vib_rate")  # Hz
+    vibrato_depth = lv.ValueTrainableParameter(
+        0.02, name=f"{name_prefix}_vib_depth"
+    )  # Fraction of frequency
 
     # Slow attack envelope
     env = lv.ExponentialADSR(

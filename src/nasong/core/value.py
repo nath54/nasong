@@ -287,6 +287,12 @@ class ValueTrainableParameter(Value):
         #
         val = self.value
 
+        # Check if we need to capture this parameter in the current context
+        ctx = ParameterContext.get_current()
+        if ctx and ctx.capture:
+            if self not in ctx.captured_params:
+                ctx.captured_params.append(self)
+
         # Robust scalar extraction for torch
         if HAS_TORCH and isinstance(val, torch.Tensor):
             val = val.item()
