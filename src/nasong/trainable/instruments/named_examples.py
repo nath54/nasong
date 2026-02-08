@@ -36,10 +36,10 @@ def TrainableNamedExamples(
         time=time,
         note_start=start_time,
         note_duration=duration,
-        attack_time=attack.value.item(),
-        decay_time=decay.value.item(),
-        sustain_level=sustain.value.item(),
-        release_time=release.value.item(),
+        attack_time=float(attack.value),
+        decay_time=float(decay.value),
+        sustain_level=float(sustain.value),
+        release_time=float(release.value),
     )
 
     return lv.Product(carrier, env)

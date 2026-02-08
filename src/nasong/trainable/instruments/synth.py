@@ -32,10 +32,10 @@ def TrainableSawtoothSynth(
         time=time,
         note_start=start_time,
         note_duration=duration,
-        attack_time=attack_time.value.item(),
-        decay_time=decay_time.value.item(),
-        sustain_level=sustain_level.value.item(),
-        release_time=release_time.value.item(),
+        attack_time=float(attack_time.value),
+        decay_time=float(decay_time.value),
+        sustain_level=float(sustain_level.value),
+        release_time=float(release_time.value),
         attack_curve=0.5,
         decay_curve=2.0,
         release_curve=2.0,
@@ -70,10 +70,10 @@ def TrainableSquareSynth(
         time=time,
         note_start=start_time,
         note_duration=duration,
-        attack_time=attack_time.value.item(),
-        decay_time=decay_time.value.item(),
-        sustain_level=sustain_level.value.item(),
-        release_time=release_time.value.item(),
+        attack_time=float(attack_time.value),
+        decay_time=float(decay_time.value),
+        sustain_level=float(sustain_level.value),
+        release_time=float(release_time.value),
     )
 
     return lv.Product(osc, env)
@@ -105,10 +105,10 @@ def TrainableSineSynth(
         time=time,
         note_start=start_time,
         note_duration=duration,
-        attack_time=attack_time.value.item(),
-        decay_time=decay_time.value.item(),
-        sustain_level=sustain_level.value.item(),
-        release_time=release_time.value.item(),
+        attack_time=float(attack_time.value),
+        decay_time=float(decay_time.value),
+        sustain_level=float(sustain_level.value),
+        release_time=float(release_time.value),
     )
 
     return lv.Product(osc, env)

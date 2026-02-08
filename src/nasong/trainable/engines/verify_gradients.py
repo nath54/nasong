@@ -6,7 +6,6 @@ from nasong.trainable.engines.numpy_engine import NumpyEngine
 from nasong.core.values.basic.value_constant import Constant
 from nasong.core.values.basic.value_identity import Identity
 from nasong.core.values.single_itms_ops.value_basic_scaling import BasicScaling
-from nasong.core.values.complex.value_sin import Sin
 from nasong.core.values.mult_itms_ops.value_sum import Sum
 
 
@@ -19,10 +18,6 @@ def check_model(name, model_fn, target_audio, sample_rate, engine):
 
     try:
         model, params = model_fn()
-        for p in params:
-            print(
-                f"  [DEBUG] Fresh Param {p.name}: value={p.value}, type={type(p.value)}"
-            )
 
         # helper to compute loss for a given set of param values
         def get_loss(p_vals):
@@ -90,7 +85,7 @@ def check_model(name, model_fn, target_audio, sample_rate, engine):
         try:
             for p in params:
                 print(f"  Param {p.name}: value={p.value}, type={type(p.value)}")
-        except:
+        except Exception as _e:
             pass
         return False
 
@@ -116,7 +111,7 @@ def verify():
     ]
 
     time_indices = Identity()
-    time_seconds = BasicScaling(
+    _time_seconds = BasicScaling(
         time_indices, mult_scale=Constant(1.0 / sample_rate), sum_scale=Constant(0.0)
     )
 
@@ -136,13 +131,6 @@ def verify():
         ),
     ]
 
-    print(f"DEBUG: Global float is {float}")
-    import nasong.core.value
-
-    print(
-        f"DEBUG: VTP class in core.value is {nasong.core.value.ValueTrainableParameter}"
-    )
-
     all_engines_pass = True
     for engine_name, engine_fn in engine_configs:
         print(f"\n===== VERIFYING ENGINE: {engine_name} =====")
@@ -153,9 +141,6 @@ def verify():
             def wrapped_model_fn():
                 with ParameterContext(capture=True) as ctx:
                     m, _ = model_fn()
-                    print(
-                        f"  [DEBUG] Model created. Params: {[p.name for p in ctx.captured_params]}"
-                    )
                     return m, ctx.captured_params
 
             if not check_model(

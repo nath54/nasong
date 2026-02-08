@@ -1,5 +1,5 @@
 instrument_name: "plucked"
-target_wav: "example_songs_for_training/guitar_cover_Raphaels_Final_Act_Classical.wav"
+target_wav: "example_songs_for_training/guitar_cover_raphaels_final_act_classical.wav"
 output_dir: "trained_models/basic_pitch_plucked_raphael"
 device: "cuda"
 epochs: 200

@@ -1,5 +1,5 @@
 instrument_name: "piano"
-target_wav: "example_songs_for_training/piano_Für_Elise.wav"
+target_wav: "example_songs_for_training/piano_fur_elise.wav"
 output_dir: "trained_models/librosa_piano_fur_elise"
 device: "cuda"
 epochs: 100

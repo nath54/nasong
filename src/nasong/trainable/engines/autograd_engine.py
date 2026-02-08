@@ -48,7 +48,6 @@ class AutogradEngine(BaseTrainingEngine):
             )
             and "autograd_engine" not in m
         ]
-        print(f"DEBUG: to_patch_names={to_patch_names}")
 
         orig_nps = {}
         for module_name in to_patch_names:
@@ -123,14 +122,7 @@ class AutogradEngine(BaseTrainingEngine):
                 p.value = param_values[i]
 
             prediction = self.blueprint.getitem_np(self.indices, self.sample_rate)
-            print(
-                f"DEBUG: prediction type={type(prediction)}, shape={getattr(prediction, 'shape', 'N/A')}"
-            )
-            print(
-                f"DEBUG: target type={type(self.target_audio)}, shape={self.target_audio.shape}"
-            )
             diff = prediction - self.target_audio
-            print(f"DEBUG: diff type={type(diff)}, shape={diff.shape}")
             return anp.mean(anp.square(diff))
 
         with self._patch_context():

@@ -278,7 +278,6 @@ class ValueTrainableParameter(Value):
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
 
-        print(f"DEBUG: VTP getitem_np - np is {getattr(np, '__name__', 'unknown')}")
         #
         val = self.value
 

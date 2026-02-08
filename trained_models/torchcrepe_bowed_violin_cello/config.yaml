@@ -49,7 +49,7 @@ spectral_loss:
   high_freq_emphasis: 2.5
   hop_length: 512
   n_fft: 2048
-target_wav: example_songs_for_training/violin_and_cello_duo_in_B-Flat_Major_BI._244_II._Andantino.wav
+target_wav: example_songs_for_training/violin_and_cello_duo_in_b_flat_major_andantino.wav
 test_duration: 5.0
 train_duration: 10.0
 val_duration: 5.0

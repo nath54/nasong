@@ -21,7 +21,7 @@ def TrainablePlucked(
         time=time,
         note_start=start_time,
         note_duration=duration,
-        attack_time=attack_time.value.item(),
+        attack_time=float(attack_time.value),
         decay_time=0.1,
         sustain_level=0.3,
         release_time=0.1,
@@ -32,7 +32,7 @@ def TrainablePlucked(
 
     # Additional exponential decay for pluck character
     pluck_env = lv.ExponentialDecay(
-        time=time, start_time=start_time, decay_rate=pluck_decay.value.item()
+        time=time, start_time=start_time, decay_rate=float(pluck_decay.value)
     )
 
     # Harmonic-rich oscillator
@@ -63,10 +63,10 @@ def TrainablePiano(
         time=time,
         note_start=start_time,
         note_duration=duration,
-        attack_time=attack_time.value.item(),
-        decay_time=decay_time.value.item(),
-        sustain_level=sustain_level.value.item(),
-        release_time=release_time.value.item(),
+        attack_time=float(attack_time.value),
+        decay_time=float(decay_time.value),
+        sustain_level=float(sustain_level.value),
+        release_time=float(release_time.value),
         attack_curve=0.3,
         decay_curve=2.0,
         release_curve=2.5,
@@ -115,10 +115,10 @@ def TrainableBowed(
         time=time,
         note_start=start_time,
         note_duration=duration,
-        attack_time=attack_time.value.item(),
-        decay_time=decay_time.value.item(),
-        sustain_level=sustain_level.value.item(),
-        release_time=release_time.value.item(),
+        attack_time=float(attack_time.value),
+        decay_time=float(decay_time.value),
+        sustain_level=float(sustain_level.value),
+        release_time=float(release_time.value),
         attack_curve=2.0,
         decay_curve=1.5,
         release_curve=2.0,

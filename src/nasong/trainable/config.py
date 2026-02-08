@@ -66,6 +66,7 @@ class TrainingConfig:
     target_wav: str
     output_dir: str = "trained_models"
     device: str = "cpu"
+    engine_type: str = "autograd"  # 'autograd', 'numpy', 'torch'
     epochs: int = 100
     learning_rate: float = 0.01
     save_interval: int = 10

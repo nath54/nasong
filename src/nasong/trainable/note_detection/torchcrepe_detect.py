@@ -1,6 +1,14 @@
 from typing import List, Dict, Any
 import numpy as np
-import torch
+
+try:
+    import torch
+
+    HAS_TORCH = True
+except (ImportError, OSError):
+    HAS_TORCH = False
+    torch = None
+
 from .base import NoteDetector
 
 try:
@@ -8,29 +16,39 @@ try:
 except ImportError:
     torchcrepe = None
 
+
 class TorchCrepeDetector(NoteDetector):
     """
     Note detection using TorchCrepe (viterbi decoding + segmentation).
     High accuracy for monophonic audio.
     """
 
-    def detect(self, audio_segment: np.ndarray, sample_rate: int) -> List[Dict[str, Any]]:
-        if torchcrepe is None:
-            raise ImportError("TorchCrepe is not installed. Please install 'torchcrepe'.")
+    def detect(
+        self, audio_segment: np.ndarray, sample_rate: int
+    ) -> List[Dict[str, Any]]:
+        if not HAS_TORCH:
+            raise ImportError("PyTorch is not installed. Cannot use TorchCrepe.")
 
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        if torchcrepe is None:
+            raise ImportError(
+                "TorchCrepe is not installed. Please install 'torchcrepe'."
+            )
+
+        device = "cuda" if torch.cuda.is_available() else "cpu"
 
         # Prepare audio tensor
         # Crepe expects shape (batch, time)
-        audio_tensor = torch.tensor(audio_segment, dtype=torch.float32, device=device).unsqueeze(0)
+        audio_tensor = torch.tensor(
+            audio_segment, dtype=torch.float32, device=device
+        ).unsqueeze(0)
 
-        step_size_ms = self.config.get('crepe_step_size', 10)
+        step_size_ms = self.config.get("crepe_step_size", 10)
         hop_length = int(step_size_ms * sample_rate / 1000)
 
         fmin = 50.0
         fmax = 2000.0
-        model_size = self.config.get('crepe_model', 'medium')
-        conf_thresh = self.config.get('crepe_confidence_threshold', 0.8)
+        model_size = self.config.get("crepe_model", "medium")
+        conf_thresh = self.config.get("crepe_confidence_threshold", 0.8)
 
         # Predict
         try:
@@ -45,7 +63,7 @@ class TorchCrepeDetector(NoteDetector):
                 decoder=torchcrepe.decode.viterbi,
                 return_periodicity=True,
                 device=device,
-                batch_size=2048
+                batch_size=2048,
             )
         except Exception as e:
             raise RuntimeError(f"TorchCrepe prediction failed: {e}")
@@ -74,14 +92,28 @@ class TorchCrepeDetector(NoteDetector):
             else:
                 if current_start_idx is not None:
                     # End of note
-                    self._add_note(notes, current_start_idx, i, current_pitches, current_confs, hop_s)
+                    self._add_note(
+                        notes,
+                        current_start_idx,
+                        i,
+                        current_pitches,
+                        current_confs,
+                        hop_s,
+                    )
                     current_start_idx = None
                     current_pitches = []
                     current_confs = []
 
         # Check last note
         if current_start_idx is not None:
-             self._add_note(notes, current_start_idx, len(is_voiced), current_pitches, current_confs, hop_s)
+            self._add_note(
+                notes,
+                current_start_idx,
+                len(is_voiced),
+                current_pitches,
+                current_confs,
+                hop_s,
+            )
 
         return notes
 
@@ -97,9 +129,11 @@ class TorchCrepeDetector(NoteDetector):
         median_pitch = np.median(pitches)
         mean_conf = np.mean(confs)
 
-        notes.append({
-            'start_time': float(start_time),
-            'duration': float(duration),
-            'frequencies': [float(median_pitch)],
-            'confidence': float(mean_conf)
-        })
+        notes.append(
+            {
+                "start_time": float(start_time),
+                "duration": float(duration),
+                "frequencies": [float(median_pitch)],
+                "confidence": float(mean_conf),
+            }
+        )

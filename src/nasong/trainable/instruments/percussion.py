@@ -22,7 +22,7 @@ def TrainableKick(time: lv.Value, start_time: float) -> lv.Value:
 
     # Envelope for overall amplitude
     env = lv.ExponentialDecay(
-        time=time, start_time=start_time, decay_rate=decay_rate.value.item()
+        time=time, start_time=start_time, decay_rate=float(decay_rate.value)
     )
 
     # Frequency sweep envelope (faster decay)
@@ -36,7 +36,7 @@ def TrainableKick(time: lv.Value, start_time: float) -> lv.Value:
     tone = lv.Sin(value=time, frequency=freq_rads, amplitude=lv.Constant(1.0))
 
     # Noise component
-    noise = lv.WhiteNoise(seed=42, scale=noise_amount.value.item())
+    noise = lv.WhiteNoise(seed=42, scale=float(noise_amount.value))
 
     # Click component (very short high-freq burst)
     click_env = lv.ExponentialDecay(time=time, start_time=start_time, decay_rate=100.0)
@@ -51,7 +51,7 @@ def TrainableKick(time: lv.Value, start_time: float) -> lv.Value:
 
     # Mix components
     mixed = lv.Sum(
-        lv.Product(tone, lv.Constant(1.0 - noise_amount.value.item())), noise, click
+        lv.Product(tone, lv.Constant(1.0 - float(noise_amount.value))), noise, click
     )
 
     return lv.Product(mixed, env, amplitude)
@@ -70,18 +70,18 @@ def TrainableSnare(time: lv.Value, start_time: float) -> lv.Value:
 
     # Envelope
     env = lv.ExponentialDecay(
-        time=time, start_time=start_time, decay_rate=decay_rate.value.item()
+        time=time, start_time=start_time, decay_rate=float(decay_rate.value)
     )
 
     # Tonal component (membrane modes)
     tone = lv.Sin(
         value=time,
         frequency=lv.Product(tone_freq, lv.Constant(6.283185307179586)),
-        amplitude=lv.Constant(1.0 - noise_amount.value.item()),
+        amplitude=lv.Constant(1.0 - float(noise_amount.value)),
     )
 
     # Noise component (snare wires)
-    noise = lv.WhiteNoise(seed=7919, scale=noise_amount.value.item())
+    noise = lv.WhiteNoise(seed=7919, scale=float(noise_amount.value))
 
     # Mix
     mixed = lv.Sum(tone, noise)
@@ -103,7 +103,7 @@ def TrainableHiHat(
 
     # Envelope
     env = lv.ExponentialDecay(
-        time=time, start_time=start_time, decay_rate=base_decay.value.item()
+        time=time, start_time=start_time, decay_rate=float(base_decay.value)
     )
 
     # Hi-hat is mostly noise with some metallic high frequencies

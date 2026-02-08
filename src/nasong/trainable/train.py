@@ -3,15 +3,45 @@ import argparse
 from typing import List, Tuple, Dict, Any
 import numpy as np
 from numpy.typing import NDArray
-import torch
-from torch import Tensor
-import torch.optim as optim
+
+try:
+    import torch
+
+    HAS_TORCH = True
+except (ImportError, OSError):
+    HAS_TORCH = False
+    torch = Any
+
 import scipy.io.wavfile as wavfile
 
 import nasong.core.all_values as lv
 import nasong.trainable.extract as learnable
-from nasong.trainable.config import TrainingConfig  # , NoteDetectionConfig
+from nasong.trainable.config import TrainingConfig
 from nasong.trainable.note_detection.create import create_note_detector
+
+# Engines
+from nasong.trainable.engines.base import BaseTrainingEngine
+from nasong.trainable.engines.numpy_engine import NumpyEngine
+from nasong.trainable.engines.autograd_engine import AutogradEngine
+
+
+def get_engine(config: TrainingConfig) -> BaseTrainingEngine:
+    if config.engine_type == "numpy":
+        return NumpyEngine(config)
+    elif config.engine_type == "autograd":
+        return AutogradEngine(config)
+    elif config.engine_type == "torch":
+        # Lazy import to avoid crashing if torch is broken/missing
+        from nasong.trainable.engines.torch_engine import TorchEngine
+
+        if not HAS_TORCH:
+            raise ImportError(
+                "Cannot use TorchEngine because PyTorch is not available."
+            )
+        return TorchEngine(config)
+    else:
+        raise ValueError(f"Unknown engine type: {config.engine_type}")
+
 
 #
 ### UTILITY FUNCTIONS ###
@@ -62,108 +92,6 @@ def load_wav_segment(
     return segment.astype(np.float32), sample_rate
 
 
-def spectral_loss(
-    synthesized: Tensor,
-    target: Tensor,
-    sample_rate: int = 44100,
-    n_fft: int = 2048,
-    hop_length: int = 512,
-    high_freq_emphasis: float = 2.0,
-) -> Tensor:
-    synth_stft = torch.stft(
-        synthesized,
-        n_fft=n_fft,
-        hop_length=hop_length,
-        window=torch.hann_window(n_fft, device=synthesized.device),
-        return_complex=True,
-    )
-    target_stft = torch.stft(
-        target,
-        n_fft=n_fft,
-        hop_length=hop_length,
-        window=torch.hann_window(n_fft, device=target.device),
-        return_complex=True,
-    )
-
-    synth_mag = torch.abs(synth_stft)
-    target_mag = torch.abs(target_stft)
-
-    freq_bins = synth_mag.shape[0]
-    freq_weights = torch.linspace(
-        1.0, high_freq_emphasis, freq_bins, device=synthesized.device
-    )
-    freq_weights = freq_weights.unsqueeze(1)
-
-    synth_mag_weighted = synth_mag * freq_weights
-    target_mag_weighted = target_mag * freq_weights
-
-    mag_loss = torch.mean(torch.abs(synth_mag_weighted - target_mag_weighted))
-
-    synth_log_mag = torch.log(synth_mag + 1e-5)
-    target_log_mag = torch.log(target_mag + 1e-5)
-    log_mag_loss = torch.mean(torch.abs(synth_log_mag - target_log_mag))
-
-    total_loss = mag_loss + 0.5 * log_mag_loss
-
-    return total_loss
-
-
-def multi_resolution_spectral_loss(
-    synthesized: Tensor,
-    target: Tensor,
-    sample_rate: int = 44100,
-    fft_sizes: List[int] = None,
-    high_freq_emphasis: float = 2.0,
-) -> Tensor:
-    if fft_sizes is None:
-        fft_sizes = [2048, 1024, 512]
-
-    total_loss = 0.0
-
-    for n_fft in fft_sizes:
-        hop_length = n_fft // 4
-        loss = spectral_loss(
-            synthesized, target, sample_rate, n_fft, hop_length, high_freq_emphasis
-        )
-        total_loss = total_loss + loss
-
-    return total_loss / len(fft_sizes)
-
-
-def collect_trainable_parameters(
-    value: lv.Value, params: List[Tensor] = None
-) -> List[Tensor]:
-    if params is None:
-        params = []
-
-    if isinstance(value, lv.ValueTrainableParameter):
-        if value.value not in params:
-            params.append(value.value)
-
-    for attr_name in dir(value):
-        if attr_name.startswith("_"):
-            continue
-
-        try:
-            attr = getattr(value, attr_name)
-
-            if isinstance(attr, lv.Value):
-                collect_trainable_parameters(attr, params)
-
-            elif isinstance(attr, list):
-                for item in attr:
-                    if isinstance(item, lv.Value):
-                        collect_trainable_parameters(item, params)
-                    elif isinstance(item, tuple) and len(item) == 2:
-                        for sub_item in item:
-                            if isinstance(sub_item, lv.Value):
-                                collect_trainable_parameters(sub_item, params)
-        except Exception:
-            continue
-
-    return params
-
-
 #
 ### TRAINING FUNCTION ###
 #
@@ -186,12 +114,21 @@ def render_audio_in_chunks(
 
     while current < end_total:
         end = min(current + chunk_size_samples, end_total)
-        # indices relative to global time for the graph
-        idx = torch.arange(current, end, dtype=torch.float32, device=device)
 
-        chunk = (
-            synth_output.getitem_torch(idx, sr, device=device).detach().cpu().numpy()
-        )
+        if HAS_TORCH and (device != "cpu" or True):
+            # indices relative to global time for the graph
+            idx = torch.arange(current, end, dtype=torch.float32, device=device)
+            chunk = (
+                synth_output.getitem_torch(idx, sr, device=device)
+                .detach()
+                .cpu()
+                .numpy()
+            )
+        else:
+            # Fallback to NumPy
+            idx = np.arange(current, end, dtype=np.float32)
+            chunk = synth_output.getitem_np(idx, sr)
+
         audio_chunks.append(chunk)
         current = end
 
@@ -200,9 +137,10 @@ def render_audio_in_chunks(
 
 def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
     """
-    Train an instrument to match a WAV file segment using the provided configuration.
+    Train an instrument using the configured Engine.
     """
     print(f"=== Training {config.instrument_name} on {config.target_wav} ===")
+    print(f"=== Engine: {config.engine_type} ===")
 
     # Load target audio
     # Determine total duration
@@ -238,7 +176,7 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
         f"Split sizes: Train={len(train_audio) / sr:.2f}s, Val={len(val_audio) / sr:.2f}s, Test={len(test_audio) / sr:.2f}s"
     )
 
-    # Run Detection on FULL audio (better context)
+    # Run Detection
     print(f"Detecting notes using {config.note_detection.method} on full audio...")
     detector = create_note_detector(config.note_detection)
     all_notes = detector.detect(full_audio, sr)
@@ -257,16 +195,12 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
     # Filter notes for TRAIN split
     train_notes = []
     for note in all_notes:
-        # Keep notes that start within train window
         if note["start_time"] < config.train_duration:
-            # Clip duration if it extends beyond
-            # Actually, standard is allow decay. But here we just classify.
             train_notes.append(note)
 
     print(f"Training notes: {len(train_notes)}")
 
     # Initialize Trainable Parameters
-    # Convert filtered notes to ValueTrainableParameter
     trainable_notes = []
     for note in train_notes:
         freq_params = [lv.ValueTrainableParameter(f) for f in note["frequencies"]]
@@ -282,14 +216,6 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
     print(f"Building {config.instrument_name} synthesis graph (Training)...")
     instrument_blueprint = learnable.get_trainable_instrument(config.instrument_name)
 
-    # We need a synthesis graph that can handle the full duration or be batched.
-    # If we batch, we need to slice time.
-    # Standard Nasong `time` goes 0..T.
-    # The note `start_time` is relative to 0.
-
-    # Building ONE big graph for training set to manage parameters
-    # Memory optimization: The graph structure itself is cheap. Rendering big buffers is expensive.
-
     time_val = lv.BasicScaling(
         value=lv.Identity(), mult_scale=lv.Constant(1 / sr), sum_scale=lv.Constant(0)
     )
@@ -298,18 +224,17 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
     for tn in trainable_notes:
         if config.instrument_name in ["kick", "snare", "hihat_closed", "hihat_open"]:
             nv = instrument_blueprint(
-                time=time_val, start_time=tn["start_time"].value.item()
+                time=time_val, start_time=float(tn["start_time"].value)
             )
             note_vals.append(nv)
         else:
             chord_voices = []
             for fp in tn["frequencies"]:
-                # IMPORTANT: To share parameters, we pass the parameter object!
                 voice = instrument_blueprint(
                     time=time_val,
                     frequency=fp,
-                    start_time=tn["start_time"].value.item(),
-                    duration=tn["duration"].value.item(),
+                    start_time=float(tn["start_time"].value),
+                    duration=float(tn["duration"].value),
                 )
                 chord_voices.append(voice)
             if len(chord_voices) == 1:
@@ -327,87 +252,50 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
 
     synth_output = lv.Sum(note_vals) if len(note_vals) > 1 else note_vals[0]
 
-    # Collect Params
-    print("Collecting parameters...")
-    all_params = collect_trainable_parameters(synth_output)
-    # Add note params explicitly
-    for tn in trainable_notes:
-        for fp in tn["frequencies"]:
-            all_params.append(fp.value)
-        all_params.append(tn["start_time"].value)
-        all_params.append(tn["duration"].value)
+    # --- ENGINE INITIALIZATION ---
+    engine = get_engine(config)
 
-    all_params = list(set(all_params))
-    for p in all_params:
-        p.requires_grad = True
-    print(f"Total trainable parameters: {len(all_params)}")
+    # Initialize implementation-specific details if needed (e.g. Torch optimizer)
+    if hasattr(engine, "initialize_optimizer"):
+        engine.initialize_optimizer(synth_output)
 
-    optimizer = optim.Adam(all_params, lr=config.learning_rate)
     history = {"losses": [], "epochs": [], "validation_losses": []}
 
-    # BATCH SETUP
-    batch_size_samples = int(config.batch_duration * sr)
-    overlap_samples = int(config.batch_overlap * sr)
-    stride = batch_size_samples - overlap_samples
-    if stride <= 0:
-        stride = batch_size_samples // 2
-
-    train_tensor = torch.from_numpy(train_audio).to(device=config.device)
-
-    print(
-        f"Starting training for {config.epochs} epochs (Batch: {config.batch_duration}s, Overlap: {config.batch_overlap}s)..."
-    )
+    print(f"Starting training for {config.epochs} epochs...")
 
     for epoch in range(config.epochs):
-        optimizer.zero_grad()
-        epoch_loss = 0.0
-        batches = 0
+        # Engine Compute Loss & Step
+        # Note: Some engines (Torch) might need batching logic or handles it internally.
+        # But for Autograd/Numpy, we often do full-batch or simple slicing.
+        # The Abstract Engine interface handles strict compute_loss -> step flow.
+        # However, TorchEngine might need to handle its own loop or we feed it data.
 
-        # Iterate windows
-        current_sample = 0
-        while current_sample < len(train_tensor):
-            end_sample = min(current_sample + batch_size_samples, len(train_tensor))
-            if end_sample - current_sample < 1024:
-                break  # Skip tiny last batch
+        # For this refactor, we stick to the interface:
+        # 1. compute_loss(target, blueprint, sr)
+        # 2. step()
 
-            # Slice Target
-            target_batch = train_tensor[current_sample:end_sample]
+        # NOTE: Autograd/NumPy engines usually assume they can hold the whole graph/arrays in memory
+        # or handle their own batching if implemented.
+        # If we need batching for Torch, we should probably move the batch loop INTO the TorchEngine
+        # or make the Engine expose a `train_epoch(dataset)` method.
 
-            # Index buffer for synthesis (absolute time)
-            # nasong uses float index? No, getitem_torch uses indices.
-            # We enable the graph to render specifically for these indices.
-            idx_buffer = torch.arange(
-                current_sample, end_sample, dtype=torch.float32, device=config.device
-            )
+        # Given arguments, `compute_loss` takes `target_audio` (numpy array).
+        # We will feed the FULL training audio to `compute_loss` for Autograd/Numpy.
+        # For Torch, if it requires batching, it should probably happen inside `compute_loss` or we risk OOM?
+        # Actually AutogradEngine.compute_loss computes loss on the full input provided.
 
-            # Render
-            # This efficiently only computes for this time window!
-            synthesized = synth_output.getitem_torch(
-                idx_buffer, sr, device=config.device
-            )
+        # Let's try full batch for now as Autograd usually implies smaller data or full batch.
 
-            loss = multi_resolution_spectral_loss(
-                synthesized,
-                target_batch,
-                sr,
-                config.spectral_loss.fft_sizes,
-                config.spectral_loss.high_freq_emphasis,
-            )
+        loss_val = engine.compute_loss(train_audio, synth_output, sr)
+        metrics = engine.step()
 
-            loss.backward()
-            epoch_loss += loss.item()
-            batches += 1
+        avg_loss = metrics.get("loss", loss_val)
 
-            current_sample += stride
-
-        optimizer.step()
-
-        avg_loss = epoch_loss / max(1, batches)
         history["losses"].append(avg_loss)
         history["epochs"].append(epoch)
 
         if epoch % 10 == 0 or epoch == config.epochs - 1:
-            print(f"Epoch {epoch:3d}/{config.epochs} | Avg Loss: {avg_loss:.6f}")
+            print(f"Epoch {epoch:3d}/{config.epochs} | Loss: {avg_loss:.6f}")
 
     print("\n=== Training Complete ===")
 
@@ -428,7 +316,6 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
     # 3. Save Audio (All Splits)
     print("Rendering audio for all splits...")
 
-    # helper to save split
     def save_split_audio(audio_data, suffix, target_audio=None):
         if len(audio_data) == 0:
             return
@@ -443,6 +330,8 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
             wavfile.write(target_path, sr, (target_audio * 32767).astype(np.int16))
 
     # Render TRAIN
+    # We use valid render mechanism (Chunks via Torch usually fastest for rendering even if training was Autograd)
+    # But if device is CPU, it will use CPU.
     train_pred = render_audio_in_chunks(
         synth_output, len(train_audio), sr, config.device, start_sample=0
     )
@@ -471,10 +360,10 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
         save_split_audio(test_pred, "test_trained", test_audio)
 
     print(f"Saved audio artifacts to: {config.output_dir}")
+
     # 4. Save Params
-    param_dict = {}
-    for i, param in enumerate(all_params):
-        param_dict[f"param_{i}"] = param.detach().cpu().item()
+    # Use Engine's method
+    param_dict = engine.get_parameter_values()
     with open(
         os.path.join(config.output_dir, f"{config.instrument_name}_params.json"), "w"
     ) as f:
@@ -485,7 +374,7 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Train Nasong instruments with configurable note detection."
+        description="Train Nasong instruments using Modular Engines."
     )
 
     parser.add_argument("wav_file", nargs="?", help="Path to input WAV file")
@@ -503,6 +392,9 @@ def main():
     )
     parser.add_argument("--output-dir", "-o", type=str, help="Output directory")
     parser.add_argument("--device", type=str, help="Device (cpu/cuda)")
+    parser.add_argument(
+        "--engine", type=str, help="Engine type (autograd, numpy, torch)"
+    )
 
     args = parser.parse_args()
 
@@ -526,11 +418,18 @@ def main():
             config.output_dir = args.output_dir
         if args.device:
             config.device = args.device
+        if args.engine:
+            config.engine_type = args.engine
 
-        # Fallback to CPU if CUDA is not available
-        if config.device == "cuda" and not torch.cuda.is_available():
-            config.device = "cpu"
-            print("CUDA not available. Switching to CPU.")
+        if config.engine_type == "torch" and not HAS_TORCH:
+            print("Torch is not available, switching to autograd.")
+            config.engine_type = "autograd"
+
+        if config.engine_type == "torch":
+            # Fallback to CPU if CUDA is not available
+            if config.device == "cuda" and not torch.cuda.is_available():
+                config.device = "cpu"
+                print("CUDA not available. Switching to CPU.")
 
     else:
         if not args.wav_file:
@@ -546,14 +445,20 @@ def main():
             learning_rate=args.lr if args.lr else 0.01,
             output_dir=args.output_dir if args.output_dir else "trained_models",
             device=args.device if args.device else "cpu",
+            engine_type=args.engine if args.engine else "autograd",
         )
         if args.method:
             config.note_detection.method = args.method
 
-        # Fallback to CPU if CUDA is not available
-        if config.device == "cuda" and not torch.cuda.is_available():
-            config.device = "cpu"
-            print("CUDA not available. Switching to CPU.")
+        if config.engine_type == "torch" and not HAS_TORCH:
+            print("Torch is not available, switching to autograd.")
+            config.engine_type = "autograd"
+
+        if config.engine_type == "torch":
+            # Fallback to CPU if CUDA is not available
+            if config.device == "cuda" and not torch.cuda.is_available():
+                config.device = "cpu"
+                print("CUDA not available. Switching to CPU.")
 
     # Validate
     if not os.path.exists(config.target_wav):

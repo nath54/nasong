@@ -3,9 +3,22 @@
 #
 
 from typing import Dict, List, Any, Optional, Set
-import torch
-import torch.optim as optim
-from torch import Tensor
+
+try:
+    import torch
+    import torch.optim as optim
+    from torch import Tensor
+
+    HAS_TORCH = True
+except (ImportError, OSError):
+    HAS_TORCH = False
+    torch = Any
+    optim = Any
+
+    class Tensor:
+        pass
+
+
 import numpy as np
 from numpy.typing import NDArray
 
@@ -26,9 +39,12 @@ class TorchEngine(BaseTrainingEngine):
         Args:
             config: TrainingConfig object containing hyperparameters.
         """
+        if not HAS_TORCH:
+            raise ImportError("PyTorch is not available. execution stopped.")
+
         super().__init__(config)
         self.device: str = getattr(config, "device", "cpu")
-        self.optimizer: Optional[torch.optim.Optimizer] = None
+        self.optimizer: Optional[optim.Optimizer] = None
         self.all_params: List[Tensor] = []
 
     def spectral_loss(
