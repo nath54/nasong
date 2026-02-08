@@ -39,8 +39,10 @@ class Min(Value):
             v.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
             for v in self.values
         ]
-        #
-        return np.minimum.reduce(arrays)
+
+        # Autograd fix: np.minimum.reduce is not supported, use stack + min.
+        stacked = np.stack(arrays, axis=0)
+        return np.min(stacked, axis=0)
 
     #
     def getitem_torch(

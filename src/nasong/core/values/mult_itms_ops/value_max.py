@@ -39,8 +39,10 @@ class Max(Value):
             v.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
             for v in self.values
         ]
-        #
-        return np.maximum.reduce(arrays)
+
+        # Autograd fix: np.maximum.reduce is not supported, use stack + max.
+        stacked = np.stack(arrays, axis=0)
+        return np.max(stacked, axis=0)
 
     #
     def getitem_torch(

@@ -199,14 +199,6 @@ class ParameterContext:
 
 
 #
-class _FloatWrapper(float):
-    """Wraps a float to provide a .item() method for compatibility with Torch-style code."""
-
-    def item(self):
-        return self
-
-
-#
 ### VALUE TRAINABLE PARAMETERS. ###
 #
 
@@ -217,6 +209,14 @@ class ValueTrainableParameter(Value):
     A Value that can be trained.
     """
 
+    @property
+    def value(self) -> Any:
+        return self._value
+
+    @value.setter
+    def value(self, val: Any) -> None:
+        self._value = val
+
     #
     def __init__(self, initial_value: float | int, name: str | None = None) -> None:
 
@@ -225,6 +225,7 @@ class ValueTrainableParameter(Value):
 
         self.name = name
         self.initial_value = initial_value
+        self._value: Any = None
 
         # Check for active context
         ctx = ParameterContext.get_current()
@@ -232,61 +233,64 @@ class ValueTrainableParameter(Value):
         # Default behavior: use torch if available
         use_torch_local = HAS_TORCH
 
-        # Value to hold (Tensor if training/torch, float if inference/no-torch)
-        self.value: Any = None
-
+        # Initial value setup
         if ctx:
             if ctx.capture:
-                # Training mode restriction: must have torch
-                if not HAS_TORCH:
-                    pass
-
-                if name is None:
-                    # Auto-generate name based on order/counter if needed
-                    pass
-
+                # Training mode
                 ctx.captured_params.append(self)
-
             elif ctx.parameters:
                 # Inference/Injection mode
                 injected_value = None
-
                 if name and name in ctx.parameters:
                     injected_value = ctx.parameters[name]
-                else:
-                    pass
-
                 if injected_value is not None:
-                    # We found a value! Use it and force NO-TORCH mode for this instance (inference)
-                    self.value = _FloatWrapper(injected_value)
+                    self._value = float(injected_value)
                     use_torch_local = False
 
         # If no injected value, use initial
-        if self.value is None:
+        if self._value is None:
             if use_torch_local:
-                self.value = torch.tensor(initial_value, dtype=torch.float32)
+                self._value = torch.tensor(initial_value, dtype=torch.float32)
             else:
-                self.value = _FloatWrapper(initial_value)
+                self._value = float(initial_value)
 
+    #
     #
     def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        if isinstance(self.value, float):
-            return self.value
-        return self.value.item()
+        val = self.value
+        if HAS_TORCH and isinstance(val, torch.Tensor):
+            return float(val.item())
+
+        #
+        try:
+            return float(val)
+        except (TypeError, ValueError):
+            # Fallback for autograd boxes which might not implement __float__ directly
+            # in some contexts, but usually they do.
+            if hasattr(val, "_value"):
+                return float(val._value)
+            return val
 
     #
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
 
+        print(f"DEBUG: VTP getitem_np - np is {getattr(np, '__name__', 'unknown')}")
         #
         val = self.value
-        if not isinstance(val, float):
+
+        # Robust scalar extraction for torch
+        if HAS_TORCH and isinstance(val, torch.Tensor):
             val = val.item()
 
-        return np.full_like(indexes_buffer, fill_value=val, dtype=np.float32)
+        # For standard numpy, we want to ensure val is a scalar float.
+        # For autograd, val will be an ArrayBox.
+        # Using ones_like * val is a robust way to broadcast that works for both.
+        # IMPORTANT: Autograd + float32 often fails. We use the dtype of the indices (usually float64 in autograd)
+        return np.ones_like(indexes_buffer, dtype=indexes_buffer.dtype) * val
 
     #
     def getitem_torch(

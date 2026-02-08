@@ -39,8 +39,10 @@ class Sum(Value):
             v.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
             for v in self.values
         ]
-        #
-        return np.sum(arrays, axis=0)
+
+        # Autograd fix: np.sum(list) is not supported, use stack.
+        stacked = np.stack(arrays, axis=0)
+        return np.sum(stacked, axis=0)
 
     #
     def getitem_torch(

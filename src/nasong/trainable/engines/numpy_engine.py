@@ -99,11 +99,11 @@ class NumpyEngine(BaseTrainingEngine):
             loss = self.spectral_loss(prediction, target_audio, sample_rate)
             # Proxy dL/dy as MSE gradient for simplified backprop
             diff = prediction_f64 - target_f64
-            self.grad_output = (2.0 * diff / len(target_audio)).astype(np.float32)
+            self.grad_output = (2.0 * diff / len(target_audio)).astype(np.float64)
         else:
             diff = prediction_f64 - target_f64
             loss = np.mean(diff**2)
-            self.grad_output = (2.0 * diff / len(target_audio)).astype(np.float32)
+            self.grad_output = (2.0 * diff / len(target_audio)).astype(np.float64)
 
         # 3. Store intermediate state for backward
         # dL/dy = 2 * (y - target) / N
