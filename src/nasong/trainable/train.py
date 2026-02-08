@@ -164,6 +164,33 @@ def collect_trainable_parameters(
 ### TRAINING FUNCTION ###
 #
 
+def render_audio_in_chunks(
+    synth_output: lv.Value,
+    total_samples: int,
+    sr: int,
+    device: str,
+    start_sample: int = 0,
+    chunk_size_sec: float = 5.0
+) -> NDArray[np.float32]:
+    """Render audio in chunks to avoid OOM."""
+    chunk_size_samples = int(chunk_size_sec * sr)
+    audio_chunks = []
+    
+    current = start_sample
+    end_total = start_sample + total_samples
+    
+    while current < end_total:
+        end = min(current + chunk_size_samples, end_total)
+        # indices relative to global time for the graph
+        idx = torch.arange(current, end, dtype=torch.float32, device=device)
+        
+        chunk = synth_output.getitem_torch(idx, sr, device=device).detach().cpu().numpy()
+        audio_chunks.append(chunk)
+        current = end
+        
+    return np.concatenate(audio_chunks)
+
+
 def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
     """
     Train an instrument to match a WAV file segment using the provided configuration.
@@ -353,34 +380,35 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
         with open(os.path.join(config.output_dir, "history.json"), "w") as f:
             json.dump(history, f, indent=2)
 
-    # 3. Save Audio (Train Split)
-    # Render Full Train
-    final_idx = torch.arange(len(train_tensor), dtype=torch.float32, device=config.device)
-    # Be careful of GPU memory on full render!
-    # If OOM, we should chunk render.
-    try:
-        final_audio = synth_output.getitem_torch(final_idx, sr, device=config.device).detach().cpu().numpy()
-    except RuntimeError:
-        print("Warning: Full render OOM. Rendering in chunks...")
-        audio_chunks = []
-        c = 0
-        while c < len(train_tensor):
-             e = min(c + sr*5, len(train_tensor))
-             idx = torch.arange(c, e, dtype=torch.float32, device=config.device)
-             chunk = synth_output.getitem_torch(idx, sr, device=config.device).detach().cpu().numpy()
-             audio_chunks.append(chunk)
-             c = e
-        final_audio = np.concatenate(audio_chunks)
+    # 3. Save Audio (All Splits)
+    print("Rendering audio for all splits...")
+    
+    # helper to save split
+    def save_split_audio(audio_data, suffix, target_audio=None):
+        if len(audio_data) == 0: return
+        
+        path = os.path.join(config.output_dir, f"{config.instrument_name}_{suffix}.wav")
+        wavfile.write(path, sr, (audio_data * 32767).astype(np.int16))
+        
+        if target_audio is not None and len(target_audio) > 0:
+            target_path = os.path.join(config.output_dir, f"{config.instrument_name}_{suffix}_target.wav")
+            wavfile.write(target_path, sr, (target_audio * 32767).astype(np.int16))
 
-    # TODO: save predicted audio for test and val
+    # Render TRAIN
+    train_pred = render_audio_in_chunks(synth_output, len(train_audio), sr, config.device, start_sample=0)
+    save_split_audio(train_pred, "trained", train_audio)
 
-    wavfile.write(os.path.join(config.output_dir, f"{config.instrument_name}_trained.wav"), sr, (final_audio * 32767).astype(np.int16))
-    wavfile.write(os.path.join(config.output_dir, f"{config.instrument_name}_target.wav"), sr, (train_audio * 32767).astype(np.int16))
+    # Render VAL
     if len(val_audio) > 0:
-        wavfile.write(os.path.join(config.output_dir, f"{config.instrument_name}_val_target.wav"), sr, (val_audio * 32767).astype(np.int16))
+        val_pred = render_audio_in_chunks(synth_output, len(val_audio), sr, config.device, start_sample=train_end_sample)
+        save_split_audio(val_pred, "val_trained", val_audio)
+
+    # Render TEST
     if len(test_audio) > 0:
-        wavfile.write(os.path.join(config.output_dir, f"{config.instrument_name}_test_target.wav"), sr, (test_audio * 32767).astype(np.int16))
-    print(f"Saved target audio to: {config.output_dir}")
+        test_pred = render_audio_in_chunks(synth_output, len(test_audio), sr, config.device, start_sample=val_end_sample)
+        save_split_audio(test_pred, "test_trained", test_audio)
+
+    print(f"Saved audio artifacts to: {config.output_dir}")
     # 4. Save Params
     param_dict = {}
     for i, param in enumerate(all_params):

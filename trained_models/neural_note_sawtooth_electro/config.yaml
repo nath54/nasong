@@ -36,7 +36,7 @@ note_detection:
   librosa_hop_length: 512
   method: neural_note
   onnx_path: models/nmp.onnx
-output_dir: trained_models/neural_note_example
+output_dir: trained_models/neural_note_sawtooth_electro
 save_config: true
 save_history: true
 save_interval: 10

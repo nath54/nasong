@@ -151,7 +151,7 @@ def visualize_spectrograms(target_path, trained_path, output_dir, instrument_nam
 
 def process_experiment(exp_dir: str, output_dir: Optional[str] = None, methods: List[str] = None):
     """
-    Evaluate a single experiment directory.
+    Evaluate a single experiment directory across all available splits (train, val, test).
     """
     print(f"\n📂 Processing {os.path.basename(exp_dir)}...")
 
@@ -159,48 +159,75 @@ def process_experiment(exp_dir: str, output_dir: Optional[str] = None, methods: 
         output_dir = exp_dir
     os.makedirs(output_dir, exist_ok=True)
 
-    wavs = glob.glob(os.path.join(exp_dir, "*_target.wav"))
-    if not wavs:
-        print(f"   ⚠️ No target audio found in {exp_dir}")
-        return
+    # Detect instrument name from train target
+    train_targets = glob.glob(os.path.join(exp_dir, "*_trained_target.wav"))
+    if not train_targets:
+        # Fallback to legacy naming if exists
+        train_targets = glob.glob(os.path.join(exp_dir, "*_target.wav"))
+        if not train_targets:
+            print(f"   ⚠️ No target audio found in {exp_dir}")
+            return
+        instrument_name = os.path.basename(train_targets[0]).replace("_target.wav", "")
+    else:
+        instrument_name = os.path.basename(train_targets[0]).replace("_trained_target.wav", "")
 
-    target_path = wavs[0]
-    instrument_name = os.path.basename(target_path).replace("_target.wav", "")
-    trained_path = os.path.join(exp_dir, f"{instrument_name}_trained.wav")
+    splits = [
+        ("train", "trained", "trained_target"),
+        ("val", "val_trained", "val_trained_target"),
+        ("test", "test_trained", "test_trained_target")
+    ]
 
-    if not os.path.exists(trained_path):
-        print(f"   ⚠️ No trained audio found: {trained_path}")
-        return
+    all_split_results = {}
 
-    # 1. Evaluate
-    print(f"   🔍 Evaluating Target: {instrument_name}")
-    target_results = evaluate_audio(target_path, methods)
+    for split_key, trained_suffix, target_suffix in splits:
+        target_path = os.path.join(exp_dir, f"{instrument_name}_{target_suffix}.wav")
+        # Support various target naming conventions
+        if not os.path.exists(target_path):
+            if split_key == "train":
+                target_path = os.path.join(exp_dir, f"{instrument_name}_target.wav")
+            elif split_key == "val":
+                target_path = os.path.join(exp_dir, f"{instrument_name}_val_target.wav")
+            elif split_key == "test":
+                target_path = os.path.join(exp_dir, f"{instrument_name}_test_target.wav")
+             
+        trained_path = os.path.join(exp_dir, f"{instrument_name}_{trained_suffix}.wav")
 
-    print(f"   🔍 Evaluating Trained: {instrument_name}")
-    trained_results = evaluate_audio(trained_path, methods)
+        if os.path.exists(target_path) and os.path.exists(trained_path):
+            print(f"   📊 Split: {split_key}")
+            
+            # 1. Evaluate
+            print(f"     🔍 Evaluating Target...")
+            target_res = evaluate_audio(target_path, methods)
+            
+            print(f"     🔍 Evaluating Trained...")
+            trained_res = evaluate_audio(trained_path, methods)
+            
+            all_split_results[split_key] = {
+                "target": target_res,
+                "trained": trained_res,
+                "target_file": os.path.basename(target_path),
+                "trained_file": os.path.basename(trained_path)
+            }
 
-    # 2. Save JSON
-    evaluation_data = {
-        "experiment": os.path.basename(exp_dir),
-        "instrument": instrument_name,
-        "target_audio": os.path.basename(target_path),
-        "trained_audio": os.path.basename(trained_path),
-        "results": {
-            "target": target_results,
-            "trained": trained_results
+            # 2. Viz
+            visualize_spectrograms(target_path, trained_path, output_dir, instrument_name, split_name=split_key)
+            print(f"     ✅ Saved spectrogram comparison for {split_key}")
+        else:
+            if split_key == "train":
+                print(f"   ⚠️ Missing train files: {target_path} or {trained_path}")
+
+    # 3. Save JSON
+    if all_split_results:
+        evaluation_data = {
+            "experiment": os.path.basename(exp_dir),
+            "instrument": instrument_name,
+            "splits": all_split_results
         }
-    }
 
-    json_path = os.path.join(output_dir, "evaluation.json")
-    with open(json_path, 'w') as f:
-        json.dump(evaluation_data, f, indent=2)
-    print(f"   ✅ Saved evaluation to {json_path}")
-
-    # 3. Viz
-    visualize_spectrograms(target_path, trained_path, output_dir, instrument_name)
-    print(f"   ✅ Saved spectrogram comparison")
-
-    # TODO: vizualize for test and validation splits
+        json_path = os.path.join(output_dir, "evaluation.json")
+        with open(json_path, 'w') as f:
+            json.dump(evaluation_data, f, indent=2)
+        print(f"   ✅ Saved full evaluation to {json_path}")
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate and visualize Nasong training results.")

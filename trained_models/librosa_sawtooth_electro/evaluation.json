@@ -1,0 +1,694 @@
+{
+  "experiment": "librosa_sawtooth_electro",
+  "instrument": "sawtooth_test",
+  "splits": {
+    "train": {
+      "target": {
+        "legacy": {
+          "status": "success",
+          "note_count": 1,
+          "notes": [
+            {
+              "frequencies": [
+                190.04309367203447,
+                370.08391925606713,
+                1110.2517577682015
+              ],
+              "start_time": 0.24,
+              "duration": 4.284
+            }
+          ]
+        },
+        "basic_pitch": {
+          "status": "success",
+          "note_count": 53,
+          "notes": [
+            {
+              "start_time": 4.751048526077097,
+              "duration": 0.20897959183673454,
+              "frequencies": [
+                207.65234878997256
+              ],
+              "confidence": 0.6199430227279663
+            },
+            {
+              "start_time": 4.634948752834467,
+              "duration": 0.2321995464852602,
+              "frequencies": [
+                92.4986056779086
+              ],
+              "confidence": 0.5470626354217529
+            },
+            {
+              "start_time": 4.518848979591836,
+              "duration": 0.11609977324263099,
+              "frequencies": [
+                92.4986056779086
+              ],
+              "confidence": 0.6625908017158508
+            },
+            {
+              "start_time": 4.437579138321995,
+              "duration": 0.08126984126984116,
+              "frequencies": [
+                92.4986056779086
+              ],
+              "confidence": 0.3620590269565582
+            },
+            {
+              "start_time": 4.402749206349206,
+              "duration": 0.06965986394557788,
+              "frequencies": [
+                123.47082531403103
+              ],
+              "confidence": 0.3691275119781494
+            },
+            {
+              "start_time": 4.275039455782313,
+              "duration": 0.2205895691609978,
+              "frequencies": [
+                369.9944227116344
+              ],
+              "confidence": 0.5772339105606079
+            },
+            {
+              "start_time": 4.170549659863945,
+              "duration": 0.31346938775510225,
+              "frequencies": [
+                82.4068892282175
+              ],
+              "confidence": 0.38534483313560486
+            },
+            {
+              "start_time": 4.077669841269841,
+              "duration": 0.09287981859410444,
+              "frequencies": [
+                82.4068892282175
+              ],
+              "confidence": 0.359901487827301
+            },
+            {
+              "start_time": 4.042839909297052,
+              "duration": 0.1741496598639456,
+              "frequencies": [
+                184.9972113558172
+              ],
+              "confidence": 0.563598096370697
+            },
+            {
+              "start_time": 3.786136507936508,
+              "duration": 0.1741496598639456,
+              "frequencies": [
+                82.4068892282175
+              ],
+              "confidence": 0.46711063385009766
+            },
+            {
+              "start_time": 3.6932566893424035,
+              "duration": 0.2205895691609978,
+              "frequencies": [
+                329.6275569128699
+              ],
+              "confidence": 0.6179666519165039
+            },
+            {
+              "start_time": 3.6932566893424035,
+              "duration": 0.09287981859410444,
+              "frequencies": [
+                82.4068892282175
+              ],
+              "confidence": 0.4411090612411499
+            },
+            {
+              "start_time": 3.6119868480725623,
+              "duration": 0.08126984126984116,
+              "frequencies": [
+                82.4068892282175
+              ],
+              "confidence": 0.3607424795627594
+            },
+            {
+              "start_time": 3.461057142857143,
+              "duration": 0.15092970521541949,
+              "frequencies": [
+                82.4068892282175
+              ],
+              "confidence": 0.35086363554000854
+            },
+            {
+              "start_time": 3.4494471655328796,
+              "duration": 0.24380952380952392,
+              "frequencies": [
+                329.6275569128699
+              ],
+              "confidence": 0.6324219703674316
+            },
+            {
+              "start_time": 3.3681773242630384,
+              "duration": 0.06965986394557833,
+              "frequencies": [
+                82.4068892282175
+              ],
+              "confidence": 0.3574875295162201
+            },
+            {
+              "start_time": 3.252077551020408,
+              "duration": 0.11609977324263054,
+              "frequencies": [
+                82.4068892282175
+              ],
+              "confidence": 0.3890422284603119
+            },
+            {
+              "start_time": 3.0895378684807255,
+              "duration": 0.06965986394557833,
+              "frequencies": [
+                369.9944227116344
+              ],
+              "confidence": 0.33219394087791443
+            },
+            {
+              "start_time": 3.0895378684807255,
+              "duration": 0.30185941043083897,
+              "frequencies": [
+                184.9972113558172
+              ],
+              "confidence": 0.4894229471683502
+            },
+            {
+              "start_time": 3.0895378684807255,
+              "duration": 0.16253968253968232,
+              "frequencies": [
+                82.4068892282175
+              ],
+              "confidence": 0.4966312050819397
+            },
+            {
+              "start_time": 3.0082680272108844,
+              "duration": 0.08126984126984116,
+              "frequencies": [
+                82.4068892282175
+              ],
+              "confidence": 0.3873859941959381
+            },
+            {
+              "start_time": 2.973438095238095,
+              "duration": 0.31346938775510225,
+              "frequencies": [
+                293.6647679174076
+              ],
+              "confidence": 0.3726436495780945
+            },
+            {
+              "start_time": 2.8689482993197277,
+              "duration": 0.13931972789115665,
+              "frequencies": [
+                82.4068892282175
+              ],
+              "confidence": 0.5850167274475098
+            },
+            {
+              "start_time": 2.7296285714285715,
+              "duration": 0.24380952380952348,
+              "frequencies": [
+                293.6647679174076
+              ],
+              "confidence": 0.6229310631752014
+            },
+            {
+              "start_time": 2.4974290249433104,
+              "duration": 0.2321995464852611,
+              "frequencies": [
+                293.6647679174076
+              ],
+              "confidence": 0.6692041754722595
+            },
+            {
+              "start_time": 2.230399546485261,
+              "duration": 0.39473922902494296,
+              "frequencies": [
+                73.41619197935188
+              ],
+              "confidence": 0.5832911133766174
+            },
+            {
+              "start_time": 2.1375197278911564,
+              "duration": 0.10448979591836727,
+              "frequencies": [
+                220.0
+              ],
+              "confidence": 0.26396799087524414
+            },
+            {
+              "start_time": 2.1375197278911564,
+              "duration": 0.3482993197278912,
+              "frequencies": [
+                184.9972113558172
+              ],
+              "confidence": 0.5390183329582214
+            },
+            {
+              "start_time": 2.125909750566893,
+              "duration": 0.10448979591836771,
+              "frequencies": [
+                73.41619197935188
+              ],
+              "confidence": 0.6305244565010071
+            },
+            {
+              "start_time": 2.044639909297052,
+              "duration": 0.08126984126984116,
+              "frequencies": [
+                73.41619197935188
+              ],
+              "confidence": 0.4596005380153656
+            },
+            {
+              "start_time": 1.9504761904761905,
+              "duration": 0.0941637188208615,
+              "frequencies": [
+                73.41619197935188
+              ],
+              "confidence": 0.4771476984024048
+            },
+            {
+              "start_time": 1.787936507936508,
+              "duration": 0.6630526077097503,
+              "frequencies": [
+                277.1826309768721
+              ],
+              "confidence": 0.4556988477706909
+            },
+            {
+              "start_time": 1.5441269841269842,
+              "duration": 0.2438095238095237,
+              "frequencies": [
+                277.1826309768721
+              ],
+              "confidence": 0.6219067573547363
+            },
+            {
+              "start_time": 1.5325170068027212,
+              "duration": 0.13931972789115643,
+              "frequencies": [
+                110.0
+              ],
+              "confidence": 0.3118199408054352
+            },
+            {
+              "start_time": 1.3815873015873017,
+              "duration": 0.5108390022675735,
+              "frequencies": [
+                220.0
+              ],
+              "confidence": 0.3438607454299927
+            },
+            {
+              "start_time": 1.195827664399093,
+              "duration": 0.2670294784580498,
+              "frequencies": [
+                73.41619197935188
+              ],
+              "confidence": 0.5471354126930237
+            },
+            {
+              "start_time": 1.18421768707483,
+              "duration": 0.15092970521541949,
+              "frequencies": [
+                220.0
+              ],
+              "confidence": 0.5562370419502258
+            },
+            {
+              "start_time": 1.18421768707483,
+              "duration": 0.3482993197278912,
+              "frequencies": [
+                110.0
+              ],
+              "confidence": 0.3625149130821228
+            },
+            {
+              "start_time": 1.0332879818594105,
+              "duration": 0.16253968253968254,
+              "frequencies": [
+                73.41619197935188
+              ],
+              "confidence": 0.43936482071876526
+            },
+            {
+              "start_time": 0.9520181405895691,
+              "duration": 0.18575963718820865,
+              "frequencies": [
+                207.65234878997256
+              ],
+              "confidence": 0.5456463098526001
+            },
+            {
+              "start_time": 0.9520181405895691,
+              "duration": 0.08126984126984138,
+              "frequencies": [
+                73.41619197935188
+              ],
+              "confidence": 0.25088343024253845
+            },
+            {
+              "start_time": 0.8359183673469388,
+              "duration": 0.13931972789115643,
+              "frequencies": [
+                92.4986056779086
+              ],
+              "confidence": 0.5559536814689636
+            },
+            {
+              "start_time": 0.7082086167800453,
+              "duration": 0.1277097505668935,
+              "frequencies": [
+                92.4986056779086
+              ],
+              "confidence": 0.6593523621559143
+            },
+            {
+              "start_time": 0.47600907029478456,
+              "duration": 0.11609977324263043,
+              "frequencies": [
+                369.9944227116344
+              ],
+              "confidence": 0.6107901334762573
+            },
+            {
+              "start_time": 0.46439909297052157,
+              "duration": 0.24380952380952375,
+              "frequencies": [
+                92.4986056779086
+              ],
+              "confidence": 0.49560511112213135
+            },
+            {
+              "start_time": 0.3599092970521542,
+              "duration": 0.10448979591836738,
+              "frequencies": [
+                92.4986056779086
+              ],
+              "confidence": 0.5578219890594482
+            },
+            {
+              "start_time": 0.2438095238095238,
+              "duration": 0.11609977324263038,
+              "frequencies": [
+                92.4986056779086
+              ],
+              "confidence": 0.4124872088432312
+            },
+            {
+              "start_time": 0.23219954648526078,
+              "duration": 0.13931972789115646,
+              "frequencies": [
+                184.9972113558172
+              ],
+              "confidence": 0.5141761898994446
+            },
+            {
+              "start_time": 0.10448979591836735,
+              "duration": 0.13931972789115646,
+              "frequencies": [
+                92.4986056779086
+              ],
+              "confidence": 0.4197736084461212
+            },
+            {
+              "start_time": 0.011609977324263039,
+              "duration": 0.08126984126984127,
+              "frequencies": [
+                92.4986056779086
+              ],
+              "confidence": 0.5534489154815674
+            },
+            {
+              "start_time": 0.011609977324263039,
+              "duration": 0.11609977324263039,
+              "frequencies": [
+                329.6275569128699
+              ],
+              "confidence": 0.41269955039024353
+            },
+            {
+              "start_time": 1.822766439909297,
+              "duration": 0.11609977324263032,
+              "frequencies": [
+                73.41619197935188
+              ],
+              "confidence": 0.39523187279701233
+            },
+            {
+              "start_time": 2.358109297052154,
+              "duration": 0.18575963718820843,
+              "frequencies": [
+                369.9944227116344
+              ],
+              "confidence": 0.281156063079834
+            }
+          ]
+        },
+        "librosa": {
+          "status": "success",
+          "note_count": 21,
+          "notes": [
+            {
+              "start_time": 0.023219954648526078,
+              "duration": 0.09287981859410431,
+              "frequencies": [
+                92.23161935859392
+              ],
+              "confidence": 0.010001721351683404
+            },
+            {
+              "start_time": 0.11609977324263039,
+              "duration": 0.10448979591836734,
+              "frequencies": [
+                92.23161935859392
+              ],
+              "confidence": 0.01000450119092749
+            },
+            {
+              "start_time": 0.22058956916099773,
+              "duration": 0.24380952380952384,
+              "frequencies": [
+                92.76591169413095
+              ],
+              "confidence": 0.030440650325689857
+            },
+            {
+              "start_time": 0.46439909297052157,
+              "duration": 0.24380952380952375,
+              "frequencies": [
+                92.23161935859392
+              ],
+              "confidence": 0.03905322274620025
+            },
+            {
+              "start_time": 0.7082086167800453,
+              "duration": 0.10448979591836738,
+              "frequencies": [
+                92.23161935859392
+              ],
+              "confidence": 0.013551060906920315
+            },
+            {
+              "start_time": 0.8126984126984127,
+              "duration": 0.12770975056689338,
+              "frequencies": [
+                92.23161935859392
+              ],
+              "confidence": 0.01581537440407984
+            },
+            {
+              "start_time": 0.9404081632653061,
+              "duration": 0.24380952380952392,
+              "frequencies": [
+                208.25243050696125
+              ],
+              "confidence": 0.06058712070905605
+            },
+            {
+              "start_time": 1.18421768707483,
+              "duration": 0.35990929705215424,
+              "frequencies": [
+                73.20428479728128
+              ],
+              "confidence": 0.020506402750273385
+            },
+            {
+              "start_time": 1.5441269841269842,
+              "duration": 0.2438095238095237,
+              "frequencies": [
+                277.98364396846745
+              ],
+              "confidence": 0.10877815195077195
+            },
+            {
+              "start_time": 1.787936507936508,
+              "duration": 0.2438095238095237,
+              "frequencies": [
+                277.98364396846745
+              ],
+              "confidence": 0.11797900773143191
+            },
+            {
+              "start_time": 2.136235827664399,
+              "duration": 0.35990929705215446,
+              "frequencies": [
+                74.0548776143282
+              ],
+              "confidence": 0.013123023068722
+            },
+            {
+              "start_time": 2.4961451247165534,
+              "duration": 0.2205895691609978,
+              "frequencies": [
+                294.5134116201051
+              ],
+              "confidence": 0.07923450456560009
+            },
+            {
+              "start_time": 2.716734693877551,
+              "duration": 0.3715192743764173,
+              "frequencies": [
+                292.81713918912504
+              ],
+              "confidence": 0.12635198057593716
+            },
+            {
+              "start_time": 3.0882539682539685,
+              "duration": 0.25541950113378675,
+              "frequencies": [
+                92.76591169413095
+              ],
+              "confidence": 0.017207174743469937
+            },
+            {
+              "start_time": 3.3436734693877552,
+              "duration": 0.09287981859410399,
+              "frequencies": [
+                82.64503181542116
+              ],
+              "confidence": 0.010000366914383975
+            },
+            {
+              "start_time": 3.436553287981859,
+              "duration": 0.20897959183673498,
+              "frequencies": [
+                328.6761258343161
+              ],
+              "confidence": 0.06887085059976035
+            },
+            {
+              "start_time": 3.645532879818594,
+              "duration": 0.4063492063492067,
+              "frequencies": [
+                82.64503181542116
+              ],
+              "confidence": 0.030466693297156008
+            },
+            {
+              "start_time": 4.051882086167801,
+              "duration": 0.20897959183673454,
+              "frequencies": [
+                92.23161935859392
+              ],
+              "confidence": 0.01827431610681051
+            },
+            {
+              "start_time": 4.260861678004535,
+              "duration": 0.25541950113378675,
+              "frequencies": [
+                371.0636467765238
+              ],
+              "confidence": 0.06005141155764301
+            },
+            {
+              "start_time": 4.516281179138322,
+              "duration": 0.12770975056689338,
+              "frequencies": [
+                92.76591169413095
+              ],
+              "confidence": 0.03329996059321913
+            },
+            {
+              "start_time": 4.6439909297052155,
+              "duration": 0.10448979591836682,
+              "frequencies": [
+                92.76591169413095
+              ],
+              "confidence": 0.038597928688137925
+            }
+          ]
+        },
+        "torchcrepe": {
+          "status": "success",
+          "note_count": 0,
+          "notes": []
+        },
+        "audioflux": {
+          "status": "success",
+          "note_count": 1,
+          "notes": [
+            {
+              "start_time": 0.0,
+              "duration": 4.899410430839002,
+              "frequencies": [
+                351.0558776855469
+              ],
+              "confidence": 1.0
+            }
+          ]
+        }
+      },
+      "trained": {
+        "legacy": {
+          "status": "success",
+          "note_count": 1,
+          "notes": [
+            {
+              "frequencies": [
+                220.0
+              ],
+              "start_time": 0.0,
+              "duration": 4.5
+            }
+          ]
+        },
+        "basic_pitch": {
+          "status": "success",
+          "note_count": 0,
+          "notes": []
+        },
+        "librosa": {
+          "status": "success",
+          "note_count": 0,
+          "notes": []
+        },
+        "torchcrepe": {
+          "status": "success",
+          "note_count": 0,
+          "notes": []
+        },
+        "audioflux": {
+          "status": "success",
+          "note_count": 1,
+          "notes": [
+            {
+              "start_time": 0.0,
+              "duration": 4.899410430839002,
+              "frequencies": [
+                49.98971939086914
+              ],
+              "confidence": 1.0
+            }
+          ]
+        }
+      },
+      "target_file": "sawtooth_test_trained_target.wav",
+      "trained_file": "sawtooth_test_trained.wav"
+    }
+  }
+}
