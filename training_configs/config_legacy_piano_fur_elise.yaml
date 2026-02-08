@@ -2,7 +2,7 @@ instrument_name: "piano"
 target_wav: "example_songs_for_training/piano_fur_elise.wav"
 output_dir: "trained_models/legacy_piano_fur_elise"
 device: "cuda"
-epochs: 100
+epochs: 30
 learning_rate: 0.01
 
 audio:

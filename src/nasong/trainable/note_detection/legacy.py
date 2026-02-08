@@ -2,15 +2,18 @@ from typing import List, Dict, Any
 import numpy as np
 from .base import NoteDetector
 
+
 class LegacyDetector(NoteDetector):
     """
     Original energy-based onset detection and FFT pitch tracking.
     """
 
-    def detect(self, audio_segment: np.ndarray, sample_rate: int) -> List[Dict[str, Any]]:
+    def detect(
+        self, audio_segment: np.ndarray, sample_rate: int
+    ) -> List[Dict[str, Any]]:
         # Unpack config
-        num_notes = self.config.get('legacy_num_notes', 1)
-        use_onset_detection = self.config.get('legacy_use_onset', True)
+        num_notes = self.config.get("legacy_num_notes", 1)
+        use_onset_detection = self.config.get("legacy_use_onset", True)
 
         total_duration = len(audio_segment) / sample_rate
         notes = []
@@ -18,8 +21,8 @@ class LegacyDetector(NoteDetector):
         if use_onset_detection:
             # Simple energy-based onset detection
             # Calculate short-time energy
-            frame_len_sec = self.config.get('legacy_frame_len', 0.02)
-            hop_len_sec = self.config.get('legacy_hop_len', 0.01)
+            frame_len_sec = self.config.get("legacy_frame_len", 0.02)
+            hop_len_sec = self.config.get("legacy_hop_len", 0.01)
 
             frame_length = int(frame_len_sec * sample_rate)
             hop_length = int(hop_len_sec * sample_rate)
@@ -32,7 +35,7 @@ class LegacyDetector(NoteDetector):
             energy = np.array(energy)
 
             # Find peaks in energy (onsets)
-            threshold_ratio = self.config.get('legacy_onset_threshold', 0.3)
+            threshold_ratio = self.config.get("legacy_onset_threshold", 0.3)
             threshold = threshold_ratio * np.max(energy)
             onsets = []
             for i in range(1, len(energy) - 1):
@@ -70,16 +73,16 @@ class LegacyDetector(NoteDetector):
             note_segment = audio_segment[start_idx:end_idx]
 
             # Detect multiple pitches (chord detection)
-            max_pitches = self.config.get('legacy_max_pitches', 3)
-            min_freq = self.config.get('legacy_min_freq', 50.0)
-            max_freq = self.config.get('legacy_max_freq', 4000.0)
+            max_pitches = self.config.get("legacy_max_pitches", 3)
+            min_freq = self.config.get("legacy_min_freq", 50.0)
+            max_freq = self.config.get("legacy_max_freq", 4000.0)
 
             frequencies = self._detect_pitches_fft(
                 note_segment,
                 sample_rate,
                 max_pitches=max_pitches,
                 min_freq=min_freq,
-                max_freq=max_freq
+                max_freq=max_freq,
             )
 
             notes.append(
@@ -87,6 +90,9 @@ class LegacyDetector(NoteDetector):
                     "frequencies": frequencies,  # List of frequencies (chord)
                     "start_time": start_time,
                     "duration": duration * 0.9,  # Leave small gap
+                    "amplitude": float(np.sqrt(np.mean(note_segment**2)))
+                    if len(note_segment) > 0
+                    else 0.0,
                 }
             )
 

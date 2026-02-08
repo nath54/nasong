@@ -6,6 +6,7 @@ def TrainablePlucked(
     frequency: lv.Value,
     start_time: float,
     duration: float,
+    init_amplitude: float = 0.4,
     name_prefix: str = "plucked",
 ) -> lv.Value:
     """
@@ -15,7 +16,7 @@ def TrainablePlucked(
     """
 
     # Trainable parameters
-    amplitude = lv.ValueTrainableParameter(0.4, name=f"{name_prefix}_amp")
+    amplitude = lv.Constant(init_amplitude)
     pluck_decay = lv.ValueTrainableParameter(8.0, name=f"{name_prefix}_decay")
     _brightness = lv.ValueTrainableParameter(
         0.7, name=f"{name_prefix}_bright"
@@ -54,6 +55,7 @@ def TrainablePiano(
     frequency: lv.Value,
     start_time: float,
     duration: float,
+    init_amplitude: float = 0.5,
     name_prefix: str = "piano",
 ) -> lv.Value:
     """
@@ -61,7 +63,7 @@ def TrainablePiano(
     """
 
     # Trainable parameters
-    amplitude = lv.ValueTrainableParameter(0.5, name=f"{name_prefix}_amp")
+    amplitude = lv.Constant(init_amplitude)
     attack_time = lv.ValueTrainableParameter(0.002, name=f"{name_prefix}_attack")
     decay_time = lv.ValueTrainableParameter(0.3, name=f"{name_prefix}_decay")
     sustain_level = lv.ValueTrainableParameter(0.4, name=f"{name_prefix}_sustain")
@@ -107,6 +109,7 @@ def TrainableBowed(
     frequency: lv.Value,
     start_time: float,
     duration: float,
+    init_amplitude: float = 0.4,
     name_prefix: str = "bowed",
 ) -> lv.Value:
     """
@@ -116,7 +119,7 @@ def TrainableBowed(
     """
 
     # Trainable parameters
-    amplitude = lv.ValueTrainableParameter(0.4, name=f"{name_prefix}_amp")
+    amplitude = lv.Constant(init_amplitude)
     attack_time = lv.ValueTrainableParameter(0.1, name=f"{name_prefix}_attack")
     decay_time = lv.ValueTrainableParameter(0.2, name=f"{name_prefix}_decay")
     sustain_level = lv.ValueTrainableParameter(0.9, name=f"{name_prefix}_sustain")

@@ -99,6 +99,8 @@ class TorchCrepeDetector(NoteDetector):
                         current_pitches,
                         current_confs,
                         hop_s,
+                        audio_segment,
+                        sample_rate,
                     )
                     current_start_idx = None
                     current_pitches = []
@@ -113,17 +115,44 @@ class TorchCrepeDetector(NoteDetector):
                 current_pitches,
                 current_confs,
                 hop_s,
+                audio_segment,
+                sample_rate,
             )
 
         return notes
 
-    def _add_note(self, notes, start_idx, end_idx, pitches, confs, hop_s):
+    def _add_note(
+        self,
+        notes,
+        start_idx,
+        end_idx,
+        pitches,
+        confs,
+        hop_s,
+        audio_segment,
+        sample_rate,
+    ):
         duration = (end_idx - start_idx) * hop_s
         # Min duration, e.g. 50ms
         if duration < 0.05:
             return
 
         start_time = start_idx * hop_s
+        end_time = end_idx * hop_s
+
+        # Calculate amplitude (RMS)
+        start_sample = int(start_time * sample_rate)
+        end_sample = int(end_time * sample_rate)
+
+        # Clamp indices
+        start_sample = max(0, start_sample)
+        end_sample = min(len(audio_segment), end_sample)
+
+        if end_sample > start_sample:
+            segment = audio_segment[start_sample:end_sample]
+            amplitude = float(np.sqrt(np.mean(segment**2)))
+        else:
+            amplitude = 0.0
 
         # Median pitch to robustly handle fluctuations
         median_pitch = np.median(pitches)
@@ -135,5 +164,6 @@ class TorchCrepeDetector(NoteDetector):
                 "duration": float(duration),
                 "frequencies": [float(median_pitch)],
                 "confidence": float(mean_conf),
+                "amplitude": amplitude,
             }
         )

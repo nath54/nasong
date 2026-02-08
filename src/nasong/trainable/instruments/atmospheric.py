@@ -2,7 +2,12 @@ import nasong.core.all_values as lv
 
 
 def TrainablePad(
-    time: lv.Value, frequency: lv.Value, start_time: float, duration: float
+    time: lv.Value,
+    frequency: lv.Value,
+    start_time: float,
+    duration: float,
+    init_amplitude: float = 0.3,
+    name_prefix: str = "pad",
 ) -> lv.Value:
     """
     Trainable pad synthesizer (warm, sustained, atmospheric).
@@ -11,13 +16,15 @@ def TrainablePad(
     """
 
     # Trainable parameters
-    amplitude = lv.ValueTrainableParameter(0.3)
-    attack_time = lv.ValueTrainableParameter(0.5)
-    decay_time = lv.ValueTrainableParameter(0.3)
-    sustain_level = lv.ValueTrainableParameter(0.8)
-    release_time = lv.ValueTrainableParameter(1.0)
-    detune_amount = lv.ValueTrainableParameter(0.01)  # Slight detuning
-    _brightness = lv.ValueTrainableParameter(0.6)
+    amplitude = lv.Constant(init_amplitude)
+    attack_time = lv.ValueTrainableParameter(0.5, name=f"{name_prefix}_attack")
+    decay_time = lv.ValueTrainableParameter(0.3, name=f"{name_prefix}_decay")
+    sustain_level = lv.ValueTrainableParameter(0.8, name=f"{name_prefix}_sustain")
+    release_time = lv.ValueTrainableParameter(1.0, name=f"{name_prefix}_release")
+    detune_amount = lv.ValueTrainableParameter(
+        0.01, name=f"{name_prefix}_detune"
+    )  # Slight detuning
+    _brightness = lv.ValueTrainableParameter(0.6, name=f"{name_prefix}_bright")
 
     # Very slow attack/release
     env = lv.ExponentialADSR(

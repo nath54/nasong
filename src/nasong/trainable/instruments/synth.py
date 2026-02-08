@@ -2,7 +2,12 @@ import nasong.core.all_values as lv
 
 
 def TrainableSawtoothSynth(
-    time: lv.Value, frequency: lv.Value, start_time: float, duration: float
+    time: lv.Value,
+    frequency: lv.Value,
+    start_time: float,
+    duration: float,
+    init_amplitude: float = 0.3,
+    name_prefix: str = "saw_synth",
 ) -> lv.Value:
     """
     Trainable sawtooth-based synthesizer.
@@ -15,11 +20,11 @@ def TrainableSawtoothSynth(
     """
 
     # Trainable parameters
-    amplitude = lv.ValueTrainableParameter(0.3)
-    attack_time = lv.ValueTrainableParameter(0.01)
-    decay_time = lv.ValueTrainableParameter(0.1)
-    sustain_level = lv.ValueTrainableParameter(0.7)
-    release_time = lv.ValueTrainableParameter(0.2)
+    amplitude = lv.Constant(init_amplitude)
+    attack_time = lv.ValueTrainableParameter(0.01, name=f"{name_prefix}_attack")
+    decay_time = lv.ValueTrainableParameter(0.1, name=f"{name_prefix}_decay")
+    sustain_level = lv.ValueTrainableParameter(0.7, name=f"{name_prefix}_sustain")
+    release_time = lv.ValueTrainableParameter(0.2, name=f"{name_prefix}_release")
     num_harmonics = 20  # Fixed for band-limited synthesis
 
     # Oscillator
@@ -45,19 +50,24 @@ def TrainableSawtoothSynth(
 
 
 def TrainableSquareSynth(
-    time: lv.Value, frequency: lv.Value, start_time: float, duration: float
+    time: lv.Value,
+    frequency: lv.Value,
+    start_time: float,
+    duration: float,
+    init_amplitude: float = 0.3,
+    name_prefix: str = "sq_synth",
 ) -> lv.Value:
     """
     Trainable square wave synthesizer.
     """
 
     # Trainable parameters
-    amplitude = lv.ValueTrainableParameter(0.3)
-    attack_time = lv.ValueTrainableParameter(0.01)
-    decay_time = lv.ValueTrainableParameter(0.1)
-    sustain_level = lv.ValueTrainableParameter(0.7)
-    release_time = lv.ValueTrainableParameter(0.2)
-    _duty_cycle = lv.ValueTrainableParameter(0.5)
+    amplitude = lv.Constant(init_amplitude)
+    attack_time = lv.ValueTrainableParameter(0.01, name=f"{name_prefix}_attack")
+    decay_time = lv.ValueTrainableParameter(0.1, name=f"{name_prefix}_decay")
+    sustain_level = lv.ValueTrainableParameter(0.7, name=f"{name_prefix}_sustain")
+    release_time = lv.ValueTrainableParameter(0.2, name=f"{name_prefix}_release")
+    _duty_cycle = lv.ValueTrainableParameter(0.5, name=f"{name_prefix}_duty")
     num_harmonics = 15
 
     # Oscillator
@@ -80,7 +90,12 @@ def TrainableSquareSynth(
 
 
 def TrainableSineSynth(
-    time: lv.Value, frequency: lv.Value, start_time: float, duration: float
+    time: lv.Value,
+    frequency: lv.Value,
+    start_time: float,
+    duration: float,
+    init_amplitude: float = 0.5,
+    name_prefix: str = "sine_synth",
 ) -> lv.Value:
     """
     Pure sine wave synthesizer with trainable parameters.
@@ -88,11 +103,11 @@ def TrainableSineSynth(
     """
 
     # Trainable parameters
-    amplitude = lv.ValueTrainableParameter(0.5)
-    attack_time = lv.ValueTrainableParameter(0.05)
-    decay_time = lv.ValueTrainableParameter(0.2)
-    sustain_level = lv.ValueTrainableParameter(0.6)
-    release_time = lv.ValueTrainableParameter(0.3)
+    amplitude = lv.Constant(init_amplitude)
+    attack_time = lv.ValueTrainableParameter(0.05, name=f"{name_prefix}_attack")
+    decay_time = lv.ValueTrainableParameter(0.2, name=f"{name_prefix}_decay")
+    sustain_level = lv.ValueTrainableParameter(0.6, name=f"{name_prefix}_sustain")
+    release_time = lv.ValueTrainableParameter(0.3, name=f"{name_prefix}_release")
 
     # Convert frequency to rad/s for Sin
     freq_rads = lv.Product(frequency, lv.Constant(6.283185307179586))  # 2*pi

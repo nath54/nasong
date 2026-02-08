@@ -6,6 +6,7 @@ def TrainableBass(
     frequency: lv.Value,
     start_time: float,
     duration: float,
+    init_amplitude: float = 0.6,
     name_prefix: str = "bass",
 ) -> lv.Value:
     """
@@ -15,7 +16,7 @@ def TrainableBass(
     """
 
     # Trainable parameters
-    amplitude = lv.ValueTrainableParameter(0.6, name=f"{name_prefix}_amp")
+    amplitude = lv.Constant(init_amplitude)
     attack_time = lv.ValueTrainableParameter(0.005, name=f"{name_prefix}_attack")
     decay_time = lv.ValueTrainableParameter(0.2, name=f"{name_prefix}_decay")
     sustain_level = lv.ValueTrainableParameter(0.6, name=f"{name_prefix}_sustain")

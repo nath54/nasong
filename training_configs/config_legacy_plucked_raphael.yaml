@@ -2,7 +2,7 @@ instrument_name: "plucked"
 target_wav: "example_songs_for_training/guitar_cover_raphaels_final_act_classical.wav"
 output_dir: "trained_models/legacy_plucked_raphael"
 device: "cuda"
-epochs: 100
+epochs: 30
 learning_rate: 0.01
 
 audio:

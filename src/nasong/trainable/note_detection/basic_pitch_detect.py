@@ -12,14 +12,19 @@ except ImportError:
     predict = None
     sf = None
 
+
 class BasicPitchDetector(NoteDetector):
     """
     Note detection using Basic Pitch (Spotify) with ONNX runtime.
     """
 
-    def detect(self, audio_segment: np.ndarray, sample_rate: int) -> List[Dict[str, Any]]:
+    def detect(
+        self, audio_segment: np.ndarray, sample_rate: int
+    ) -> List[Dict[str, Any]]:
         if predict is None:
-            raise ImportError("Basic Pitch or SoundFile is not installed. Please install 'basic-pitch' and 'soundfile'.")
+            raise ImportError(
+                "Basic Pitch or SoundFile is not installed. Please install 'basic-pitch' and 'soundfile'."
+            )
 
         # Write to temp file because basic-pitch expects a file path
         # (predict takes a path string)
@@ -35,23 +40,25 @@ class BasicPitchDetector(NoteDetector):
             # basic-pitch 0.4.0 takes single audio_path, no model_serialization arg
             model_output, midi_data, note_events = predict(
                 tmp_path,
-                onset_threshold=self.config.get('bp_onset_threshold', 0.5),
-                frame_threshold=self.config.get('bp_frame_threshold', 0.3),
-                minimum_note_length=self.config.get('bp_min_note_len', 58.0),
-                minimum_frequency=self.config.get('bp_min_freq', 50.0),
-                maximum_frequency=self.config.get('bp_max_freq', 2000.0)
+                onset_threshold=self.config.get("bp_onset_threshold", 0.5),
+                frame_threshold=self.config.get("bp_frame_threshold", 0.3),
+                minimum_note_length=self.config.get("bp_min_note_len", 58.0),
+                minimum_frequency=self.config.get("bp_min_freq", 50.0),
+                maximum_frequency=self.config.get("bp_max_freq", 2000.0),
             )
 
             if not note_events:
                 return []
-            
+
             # note_events is returned directly as list of tuples in 0.4.0
             file_events = note_events
 
         except Exception as e:
             # Check if basic-pitch error is related to missing ONNX runtime
             if "onnxruntime" in str(e).lower():
-                raise ImportError("ONNX Runtime is required for Basic Pitch ONNX mode. Please install 'onnxruntime' or 'onnxruntime-gpu'.") from e
+                raise ImportError(
+                    "ONNX Runtime is required for Basic Pitch ONNX mode. Please install 'onnxruntime' or 'onnxruntime-gpu'."
+                ) from e
             raise e
         finally:
             if os.path.exists(tmp_path):
@@ -63,12 +70,15 @@ class BasicPitchDetector(NoteDetector):
             # Convert MIDI pitch to Hz
             freq = 440.0 * (2.0 ** ((pitch_midi - 69.0) / 12.0))
 
-            notes.append({
-                'start_time': float(start),
-                'duration': float(end - start),
-                'frequencies': [float(freq)],
-                'confidence': float(amp)
-            })
+            notes.append(
+                {
+                    "start_time": float(start),
+                    "duration": float(end - start),
+                    "frequencies": [float(freq)],
+                    "confidence": float(amp),
+                    "amplitude": float(amp),
+                }
+            )
 
         # Basic Pitch might return overlapping notes (polyphony).
         # We process them individually.

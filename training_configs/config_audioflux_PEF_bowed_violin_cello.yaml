@@ -2,7 +2,7 @@ instrument_name: "bowed"
 target_wav: "example_songs_for_training/violin_and_cello_duo_in_b_flat_major_andantino.wav"
 output_dir: "trained_models/config_audioflux_bowed_violin_cello"
 device: "cuda"
-epochs: 100
+epochs: 30
 learning_rate: 0.01
 
 audio:

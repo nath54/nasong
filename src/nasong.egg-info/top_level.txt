@@ -1,2 +1,1 @@
 nasong
-verification_output

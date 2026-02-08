@@ -226,6 +226,7 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
                 "duration": lv.ValueTrainableParameter(
                     note["duration"], name=f"{note_prefix}_dur"
                 ),
+                "amplitude": note.get("amplitude", 0.5),
                 "prefix": note_prefix,
             }
         )
@@ -281,6 +282,7 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
                     frequency=fp,
                     start_time=float(tn["start_time"].value),
                     duration=float(tn["duration"].value),
+                    init_amplitude=float(tn["amplitude"]),
                     name_prefix=voice_prefix,
                 )
                 chord_voices.append(voice)
@@ -341,7 +343,7 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
         history["losses"].append(avg_loss)
         history["epochs"].append(epoch)
 
-        if epoch % 10 == 0 or epoch == config.epochs - 1:
+        if epoch % 1 == 0 or epoch == config.epochs - 1:
             print(f"Epoch {epoch:3d}/{config.epochs} | Loss: {avg_loss:.6f}")
 
     print("\n=== Training Complete ===")
