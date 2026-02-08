@@ -4,8 +4,6 @@
 *.json
 training_configs
 *.png
-!trained_models/**/*.json
-!trained_models/**/*.png
 !training_configs
 tmp.sh
 **old
