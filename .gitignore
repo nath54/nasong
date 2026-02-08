@@ -3,7 +3,9 @@
 .*
 *.json
 training_configs
+trained_models
 *.png
 !training_configs
 tmp.sh
 **old
+results_analysis

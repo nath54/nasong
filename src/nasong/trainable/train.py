@@ -1,6 +1,7 @@
 import os
 import argparse
-from typing import List, Tuple, Dict, Any
+import datetime
+from typing import Tuple, Dict, Any
 import numpy as np
 from numpy.typing import NDArray
 
@@ -141,6 +142,11 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
     """
     print(f"=== Training {config.instrument_name} on {config.target_wav} ===")
     print(f"=== Engine: {config.engine_type} ===")
+
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    # Avoid double appending if already present (simple heuristic)
+    # But since we want every run to be unique, we just append.
+    config.output_dir = os.path.join(config.output_dir, timestamp)
 
     # Load target audio
     # Determine total duration
@@ -364,6 +370,12 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
     # 4. Save Params
     # Use Engine's method
     param_dict = engine.get_parameter_values()
+
+    # Save as generic params.json for inference compatibility
+    with open(os.path.join(config.output_dir, "params.json"), "w") as f:
+        json.dump(param_dict, f, indent=2)
+
+    # Also save with instrument name for reference (optional, keeping backward compat if needed)
     with open(
         os.path.join(config.output_dir, f"{config.instrument_name}_params.json"), "w"
     ) as f:
@@ -447,6 +459,7 @@ def main():
             device=args.device if args.device else "cpu",
             engine_type=args.engine if args.engine else "autograd",
         )
+
         if args.method:
             config.note_detection.method = args.method
 

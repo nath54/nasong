@@ -260,6 +260,12 @@ class ValueTrainableParameter(Value):
 
         #
         val = self.value
+        # Check if we need to capture this parameter in the current context
+        ctx = ParameterContext.get_current()
+        if ctx and ctx.capture:
+            if self not in ctx.captured_params:
+                ctx.captured_params.append(self)
+
         if HAS_TORCH and isinstance(val, torch.Tensor):
             return float(val.item())
 
@@ -302,6 +308,12 @@ class ValueTrainableParameter(Value):
         #
         ### Best way to pass the value correctly with good gradient flow. ###
         #
+        # Check if we need to capture this parameter in the current context
+        ctx = ParameterContext.get_current()
+        if ctx and ctx.capture:
+            if self not in ctx.captured_params:
+                ctx.captured_params.append(self)
+
         if isinstance(self.value, float):
             # Fallback if we accidentally call torch render on inference object
             # Convert float to tensor on fly (no gradient obviously)
