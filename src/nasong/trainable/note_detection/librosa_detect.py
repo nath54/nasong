@@ -1,6 +1,6 @@
 from typing import List, Dict, Any
 import numpy as np
-import logging
+
 from .base import NoteDetector
 
 try:

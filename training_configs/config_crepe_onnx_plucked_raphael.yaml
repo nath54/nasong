@@ -1,0 +1,21 @@
+
+instrument_name: "plucked"
+target_wav: "example_songs_for_training/guitar_cover_raphaels_final_act_classical.wav"
+output_dir: "trained_models/config_crepe_onnx_plucked_raphael"
+device: "cuda"
+epochs: 30
+learning_rate: 0.01
+
+audio:
+  start_time: 0.0
+  duration: 10.0
+  sample_rate: 44100
+
+note_detection:
+  method: "crepe_onnx"
+  crepe_confidence_threshold: 0.6
+  # The model download happens automatically on first run
+
+spectral_loss:
+  fft_sizes: [2048, 1024, 512]
+  high_freq_emphasis: 2.0
