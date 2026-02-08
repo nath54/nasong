@@ -1,8 +1,4 @@
-#
-### Import Modules. ###
-#
-
-#
+from typing import Dict, Any
 import numpy as np
 from numpy.typing import NDArray
 
@@ -78,3 +74,28 @@ class Min(Value):
             stacked: Tensor = torch.stack(value_tensors, dim=0)
             #
             return torch.min(stacked, dim=0)[0]
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Propagate gradients through min.
+        y = min(x_i)
+        dy/dx_i = 1 if x_i is min, 0 otherwise.
+        """
+        if not self.values:
+            return
+
+        arrays = [
+            v.getitem_np(np.zeros_like(grad_output), sample_rate) for v in self.values
+        ]
+        stacked = np.stack(arrays, axis=0)
+        min_idx = np.argmin(stacked, axis=0)
+
+        for i, v in enumerate(self.values):
+            mask = (min_idx == i).astype(np.float32)
+            v.backward(grad_output * mask, context, sample_rate)

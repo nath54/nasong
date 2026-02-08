@@ -1,9 +1,5 @@
-#
-### Import Modules. ###
-#
+from typing import Dict, Any
 import math
-
-#
 import numpy as np
 from numpy.typing import NDArray
 
@@ -17,14 +13,6 @@ from nasong.core.values.basic.value_constant import Constant
 class Sawtooth(Value):
     """
     A Value that generates a "naive" sawtooth wave.
-
-    "Truthness" / "Good Listening" Analysis:
-        - "Truthness": This is a mathematically correct, "naive" sawtooth wave.
-        - "Good Listening": This implementation is **VERY POOR** for
-            "good listening" at audio rates.
-        - **Reason:** Like the square wave, this has an instantaneous
-            discontinuity (the "drop") which causes massive aliasing.
-        - **Good Use:** Excellent for LFOs.
     """
 
     #
@@ -44,7 +32,7 @@ class Sawtooth(Value):
             frequency: The frequency multiplier.
             amplitude: The amplitude (gain).
             delta: The phase offset.
-            direction: A Value (e.g., Constant(1) or Constant(-1)) that determines the slope.
+            direction: A Value determinations the slope.
                         >= 0 gives a rising sawtooth.
                         < 0 gives a falling sawtooth.
         """
@@ -187,3 +175,40 @@ class Sawtooth(Value):
         ### Apply amplitude scaling. ###
         #
         return amp_v * sawtooth_value
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Propagate gradients through sawtooth wave.
+        Ignoring the discontinuity (jump).
+        Rising: y = a * (2 * p - 1) where p = (v * f + d) % 1
+        dy/da = 2*p - 1
+        dy/dp = 2*a
+        dp/dv = f, dp/df = v, dp/dd = 1
+        Falling: y = a * (1 - 2 * p)
+        dy/dp = -2*a
+        """
+        val_v = self.value.getitem_np(context["indices"], sample_rate)
+        f_v = self.frequency.getitem_np(context["indices"], sample_rate)
+        amp_v = self.amplitude.getitem_np(context["indices"], sample_rate)
+        d_v = self.delta.getitem_np(context["indices"], sample_rate)
+        dir_v = self.direction.getitem_np(np.zeros_like(grad_output), sample_rate)
+
+        phase = val_v * f_v + d_v
+        p = phase - np.floor(phase)
+
+        # dy/da
+        saw_val = np.where(dir_v >= 0, 2.0 * p - 1.0, 1.0 - 2.0 * p)
+        self.amplitude.backward(grad_output * saw_val, context, sample_rate)
+
+        # dy/dp
+        slope = np.where(dir_v >= 0, 2.0, -2.0)
+        grad_base = grad_output * amp_v * slope
+        self.value.backward(grad_base * f_v, context, sample_rate)
+        self.frequency.backward(grad_base * val_v, context, sample_rate)
+        self.delta.backward(grad_base, context, sample_rate)

@@ -1,8 +1,4 @@
-#
-### Import Modules. ###
-#
-
-#
+from typing import Dict, Any
 import numpy as np
 from numpy.typing import NDArray
 
@@ -77,3 +73,24 @@ class BasicScaling(Value):
 
         #
         return v * m + s
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Propagate gradients through linear scaling.
+        y = v * m + s
+        dy/dv = m
+        dy/dm = v
+        dy/ds = 1
+        """
+        v_val = self.value.getitem_np(context["indices"], sample_rate)
+        m_val = self.mult_scale.getitem_np(context["indices"], sample_rate)
+
+        self.value.backward(grad_output * m_val, context, sample_rate)
+        self.mult_scale.backward(grad_output * v_val, context, sample_rate)
+        self.sum_scale.backward(grad_output, context, sample_rate)

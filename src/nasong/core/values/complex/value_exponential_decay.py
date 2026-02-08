@@ -1,9 +1,5 @@
-#
-### Import Modules. ###
-#
+from typing import Dict, Any
 import math
-
-#
 import numpy as np
 from numpy.typing import NDArray
 
@@ -16,10 +12,6 @@ from nasong.core.value import torch, Tensor
 class ExponentialDecay(Value):
     """
     A simple, one-shot exponential decay envelope.
-    Perfect for percussion (Kick, Snare, HiHat).
-
-    This is a "truthful" and "good listening" envelope.
-    `env = exp(-relative_time * decay_rate)`
     """
 
     #
@@ -120,14 +112,9 @@ class ExponentialDecay(Value):
             return torch.zeros_like(indexes_buffer, dtype=torch.float32, device=device)
 
         #
-        safe_relative_time: Tensor = torch.maximum(
-            torch.tensor(0.0, dtype=torch.float32, device=device), relative_time
-        )
-
-        #
         ### Calculate decay for all samples using the safe time. ###
         #
-        decay_envelope: Tensor = torch.exp(-safe_relative_time * self.decay_rate).to(
+        decay_envelope: Tensor = torch.exp(-relative_time * self.decay_rate).to(
             dtype=torch.float32
         )
 
@@ -135,3 +122,25 @@ class ExponentialDecay(Value):
         ### Apply gate mask to zero out samples before the start_time. ###
         #
         return decay_envelope * gate_mask
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Propagate gradient to self.time.
+        y = exp(-r * d)
+        dy/dr = -d * exp(-r * d) = -d * y
+        """
+        t = self.time.getitem_np(np.zeros_like(grad_output), sample_rate)
+        relative_time = t - self.start_time
+
+        gate_mask = relative_time >= 0
+        y = np.exp(-np.maximum(0.0, relative_time) * self.decay_rate)
+
+        dy_dt = -self.decay_rate * y
+
+        self.time.backward(grad_output * dy_dt * gate_mask, context, sample_rate)

@@ -1,6 +1,4 @@
-#
-### Import Modules. ###
-#
+from typing import Dict, Any
 import math
 
 #
@@ -216,6 +214,67 @@ class ExponentialADSR(Value):
         ### Apply the main gate mask to ensure output is 0 outside the envelope. ###
         #
         return env * gate_mask
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Propagate gradient to self.time.
+        dy/dt = dy/dprogress * dprogress/dt
+        - Attack: curve * progress^(curve-1) * (1/attack_time)
+        - Decay: (1-sustain) * curve * (1-progress)^(curve-1) * (-1/decay_time)
+        - Sustain: 0
+        - Release: sustain * curve * (1-progress)^(curve-1) * (-1/release_time)
+        """
+        t = self.time.getitem_np(np.zeros_like(grad_output), sample_rate)
+        relative_time = t - self.note_start
+
+        dy_dt = np.zeros_like(relative_time)
+        gate_mask = (relative_time >= 0) & (relative_time <= self.release_end)
+
+        # Attack
+        attack_mask = relative_time < self.attack_end
+        if np.any(attack_mask):
+            p = relative_time[attack_mask] / self.attack_time
+            # Avoid div by zero if curve < 1 and p=0
+            p = np.maximum(1e-7, p)
+            dy_dt[attack_mask] = (
+                self.attack_curve * np.power(p, self.attack_curve - 1.0)
+            ) / self.attack_time
+
+        # Decay
+        decay_mask = (relative_time >= self.attack_end) & (
+            relative_time < self.decay_end
+        )
+        if np.any(decay_mask):
+            p = (relative_time[decay_mask] - self.attack_time) / self.decay_time
+            p_inv = np.maximum(1e-7, 1.0 - p)
+            dy_dt[decay_mask] = (
+                (1.0 - self.sustain_level)
+                * self.decay_curve
+                * np.power(p_inv, self.decay_curve - 1.0)
+                * (-1.0 / self.decay_time)
+            )
+
+        # Release
+        release_mask = (relative_time >= self.sustain_end) & (
+            relative_time <= self.release_end
+        )
+        if np.any(release_mask):
+            p = (relative_time[release_mask] - self.note_duration) / self.release_time
+            p_inv = np.maximum(1e-7, 1.0 - p)
+            dy_dt[release_mask] = (
+                self.sustain_level
+                * self.release_curve
+                * np.power(p_inv, self.release_curve - 1.0)
+                * (-1.0 / self.release_time)
+            )
+
+        self.time.backward(grad_output * dy_dt * gate_mask, context, sample_rate)
 
     #
     def getitem_torch(

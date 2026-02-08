@@ -1,8 +1,4 @@
-#
-### Import Modules. ###
-#
-
-#
+from typing import Dict, Any
 import numpy as np
 from numpy.typing import NDArray
 
@@ -15,16 +11,6 @@ from nasong.core.value import torch, Tensor
 class ADSR2(Value):
     """
     A "truthful" one-shot Attack-Decay-Sustain-Release envelope.
-
-    "Truthness" / "Good Listening" Analysis:
-        - "Truthness": **EXCELLENT**. This is the "correct" model of an
-            ADSR envelope. It's event-based, triggering on `note_start`.
-        - "Good Listening": **GOOD**. This is a perfectly functional envelope.
-        - **Improvement:** The "realism" could be slightly improved. This
-            implementation uses linear (straight-line) ramps for A, D, and R.
-            Real analog envelopes have *exponential* curves, which sound
-            "snappier" and more "natural." However, linear is much simpler
-            to implement and is a valid (and common) synthesis choice.
     """
 
     #
@@ -261,3 +247,51 @@ class ADSR2(Value):
         ### Apply the main gate mask to ensure output is 0 outside the envelope. ###
         #
         return env * gate_mask
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Propagate gradient to self.time.
+        dy/dt is piecewise:
+        - Attack: 1/attack_time
+        - Decay: -(1-sustain_level)/decay_time
+        - Sustain: 0
+        - Release: -sustain_level/release_time
+        """
+        # We need the relative time again.
+        # For performance, we could save it in getitem_np,
+        # but recalculating it from time's forward result is also possible.
+        # However, to be strict, we'd need time.getitem_np's result.
+        # Let's assume for now we recalculate for simplicity,
+        # or we should have saved it.
+        t: NDArray[np.float32] = self.time.getitem_np(
+            np.zeros(grad_output.shape, dtype=np.float32), sample_rate
+        )
+        relative_time: NDArray[np.float32] = t - self.note_start
+
+        dy_dt: NDArray[np.float32] = np.zeros_like(relative_time)
+
+        # Stage masks
+        gate_mask = (relative_time >= 0) & (relative_time <= self.release_end)
+        attack_mask = relative_time < self.attack_end
+        decay_mask = (relative_time >= self.attack_end) & (
+            relative_time < self.decay_end
+        )
+        sustain_mask = (relative_time >= self.decay_end) & (
+            relative_time < self.sustain_end
+        )
+        release_mask = (relative_time >= self.sustain_end) & (
+            relative_time <= self.release_end
+        )
+
+        dy_dt[attack_mask] = 1.0 / self.attack_time
+        dy_dt[decay_mask] = -(1.0 - self.sustain_level) / self.decay_time
+        dy_dt[sustain_mask] = 0.0
+        dy_dt[release_mask] = -self.sustain_level / self.release_time
+
+        self.time.backward(grad_output * dy_dt * gate_mask, context, sample_rate)

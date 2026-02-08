@@ -1,8 +1,4 @@
-#
-### Import Modules. ###
-#
-
-#
+from typing import Dict, Any
 import numpy as np
 from numpy.typing import NDArray
 
@@ -92,3 +88,19 @@ class Modulo(Value):
         ### We use torch.where to prevent division by zero. ###
         #
         return torch.where(mod_v == 0, val_v, torch.fmod(val_v, mod_v))
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Propagate gradients through modulo.
+        y = x % m
+        dy/dx = 1 (ignoring the jumps)
+        dy/dm = 0 (mostly, though technically it's more complex)
+        """
+        self.value.backward(grad_output, context, sample_rate)
+        self.modulo_value.backward(np.zeros_like(grad_output), context, sample_rate)

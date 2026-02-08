@@ -1,38 +1,28 @@
-#
-### Import Modules. ###
-#
+from typing import Dict, Any
 import math
-
-#
 import numpy as np
 from numpy.typing import NDArray
 
 #
 from nasong.core.value import Value
 from nasong.core.value import torch, Tensor
+from nasong.core.values.basic.value_constant import Constant
 
 
 #
 class Distortion(Value):
     """
     Guitar distortion effect using `tanh` soft clipping.
-
-    "Truthness" / "Good Listening" Analysis:
-        - "Truthness": **EXCELLENT**. This is a "truthful" and classic
-            model of a waveshaper used for soft-clipping distortion.
-        - "Good Listening": **GOOD**. It does exactly what it's supposed to do:
-            adds harmonics by clipping the waveform. The `tanh` function
-            provides a "warm" sound compared to "hard" clipping.
     """
 
     #
-    def __init__(self, value: Value, drive: float = 5.0) -> None:
+    def __init__(self, value: Value, gain: Value = Constant(5.0)) -> None:
         """
         Initializes the distortion effect.
 
         Args:
             value: The input `Value` (the audio signal) to be distorted.
-            drive: The amount of gain to apply before clipping.
+            gain: The amount of gain to apply before clipping.
                     Higher values = more distortion.
         """
 
@@ -41,17 +31,17 @@ class Distortion(Value):
 
         #
         self.value: Value = value
-        self.drive: float = drive
+        self.gain: Value = gain
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        ### Apply gain (drive). ###
+        ### Apply gain. ###
         #
-        x: float = (
-            self.value.get_item(index=index, sample_rate=sample_rate) * self.drive
-        )
+        x: float = self.value.get_item(
+            index=index, sample_rate=sample_rate
+        ) * self.gain.get_item(index=index, sample_rate=sample_rate)
 
         #
         ### Soft clipping using tanh. ###
@@ -64,14 +54,11 @@ class Distortion(Value):
     ) -> NDArray[np.float32]:
 
         #
-        ### Get the input signal buffer and apply gain (drive). ###
+        ### Get the input signal buffer and apply gain. ###
         #
-        x: NDArray[np.float32] = (
-            self.value.getitem_np(
-                indexes_buffer=indexes_buffer, sample_rate=sample_rate
-            )
-            * self.drive
-        )
+        x: NDArray[np.float32] = self.value.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        ) * self.gain.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
 
         #
         ### Apply vectorized soft clipping using np.tanh. ###
@@ -90,16 +77,41 @@ class Distortion(Value):
         x: Tensor = self.value.getitem_torch(
             indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
         )
-        gain: Tensor = self.gain.getitem_torch(
+        gain_v: Tensor = self.gain.getitem_torch(
             indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
         )
 
         #
         ### Amplify the signal. ###
         #
-        x = x * gain
+        x = x * gain_v
 
         #
         ### Apply vectorized soft clipping using torch.tanh. ###
         #
         return (torch.tanh(x) * 0.5).to(dtype=torch.float32)
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Propagate gradients through tanh distortion.
+        y = 0.5 * tanh(x * g)
+        dy/dx = 0.5 * g * (1 - tanh^2(x * g))
+        dy/dg = 0.5 * x * (1 - tanh^2(x * g))
+        """
+        val_v = self.value.getitem_np(np.zeros_like(grad_output), sample_rate)
+        gain_v = self.gain.getitem_np(np.zeros_like(grad_output), sample_rate)
+
+        tx = val_v * gain_v
+        tanh_tx = np.tanh(tx)
+
+        # d/du tanh(u) = 1 - tanh^2(u)
+        grad_base = grad_output * 0.5 * (1.0 - tanh_tx**2)
+
+        self.value.backward(grad_base * gain_v, context, sample_rate)
+        self.gain.backward(grad_base * val_v, context, sample_rate)

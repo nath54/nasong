@@ -1,9 +1,5 @@
-#
-### Import Modules. ###
-#
+from typing import Dict, Any
 import math
-
-#
 import numpy as np
 from numpy.typing import NDArray
 
@@ -17,15 +13,6 @@ from nasong.core.values.basic.value_constant import Constant
 class Square(Value):
     """
     A Value that generates a "naive" square wave with a variable duty cycle.
-
-    "Truthness" / "Good Listening" Analysis:
-        - "Truthness": This is a mathematically correct, "naive" square wave.
-        - "Good Listening": This implementation is **VERY POOR** for
-            "good listening" at audio rates.
-        - **Reason:** It produces extremely strong aliasing due to the
-            instantaneous vertical "jumps" (discontinuities) in the waveform.
-            This will sound very harsh and noisy.
-        - **Good Use:** This is perfect for LFOs, triggers, or gates.
     """
 
     #
@@ -154,3 +141,43 @@ class Square(Value):
         ### Square wave: high for duty_cycle portion, low for the rest. ###
         #
         return torch.where(normalized_phase < duty_v, amp_v, -amp_v)
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Propagate gradients through square wave.
+        y = a * sign(duty - (v*f + d)%1) (roughly)
+        dy/da = sign(...)
+        dy/dduty = 2 * a * delta(duty - p)
+        For simplicity, we use straight-through: dy/dduty = 0 almost everywhere,
+        or we can use a narrow pulse. Here we'll just handle dy/da.
+        """
+        val_v = self.value.getitem_np(context["indices"], sample_rate)
+        f_v = self.frequency.getitem_np(context["indices"], sample_rate)
+        amp_v = self.amplitude.getitem_np(context["indices"], sample_rate)
+        d_v = self.delta.getitem_np(context["indices"], sample_rate)
+        duty = self.duty_cycle.getitem_np(context["indices"], sample_rate)
+
+        phase = val_v * f_v + d_v
+        p = phase - np.floor(phase)
+
+        # dy/da
+        sq_val = np.where(p < duty, 1.0, -1.0)
+        self.amplitude.backward(grad_output * sq_val, context, sample_rate)
+
+        # dy/dduty: straight-through proxy
+        # We can approximate dy/dduty = a * pulse at the transition
+        # But for now, we leave it at 0 as per the comment.
+        self.duty_cycle.backward(np.zeros_like(grad_output), context, sample_rate)
+
+        # Straight-through for phase-related grads
+        # Use a sawtooth-like proxy: ramp from -1 to 1 per cycle
+        grad_proxy = grad_output * amp_v * 2.0
+        self.value.backward(grad_proxy * f_v, context, sample_rate)
+        self.frequency.backward(grad_proxy * val_v, context, sample_rate)
+        self.delta.backward(grad_proxy, context, sample_rate)

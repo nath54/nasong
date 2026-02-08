@@ -4,6 +4,8 @@
 import numpy as np
 from numpy.typing import NDArray
 
+from typing import Dict, Any
+
 #
 from nasong.core.value import Value
 from nasong.core.value import torch, Tensor
@@ -26,7 +28,7 @@ class Constant(Value):
     def get_item(self, index: int, sample_rate: int) -> float:
 
         #
-        return self.value
+        return float(self.value)
 
     #
     def getitem_np(
@@ -34,7 +36,9 @@ class Constant(Value):
     ) -> NDArray[np.float32]:
 
         #
-        return np.full_like(indexes_buffer, fill_value=self.value, dtype=np.float32)
+        return np.full_like(
+            indexes_buffer, fill_value=float(self.value), dtype=np.float32
+        )
 
     #
     def getitem_torch(
@@ -51,6 +55,16 @@ class Constant(Value):
             dtype=torch.float32,
             device=device,
         )
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """Constant has no inputs, so backward does nothing."""
+        pass
 
 
 #

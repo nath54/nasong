@@ -1,9 +1,5 @@
-#
-### Import Modules. ###
-#
+from typing import Dict, Any
 import math
-
-#
 import numpy as np
 from numpy.typing import NDArray
 
@@ -17,14 +13,6 @@ from nasong.core.values.basic.value_constant import Constant
 class BandLimitedSquare(Value):
     """
     A "good listening" square wave built from a fixed number of harmonics.
-
-    "Truthness" / "Good Listening" Analysis:
-        - "Truthness": This is a "truthful" additive synthesis model
-            of a band-limited square wave (which contains only odd harmonics).
-        - "Good Listening": **GOOD**.
-        - **Reason:** This avoids the "naive" formula and its massive
-            aliasing by summing `Sin` waves. It uses the same "fixed-harmonic-limit"
-            compromise as `BandLimitedSawtooth`.
     """
 
     #
@@ -148,3 +136,38 @@ class BandLimitedSquare(Value):
         ### Normalize (approx. 4/pi) and apply amplitude. ###
         #
         return (output_array * 0.7854 * a_v).to(dtype=torch.float32)
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Propagate gradients through band-limited square wave.
+        y = 0.7854 * a * sum(sin(t * f * h * 2pi) / h)
+        dy/da = 0.7854 * sum(...)
+        dy/dt = 0.7854 * a * sum(cos(...) * f * h * 2pi / h) = 0.7854 * a * f * 2pi * sum(cos(...))
+        dy/df = 0.7854 * a * t * 2pi * sum(cos(...))
+        """
+        t_v = self.time.getitem_np(np.zeros_like(grad_output), sample_rate)
+        f_v = self.frequency.getitem_np(np.zeros_like(grad_output), sample_rate)
+        a_v = self.amplitude.getitem_np(np.zeros_like(grad_output), sample_rate)
+
+        sum_sin = np.zeros_like(grad_output)
+        sum_cos = np.zeros_like(grad_output)
+
+        for n in range(1, self.num_harmonics + 1):
+            h = 2 * n - 1
+            phase = t_v * f_v * h * self.pi2
+            sum_sin += np.sin(phase) / h
+            sum_cos += np.cos(phase)
+
+        # dy/da
+        self.amplitude.backward(grad_output * 0.7854 * sum_sin, context, sample_rate)
+
+        # dy/dt and dy/df
+        grad_base = grad_output * 0.7854 * a_v * self.pi2 * sum_cos
+        self.time.backward(grad_base * f_v, context, sample_rate)
+        self.frequency.backward(grad_base * t_v, context, sample_rate)

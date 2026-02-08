@@ -1,9 +1,5 @@
-#
-### Import Modules. ###
-#
+from typing import Dict, Any
 import math
-
-#
 import numpy as np
 from numpy.typing import NDArray
 
@@ -71,3 +67,32 @@ class Log(Value):
 
         #
         return (torch.log(val_v) / torch.log(base_v)).to(dtype=torch.float32)
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Propagate gradients through log.
+        y = ln(x) / ln(b)
+        dy/dx = 1 / (x * ln(b))
+        dy/db = -ln(x) / (b * (ln(b))^2)
+        """
+        val_v = self.value.getitem_np(context["indices"], sample_rate)
+        base_v = self.base.getitem_np(context["indices"], sample_rate)
+
+        # Avoid log(0) and div by zero
+        val_v = np.maximum(1e-7, val_v)
+        base_v = np.maximum(1e-7, base_v)
+
+        ln_v = np.log(val_v)
+        ln_b = np.log(base_v)
+
+        grad_dx = grad_output / (val_v * ln_b)
+        grad_db = -grad_output * ln_v / (base_v * (ln_b**2))
+
+        self.value.backward(grad_dx, context, sample_rate)
+        self.base.backward(grad_db, context, sample_rate)

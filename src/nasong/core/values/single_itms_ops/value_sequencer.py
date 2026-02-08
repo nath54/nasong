@@ -1,9 +1,4 @@
-#
-### Import Modules. ###
-#
-from typing import Callable, Any
-
-#
+from typing import Callable, Any, Dict
 import numpy as np
 from numpy.typing import NDArray
 
@@ -93,3 +88,16 @@ class Sequencer(Value):
         return self.sum.getitem_torch(
             indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
         )
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Propagate gradients through sequencer.
+        Proxies to the internal Sum object.
+        """
+        self.sum.backward(grad_output, context, sample_rate)

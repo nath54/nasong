@@ -1,8 +1,4 @@
-#
-### Import Modules. ###
-#
-
-#
+from typing import Dict, Any
 import numpy as np
 from numpy.typing import NDArray
 
@@ -71,3 +67,25 @@ class LowPass(Value):
                 indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
             ),
         )
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Propagate gradients through low-pass (min clipper).
+        y = min(x, high)
+        dy/dx = 1 if x < high, 0 otherwise.
+        dy/dhigh = 1 if high <= x, 0 otherwise.
+        """
+        v_val = self.value.getitem_np(context["indices"], sample_rate)
+        high_val = self.max_value.getitem_np(context["indices"], sample_rate)
+
+        mask_x = (v_val < high_val).astype(np.float32)
+        mask_high = (high_val <= v_val).astype(np.float32)
+
+        self.value.backward(grad_output * mask_x, context, sample_rate)
+        self.max_value.backward(grad_output * mask_high, context, sample_rate)

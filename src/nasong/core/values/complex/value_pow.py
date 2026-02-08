@@ -1,9 +1,5 @@
-#
-### Import Modules. ###
-#
+from typing import Dict, Any
 import math
-
-#
 import numpy as np
 from numpy.typing import NDArray
 
@@ -71,3 +67,29 @@ class Pow(Value):
 
         #
         return torch.pow(base_v, exp_v)
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Propagate gradients through power function.
+        y = b ^ e
+        dy/db = e * b^(e-1)
+        dy/de = b^e * ln(b)
+        """
+        b_val = self.base.getitem_np(context["indices"], sample_rate)
+        e_val = self.exponent.getitem_np(context["indices"], sample_rate)
+
+        # dy/db
+        grad_db = grad_output * e_val * np.power(np.maximum(1e-7, b_val), e_val - 1.0)
+
+        # dy/de
+        y = np.power(b_val, e_val)
+        grad_de = grad_output * y * np.log(np.maximum(1e-7, b_val))
+
+        self.base.backward(grad_db, context, sample_rate)
+        self.exponent.backward(grad_de, context, sample_rate)

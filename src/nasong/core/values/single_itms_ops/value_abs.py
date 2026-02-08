@@ -1,8 +1,4 @@
-#
-### Import Modules. ###
-#
-
-#
+from typing import Dict, Any
 import numpy as np
 from numpy.typing import NDArray
 
@@ -56,3 +52,18 @@ class Abs(Value):
                 indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
             )
         )
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Propagate gradients through abs.
+        y = |x|
+        dy/dx = sign(x)
+        """
+        x_v = self.value.getitem_np(context["indices"], sample_rate)
+        self.value.backward(grad_output * np.sign(x_v), context, sample_rate)

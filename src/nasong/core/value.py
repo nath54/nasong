@@ -1,7 +1,7 @@
 #
 ### Import Modules. ###
 #
-from typing import Any
+from typing import Any, Dict
 
 #
 import numpy as np
@@ -138,6 +138,26 @@ class Value:
         ### We don't use the __get_item__ method to avoid gradient discontinuity. ###
         #
         return default
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Calculates gradients for the NumPy engine (manual differentiation).
+
+        Subclasses should override this to propagate gradients to their inputs
+        and update their internal parameters.
+
+        Args:
+            grad_output: The gradient of the loss with respect to this node's output.
+            context: A storage for intermediate values from the forward pass.
+            sample_rate: The sample rate.
+        """
+        pass
 
 
 #
@@ -286,3 +306,28 @@ class ValueTrainableParameter(Value):
             return t_val.expand_as(indexes_buffer)
 
         return self.value.to(device).expand_as(indexes_buffer)
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Accumulate gradients for this parameter.
+        """
+        engine = context.get("engine")
+        if engine:
+            # Accumulate gradient: dL/dp = sum(dL/dy * dy/dp)
+            # For a parameter p, dy/dp = 1 (constant value across indices)
+            # So the gradient is just the sum of grad_output.
+            # Use float64 for accumulation to avoid precision loss
+            grad = np.sum(grad_output, dtype=np.float64)
+
+            # Use the engine's gradient dictionary
+            if hasattr(engine, "gradients"):
+                if self in engine.gradients:
+                    engine.gradients[self] += grad
+                else:
+                    engine.gradients[self] = np.array([grad], dtype=np.float64)

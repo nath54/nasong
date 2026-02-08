@@ -2,6 +2,7 @@
 ### Import Modules. ###
 #
 import math
+from typing import Dict, Any
 
 #
 import numpy as np
@@ -148,3 +149,37 @@ class BandLimitedSawtooth(Value):
         ### Normalize (approx. 2/pi) and apply amplitude. ###
         #
         return (output_array * 0.6366 * a_v).to(dtype=torch.float32)
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Propagate gradients through additive synthesis.
+        """
+        t_v = self.time.getitem_np(np.zeros_like(grad_output), sample_rate)
+        f_v = self.frequency.getitem_np(np.zeros_like(grad_output), sample_rate)
+        a_v = self.amplitude.getitem_np(np.zeros_like(grad_output), sample_rate)
+
+        common_sum_cos = np.zeros_like(grad_output)
+        common_sum_sin_n = np.zeros_like(grad_output)
+
+        for n in range(1, self.num_harmonics + 1):
+            phase = t_v * f_v * n * self.pi2
+            common_sum_cos += np.cos(phase)
+            common_sum_sin_n += np.sin(phase) / n
+
+        # dy/da = 0.6366 * sum(sin(phi)/n)
+        self.amplitude.backward(
+            grad_output * 0.6366 * common_sum_sin_n, context, sample_rate
+        )
+
+        # dphi/dt = 2pi * f * n
+        # dphi/df = 2pi * t * n
+        # dy/dt = 0.6366 * a * sum(cos(phi) * 2pi * f) = 0.6366 * a * 2pi * f * sum(cos(phi))
+        grad_base = grad_output * 0.6366 * a_v * self.pi2 * common_sum_cos
+        self.time.backward(grad_base * f_v, context, sample_rate)
+        self.frequency.backward(grad_base * t_v, context, sample_rate)

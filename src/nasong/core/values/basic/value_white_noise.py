@@ -1,8 +1,4 @@
-#
-### Import Modules. ###
-#
-
-#
+from typing import Dict, Any
 import numpy as np
 from numpy.typing import NDArray
 
@@ -14,7 +10,7 @@ from nasong.core.value import torch, Tensor
 #
 class WhiteNoise(Value):
     #
-    def __init__(self, seed: int = 42, scale: float = 1.0):
+    def __init__(self, seed: int = 42, scale: float = 1.0) -> None:
 
         #
         super().__init__()
@@ -25,6 +21,14 @@ class WhiteNoise(Value):
         self.scale: float = scale
 
     #
+    def get_item(self, index: int, sample_rate: int) -> float:
+        # We use a non-vectorized version for single samples if needed,
+        # but internal code usually uses getitem_np.
+        # Simple hash-based approach for single items:
+        noise = float(((index * self.seed + 12345) & 0xFFFFFFFF) / 0xFFFFFFFF - 0.5)
+        return noise * 100.0 * self.scale
+
+    #
     ### Helper function for vectorized deterministic noise ###
     #
     @staticmethod
@@ -33,23 +37,8 @@ class WhiteNoise(Value):
     ) -> NDArray[np.float32]:
         """
         Generates a deterministic, pseudo-random noise value for each index.
-
-        This replaces the non-vectorizable, non-performant `hash()`-based
-        noise in the original classes. This uses a simple, fast LCG (Linear
-        Congruential Generator) which is "hash-like" and deterministic.
-
-        Args:
-            indexes_buffer: The buffer of sample indices.
-            seed: An integer to vary the noise (e.g., 8191, 7919).
-            scale: The final scaling factor (e.g., 1/5000.0).
-
-        Returns:
-            A NumPy array of noise values, one for each index.
         """
 
-        #
-        ### A simple LCG: (a * x + c) % m              ###
-        ### We use bitwise-AND for a fast modulo 2^32. ###
         #
         idx_int: NDArray[np.uint32] = indexes_buffer.astype(np.uint32)
         noise_int: NDArray[np.uint32] = ((idx_int * seed + 12345) & 0xFFFFFFFF).astype(
@@ -102,3 +91,15 @@ class WhiteNoise(Value):
         ### Scale to match original intent. ###
         #
         return (noise_float * 100.0 * self.scale).to(dtype=torch.float32, device=device)
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        WhiteNoise has no upstream trainable parameters in current implementation.
+        """
+        pass

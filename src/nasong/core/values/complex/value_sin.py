@@ -1,9 +1,5 @@
-#
-### Import Modules. ###
-#
+from typing import Dict, Any
 import math
-
-#
 import numpy as np
 from numpy.typing import NDArray
 
@@ -96,3 +92,34 @@ class Sin(Value):
 
         #
         return amp_v * torch.sin(val_v * fre_v + del_v)
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Propagate gradients through Sine wave.
+        y = a * sin(v * f + d)
+        dy/da = sin(v * f + d)
+        dy/dv = a * f * cos(v * f + d)
+        dy/df = a * v * cos(v * f + d)
+        dy/dd = a * cos(v * f + d)
+        """
+        val_v = self.value.getitem_np(context["indices"], sample_rate)
+        fre_v = self.frequency.getitem_np(context["indices"], sample_rate)
+        amp_v = self.amplitude.getitem_np(context["indices"], sample_rate)
+        del_v = self.delta.getitem_np(context["indices"], sample_rate)
+
+        phase = val_v * fre_v + del_v
+        sin_phase = np.sin(phase)
+        cos_phase = np.cos(phase)
+
+        self.amplitude.backward(grad_output * sin_phase, context, sample_rate)
+
+        grad_base = grad_output * amp_v * cos_phase
+        self.value.backward(grad_base * fre_v, context, sample_rate)
+        self.frequency.backward(grad_base * val_v, context, sample_rate)
+        self.delta.backward(grad_base, context, sample_rate)

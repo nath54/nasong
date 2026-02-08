@@ -1,8 +1,4 @@
-#
-### Import Modules. ###
-#
-
-#
+from typing import Dict, Any
 import numpy as np
 from numpy.typing import NDArray
 
@@ -60,13 +56,14 @@ class Polynom(Value):
         return np.sum(
             [
                 np.multiply(
-                    np.pow(X_val, i),
+                    np.power(X_val, i),
                     self.terms[i].getitem_np(
                         indexes_buffer=indexes_buffer, sample_rate=sample_rate
                     ),
                 )
                 for i in range(len(self.terms))
-            ]
+            ],
+            axis=0,
         )
 
     #
@@ -97,3 +94,31 @@ class Polynom(Value):
 
         #
         return result
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Propagate gradients through polynomial.
+        y = sum(a_i * X^i)
+        dy/dX = sum(i * a_i * X^(i-1))
+        dy/da_i = X^i
+        """
+        X_val = self.X.getitem_np(context["indices"], sample_rate)
+
+        grad_dX = np.zeros_like(grad_output)
+
+        for i, term in enumerate(self.terms):
+            a_i = term.getitem_np(context["indices"], sample_rate)
+            # dy/da_i
+            term.backward(grad_output * np.power(X_val, i), context, sample_rate)
+
+            # dy/dX contribution
+            if i > 0:
+                grad_dX += i * a_i * np.power(X_val, i - 1)
+
+        self.X.backward(grad_output * grad_dX, context, sample_rate)

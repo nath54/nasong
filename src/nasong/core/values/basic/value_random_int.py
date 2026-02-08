@@ -9,6 +9,8 @@ import random
 import numpy as np
 from numpy.typing import NDArray
 
+from typing import Dict, Any
+
 #
 from nasong.core.value import Value
 from nasong.core.value import torch, Tensor
@@ -78,11 +80,22 @@ class RandomInt(Value):
         max_int = np.maximum(min_int + 1, max_int)
 
         #
+        ### Generate random coefficients for backward pass. ###
+        #
+        # For RandomInt, the continuous proxy is min + r*(max - min + 1) -> floor()
+        random_vals: NDArray[np.float32] = np.random.uniform(
+            low=0.0, high=1.0, size=indexes_buffer.shape
+        ).astype(np.float32)
+
+        # Save for backward pass
+        self._last_random_vals = random_vals
+
+        #
         ### Generate random ints and cast back to float32 for the audio buffer. ###
         #
-        return np.random.randint(
-            low=min_int, high=max_int, size=indexes_buffer.shape
-        ).astype(np.float32)
+        return np.floor(min_vals + random_vals * (max_vals - min_vals + 1.0)).astype(
+            np.float32
+        )
 
     #
     def getitem_torch(
@@ -119,3 +132,22 @@ class RandomInt(Value):
         return torch.floor(min_vals + random_vals * (max_vals - min_vals + 1.0)).to(
             dtype=torch.float32, device=device
         )
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Straight-through differentiation for RandomInt bounds.
+        y = floor(min + r*(max - min + 1))
+        Proxy dy/dmin = 1 - r
+        Proxy dy/dmax = r
+        """
+        if hasattr(self, "_last_random_vals"):
+            r = self._last_random_vals
+            # Straight-through proxy
+            self.min_range.backward(grad_output * (1.0 - r), context, sample_rate)
+            self.max_range.backward(grad_output * r, context, sample_rate)

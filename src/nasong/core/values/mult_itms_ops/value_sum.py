@@ -1,8 +1,4 @@
-#
-### Import Modules. ###
-#
-
-#
+from typing import Dict, Any
 import numpy as np
 from numpy.typing import NDArray
 
@@ -78,3 +74,18 @@ class Sum(Value):
             stacked: Tensor = torch.stack(value_tensors, dim=0)
             #
             return torch.sum(stacked, dim=0)
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Propagate gradients through sum.
+        y = sum(x_i)
+        dy/dx_i = 1
+        """
+        for v in self.values:
+            v.backward(grad_output, context, sample_rate)

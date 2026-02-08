@@ -1,9 +1,5 @@
-#
-### Import Modules. ###
-#
+from typing import Dict, Any
 import math
-
-#
 import numpy as np
 from numpy.typing import NDArray
 
@@ -17,19 +13,6 @@ from nasong.core.values.basic.value_constant import Constant
 class Triangle(Value):
     """
     A Value that generates a "naive" triangle wave.
-
-    "Truthness" / "Good Listening" Analysis:
-        - "Truthness": This is a mathematically correct, "naive" triangle
-            wave. It is "truthful" in that sense.
-        - "Good Listening": This implementation is **POOR** for "good listening"
-            when used for audio-rate oscillators (e.g., frequencies > 20 Hz).
-        - **Reason:** It produces strong aliasing (unwanted, inharmonic
-            frequencies) because it has infinite sharp corners (harmonics)
-            that are not band-limited. This aliasing sounds like a harsh,
-            "digital" noise.
-        - **Good Use:** This implementation is perfectly "realistic" and "good"
-            for LFO (Low-Frequency Oscillator) use, where aliasing is not
-            in the audible range.
     """
 
     #
@@ -75,7 +58,6 @@ class Triangle(Value):
 
         #
         ### Triangle wave formula: 2 * |2 * (phase - floor(phase + 0.5))| - 1 ###
-        ### This creates a wave that oscillates between -1 and 1              ###
         #
         triangle_value: float = 2.0 * abs(2.0 * (phase - math.floor(phase + 0.5))) - 1.0
 
@@ -158,3 +140,37 @@ class Triangle(Value):
         ### Apply amplitude scaling. ###
         #
         return amp_v * triangle_value
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Propagate gradients through triangle wave.
+        y = a * (4 * |p - 0.5| - 1) where p = phase % 1
+        But the current formula is 2 * |2 * (phase - floor(phase + 0.5))| - 1.
+        Basically, the slope is 4*a or -4*a.
+        """
+        val_v = self.value.getitem_np(context["indices"], sample_rate)
+        f_v = self.frequency.getitem_np(context["indices"], sample_rate)
+        amp_v = self.amplitude.getitem_np(context["indices"], sample_rate)
+        d_v = self.delta.getitem_np(context["indices"], sample_rate)
+
+        phase = val_v * f_v + d_v
+        # Relative phase in [-0.5, 0.5)
+        rel_p = phase - np.floor(phase + 0.5)
+
+        # dy/da
+        tri_val = 2.0 * np.abs(2.0 * rel_p) - 1.0
+        self.amplitude.backward(grad_output * tri_val, context, sample_rate)
+
+        # dy/dp
+        # slope is 4*a if rel_p > 0, -4*a if rel_p < 0
+        slope_sign = np.where(rel_p >= 0, 1.0, -1.0)
+        grad_base = grad_output * amp_v * slope_sign * 4.0
+        self.value.backward(grad_base * f_v, context, sample_rate)
+        self.frequency.backward(grad_base * val_v, context, sample_rate)
+        self.delta.backward(grad_base, context, sample_rate)

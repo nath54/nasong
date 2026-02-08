@@ -1,8 +1,4 @@
-#
-### Import Modules. ###
-#
-
-#
+from typing import Dict, Any
 import numpy as np
 from numpy.typing import NDArray
 
@@ -114,3 +110,42 @@ class TimeInterval(Value):
 
         #
         return torch.where(inside_mask, inside_values, outside_values)
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Propagate gradients through time interval.
+        y = inside if min <= time <= max else outside
+        dy/dinside = 1 if inside, 0 otherwise
+        dy/doutside = 1 if outside, 0 otherwise
+        """
+        # We need the indexes to know which branch was taken
+        # grad_output is likely coming from a buffer that has the same shape as the sample indexes
+        # But we don't have the indexes directly here.
+        # Actually, backward receives grad_output which corresponds to the last getitem_np call.
+        # We can reconstruct the mask if we know the sample rate and the size of grad_output.
+        # BUT the best is to just call getitem_np on the indices to get the masks.
+
+        # We need the indices. The indices are usually 0..N-1.
+        indices = np.arange(len(grad_output), dtype=np.float32)
+
+        min_v = self.min_sample_idx.getitem_np(context["indices"], sample_rate)
+        max_v = self.max_sample_idx.getitem_np(context["indices"], sample_rate)
+
+        inside_mask = (indices >= min_v) & (indices <= max_v)
+        outside_mask = ~inside_mask
+
+        self.value_inside.backward(
+            grad_output * inside_mask.astype(np.float32), context, sample_rate
+        )
+        self.value_outside.backward(
+            grad_output * outside_mask.astype(np.float32), context, sample_rate
+        )
+        # Straight-through for min/max idx
+        self.min_sample_idx.backward(np.zeros_like(grad_output), context, sample_rate)
+        self.max_sample_idx.backward(np.zeros_like(grad_output), context, sample_rate)

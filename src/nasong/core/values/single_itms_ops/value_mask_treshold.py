@@ -1,8 +1,4 @@
-#
-### Import Modules. ###
-#
-
-#
+from typing import Dict, Any
 import numpy as np
 from numpy.typing import NDArray
 
@@ -104,3 +100,28 @@ class MaskTreshold(Value):
 
         #
         return torch.where(mask_v < treshold_v, base_value, masked_value)
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Propagate gradients through mask threshold.
+        y = value if mask < threshold else mask_value
+        dy/dvalue = 1 if mask < threshold else 0
+        dy/dmask_value = 1 if mask >= threshold else 0
+        """
+        mask_v = self.mask.getitem_np(context["indices"], sample_rate)
+        tresh_v = self.treshold_to_mask.getitem_np(context["indices"], sample_rate)
+
+        mask_below = (mask_v < tresh_v).astype(np.float32)
+        mask_above = (mask_v >= tresh_v).astype(np.float32)
+
+        self.value.backward(grad_output * mask_below, context, sample_rate)
+        self.mask_value.backward(grad_output * mask_above, context, sample_rate)
+        # Straight-through for mask and threshold
+        self.mask.backward(np.zeros_like(grad_output), context, sample_rate)
+        self.treshold_to_mask.backward(np.zeros_like(grad_output), context, sample_rate)

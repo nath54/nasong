@@ -1,8 +1,4 @@
-#
-### Import Modules. ###
-#
-
-#
+from typing import Dict, Any
 import numpy as np
 from numpy.typing import NDArray
 
@@ -95,3 +91,23 @@ class PonderedSum(Value):
 
         #
         return result
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Propagate gradients through pondered sum.
+        y = sum(w_i * x_i)
+        dy/dw_i = x_i
+        dy/dx_i = w_i
+        """
+        for weight, value in self.values_and_weights:
+            w_val = weight.getitem_np(context["indices"], sample_rate)
+            v_val = value.getitem_np(context["indices"], sample_rate)
+
+            weight.backward(grad_output * v_val, context, sample_rate)
+            value.backward(grad_output * w_val, context, sample_rate)

@@ -7,6 +7,8 @@ import random
 import numpy as np
 from numpy.typing import NDArray
 
+from typing import Dict, Any
+
 #
 from nasong.core.value import Value
 from nasong.core.value import torch, Tensor
@@ -60,9 +62,14 @@ class RandomFloat(Value):
         #
         ### Use numpy's vectorized uniform random number generator. ###
         #
-        return np.random.uniform(
-            low=min_vals, high=max_vals, size=indexes_buffer.shape
+        random_vals: NDArray[np.float32] = np.random.uniform(
+            low=0.0, high=1.0, size=indexes_buffer.shape
         ).astype(np.float32)
+
+        # Save for backward pass
+        self._last_random_vals = random_vals
+
+        return min_vals + random_vals * (max_vals - min_vals)
 
     #
     def getitem_torch(
@@ -94,3 +101,21 @@ class RandomFloat(Value):
         )
         #
         return min_vals + random_vals * (max_vals - min_vals)
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Propagate gradients to min_range and max_range.
+        y = min + r*(max - min) = min*(1-r) + max*r
+        dy/dmin = 1 - r
+        dy/dmax = r
+        """
+        if hasattr(self, "_last_random_vals"):
+            r = self._last_random_vals
+            self.min_range.backward(grad_output * (1.0 - r), context, sample_rate)
+            self.max_range.backward(grad_output * r, context, sample_rate)

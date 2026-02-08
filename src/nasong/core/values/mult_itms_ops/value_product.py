@@ -1,8 +1,4 @@
-#
-### Import Modules. ###
-#
-
-#
+from typing import Dict, Any
 import numpy as np
 from numpy.typing import NDArray
 
@@ -80,3 +76,23 @@ class Product(Value):
 
         #
         return result
+
+    #
+    def backward(
+        self,
+        grad_output: NDArray[np.float32],
+        context: Dict[str, Any],
+        sample_rate: int,
+    ) -> None:
+        """
+        Propagate gradients through product.
+        y = prod(x_i)
+        dy/dx_i = y / x_i
+        """
+        y = self.getitem_np(context["indices"], sample_rate)
+
+        for v in self.values:
+            xi = v.getitem_np(context["indices"], sample_rate)
+            # Avoid division by zero
+            grad_xi = grad_output * y / np.where(xi == 0, 1e-7, xi)
+            v.backward(grad_xi, context, sample_rate)
