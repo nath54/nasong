@@ -8,7 +8,7 @@ from torch import Tensor
 import torch.optim as optim
 import scipy.io.wavfile as wavfile
 
-import nasong.core.value as lv
+import nasong.core.all_values as lv
 import nasong.trainable.extract as learnable
 from nasong.trainable.config import TrainingConfig  # , NoteDetectionConfig
 from nasong.trainable.note_detection.create import create_note_detector

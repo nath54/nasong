@@ -87,7 +87,7 @@ Your script **MUST** define two things:
 
 **Example Template:**
 ```python
-import nasong.core.value as lv
+import nasong.core.all_values as lv
 from nasong.instruments.synth import SimpleSynth
 
 # 1. Define Duration
@@ -191,7 +191,7 @@ Use the `load_trained_instrument` helper to load an instrument with its trained 
 
 ```python
 from nasong.trainable.inference import load_trained_instrument
-import nasong.core.value as lv
+import nasong.core.all_values as lv
 
 # 1. Load instrument from Experiment ID (get this from nasong-monitor list)
 # This returns a callable function identical to the original blueprint but with defaults updated.

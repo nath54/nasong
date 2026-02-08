@@ -1,0 +1,104 @@
+#
+### Import Modules. ###
+#
+from typing import cast, Callable, Any
+
+#
+import random
+import math
+
+#
+import numpy as np
+from numpy.typing import NDArray
+
+#
+from nasong.core.value import Value
+from nasong.core.value import torch, Tensor
+from nasong.core.values.basic.value_constant import Constant
+
+
+#
+class Polynom(Value):
+    """
+    A Value that calculates a polynomial function:
+    y = terms[0] + terms[1]*X + terms[2]*X^2 + ...
+    """
+
+    #
+    def __init__(
+        self, X: Value, terms: list[Value] = [Constant(0), Constant(1)]
+    ) -> None:
+
+        #
+        super().__init__()
+
+        #
+        self.X: Value = X
+        #
+        self.terms: list[Value] = terms
+
+    #
+    def get_item(self, index: int, sample_rate: int) -> float:
+
+        #
+        X_val: float = self.X.get_item(index=index, sample_rate=sample_rate)
+
+        #
+        return sum(
+            [
+                X_val**i * self.terms[i].get_item(index=index, sample_rate=sample_rate)
+                for i in range(len(self.terms))
+            ]
+        )
+
+    #
+    def getitem_np(
+        self, indexes_buffer: NDArray[np.float32], sample_rate: int
+    ) -> NDArray[np.float32]:
+
+        #
+        X_val: NDArray[np.float32] = self.X.getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+
+        #
+        return np.sum(
+            [
+                np.multiply(
+                    np.pow(X_val, i),
+                    self.terms[i].getitem_np(
+                        indexes_buffer=indexes_buffer, sample_rate=sample_rate
+                    ),
+                )
+                for i in range(len(self.terms))
+            ]
+        )
+
+    #
+    def getitem_torch(
+        self,
+        indexes_buffer: Tensor,
+        sample_rate: int,
+        device: str | torch.device = "cpu",
+    ) -> Tensor:
+
+        #
+        X_val: Tensor = self.X.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+
+        #
+        result: Tensor = torch.zeros_like(
+            indexes_buffer, dtype=torch.float32, device=device
+        )
+        #
+        for i in range(len(self.terms)):
+            #
+            term_val: Tensor = self.terms[i].getitem_torch(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+            )
+            #
+            result = result + torch.pow(X_val, float(i)) * term_val
+
+        #
+        return result

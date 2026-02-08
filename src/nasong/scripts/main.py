@@ -27,7 +27,7 @@ import argparse
 import nasong.core.utils as li
 import nasong.core.config as lc
 import nasong.core.song as ls
-import nasong.core.value as lv
+import nasong.core.all_values as lv
 
 
 #

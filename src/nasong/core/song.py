@@ -38,7 +38,7 @@ from numpy.typing import NDArray
 # from tqdm import tqdm
 #
 import nasong.core.config as lc
-import nasong.core.value as lv
+import nasong.core.all_values as lv
 import nasong.core.wav as lw
 
 

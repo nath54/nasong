@@ -1,7 +1,7 @@
 #
 ### Import Modules. ###
 #
-import nasong.core.value as lv
+import nasong.core.all_values as lv
 
 #
 from nasong.instruments.plucked_strings import Strum, GuitarString

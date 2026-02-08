@@ -1,4 +1,4 @@
-import nasong.core.value as lv
+import nasong.core.all_values as lv
 
 
 def TrainableKick(time: lv.Value, start_time: float) -> lv.Value:

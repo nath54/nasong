@@ -69,7 +69,7 @@ Your script **MUST** define two things:
 
 **Example Template:**
 ```python
-import nasong.core.value as lv
+import nasong.core.all_values as lv
 from nasong.instruments.synth import SimpleSynth
 
 # 1. Define Duration
@@ -79,10 +79,10 @@ duration = 10.0  # seconds
 def song(time: lv.Value) -> lv.Value:
     # Build your audio graph here
     # 'time' is the global time ramp signal provided by the renderer
-    
+
     # Example: A simple 440Hz sine wave
     intro = SimpleSynth(time, frequency=lv.Constant(440))
-    
+
     return intro
 ```
 
@@ -173,19 +173,19 @@ Use the `load_trained_instrument` helper to load an instrument with its trained 
 
 ```python
 from nasong.trainable.inference import load_trained_instrument
-import nasong.core.value as lv
+import nasong.core.all_values as lv
 
 # 1. Load instrument from Experiment ID (get this from nasong-monitor list)
 # This returns a callable function identical to the original blueprint but with defaults updated.
-my_instrument = load_trained_instrument("a1b2c3d4") 
+my_instrument = load_trained_instrument("a1b2c3d4")
 
 # 2. Use it in your song graph
 # It behaves exactly like a normal instrument
 def song(time: lv.Value) -> lv.Value:
     return my_instrument(
-        time=time, 
-        frequency=lv.Constant(440), 
-        start_time=0.0, 
+        time=time,
+        frequency=lv.Constant(440),
+        start_time=0.0,
         duration=1.0
     )
 ```
