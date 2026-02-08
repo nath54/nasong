@@ -10,7 +10,7 @@ import scipy.io.wavfile as wavfile
 
 import nasong.core.value as lv
 import nasong.trainable.extract as learnable
-from nasong.trainable.config import TrainingConfig, NoteDetectionConfig
+from nasong.trainable.config import TrainingConfig  # , NoteDetectionConfig
 from nasong.trainable.note_detection.create import create_note_detector
 
 #
@@ -527,6 +527,11 @@ def main():
         if args.device:
             config.device = args.device
 
+        # Fallback to CPU if CUDA is not available
+        if config.device == "cuda" and not torch.cuda.is_available():
+            config.device = "cpu"
+            print("CUDA not available. Switching to CPU.")
+
     else:
         if not args.wav_file:
             parser.print_help()
@@ -548,6 +553,7 @@ def main():
         # Fallback to CPU if CUDA is not available
         if config.device == "cuda" and not torch.cuda.is_available():
             config.device = "cpu"
+            print("CUDA not available. Switching to CPU.")
 
     # Validate
     if not os.path.exists(config.target_wav):
