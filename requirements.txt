@@ -7,14 +7,13 @@ PyYAML
 tabulate
 
 # Audio & Signal Processing
-librosa>=0.8.0
+librosa
 soundfile
 audioflux
 
 # Machine Learning & Training (Optional but recommended for the full feature set)
 torch
 torchcrepe
-basic-pitch
 onnxruntime
 
 # Utilities
