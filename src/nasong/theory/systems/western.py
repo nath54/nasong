@@ -41,5 +41,5 @@ class Western:
         return Scale.from_name(root, "locrian")
 
     @staticmethod
-    def aeolian(root: str) -> Scale:
-        return Scale.from_name(root, "aeolian")
+    def mode(root: str, mode_name: str) -> Scale:
+        return Scale.from_name(root, mode_name)
