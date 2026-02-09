@@ -16,6 +16,7 @@ from textual.screen import Screen
 from textual.binding import Binding
 from textual.reactive import reactive
 import os
+import sys
 
 from nasong.app.live_session import LiveSession
 from nasong.app.docs_utils import get_module_docs
@@ -29,6 +30,7 @@ class Editor(TextArea):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.language = "python"
+        self.theme = "dracula"
         self.show_line_numbers = True
 
 
@@ -93,36 +95,36 @@ class AlgoRaveApp(App):
     CSS = """
     Screen {
     }
-    
+
     #main-content {
         width: 3fr;
         height: 100%;
     }
-    
+
     #sidebar {
         width: 1fr;
         height: 100%;
         border-left: solid green;
     }
-    
+
     .box {
         height: 50%;
         padding: 1;
         border-bottom: solid white;
     }
-    
+
     .header {
         text-align: center;
         background: $accent;
         color: $text;
         width: 100%;
     }
-    
+
     .search-box {
         dock: top;
         margin-bottom: 1;
     }
-    
+
     #status-bar {
         dock: bottom;
         height: 1;
@@ -131,17 +133,17 @@ class AlgoRaveApp(App):
         text-align: right;
         padding: 0 1;
     }
-    
+
     #status-bar.reloading {
         color: yellow;
         text-style: bold;
     }
-    
+
     #status-bar.success {
         color: green;
         text-style: bold;
     }
-    
+
     #status-bar.error {
         color: red;
         text-style: bold;
@@ -164,9 +166,12 @@ class AlgoRaveApp(App):
     bpm = reactive(120.0)
     volume = reactive(0.8)
 
-    def __init__(self, device=None, sample_rate=44100):
+    def __init__(self, device=None, sample_rate=44100, volume=0.8, initial_file=None):
         super().__init__()
         self.session = LiveSession(device=device, sample_rate=sample_rate)
+        self.session.set_volume(volume)
+        self.volume = volume
+        self.initial_file = initial_file
         self.session.set_error_callback(self.on_session_error)
         self.session.set_log_callback(self.log_message)
 
@@ -194,7 +199,7 @@ class AlgoRaveApp(App):
         with Horizontal():
             with Container(id="main-content"):
                 with TabbedContent(id="tabs"):
-                    with TabPane("demo_theory.py", id="tab-demo"):
+                    with TabPane("Editor", id="tab-demo"):
                         yield Editor(id="editor-demo")
 
             with Vertical(id="sidebar"):
@@ -213,6 +218,8 @@ class AlgoRaveApp(App):
                         yield Button("-", id="btn-vol-dec")
                         yield Button("+", id="btn-vol-inc")
 
+                    yield Button("Reload Code (F5)", id="btn-reload", variant="primary")
+
                 with Container(classes="box"):
                     yield DocBrowser()
         yield Label("Ready", id="status-bar")
@@ -220,13 +227,29 @@ class AlgoRaveApp(App):
 
     def on_mount(self) -> None:
         self.title = "NaSong Algo-Rave"
+        target = self.initial_file or "demo_theory.py"
         try:
-            with open("demo_theory.py", "r") as f:
+            with open(target, "r") as f:
                 content = f.read()
-                self.query_one("#editor-demo", Editor).text = content
-                self.current_file = os.path.abspath("demo_theory.py")
-        except FileNotFoundError:
-            pass
+                editor = self.query_one("#editor-demo", Editor)
+                editor.text = content
+                self.current_file = os.path.abspath(target)
+
+                # Dynamic tab name
+                tab_pane = self.query_one("#tab-demo", TabPane)
+                tab_pane.label = os.path.basename(target)
+
+                # Auto-load into session if it's there
+                success = self.session.load_script(self.current_file)
+                status = self.query_one("#status-bar", Label)
+                if success:
+                    status.update("● ONLINE")
+                    status.classes = "success"
+                else:
+                    status.update("● ERROR")
+                    status.classes = "error"
+        except Exception as e:
+            self.log_message(f"Could not load {target}: {e}")
 
     def action_save_file(self) -> None:
         editor = self.query_one("#editor-demo", Editor)
@@ -288,25 +311,31 @@ class AlgoRaveApp(App):
         elif event.button.id == "btn-bpm-dec":
             self.bpm -= 5
         elif event.button.id == "btn-vol-inc":
-            self.volume = min(1.0, self.volume + 0.1)
+            self.volume = min(10.0, self.volume + 0.1)  # Boost allowed
         elif event.button.id == "btn-vol-dec":
             self.volume = max(0.0, self.volume - 0.1)
+        elif event.button.id == "btn-reload":
+            self.action_reload_code()
 
     def watch_bpm(self, val):
         try:
             self.query_one("#lbl-bpm", Label).update(f"BPM: {val}")
-        except:
+        except Exception as _e:
             pass
 
     def watch_volume(self, val):
         try:
             self.query_one("#lbl-vol", Label).update(f"Volume: {int(val * 100)}%")
             self.session.set_volume(val)
-        except:
+        except Exception as _e:
             pass
 
     def on_session_error(self, err_msg: str):
-        self.notify(err_msg, title="Audio/Script Error", severity="error")
+        if self.is_mounted:
+            self.notify(err_msg, title="Audio/Script Error", severity="error")
+        else:
+            # Print to console as fallback
+            sys.__stdout__.write(f"SESSION ERROR: {err_msg}\n")
 
     def on_unmount(self) -> None:
         self.session.stop()
@@ -317,16 +346,29 @@ def main():
 
     parser = argparse.ArgumentParser(description="NaSong Algo-Rave TUI")
     parser.add_argument(
-        "--rate", type=int, default=44100, help="Sample rate (try 48000 if silent)"
+        "script",
+        nargs="?",
+        default="nasong_examples/demo_loop.py",
+        help="Initial script",
     )
+    parser.add_argument(
+        "--rate", type=int, default=48000, help="Sample rate (try 44100 if silent)"
+    )
+    parser.add_argument("--device", type=int, default=None, help="Audio device index")
+    parser.add_argument("--volume", type=float, default=0.8, help="Initial volume")
     args = parser.parse_args()
 
-    # Normalize device if it's a digit
     device = args.device
-    if device and device.isdigit():
-        device = int(device)
+    # Simple check for exists in args (nargs=? script might be missing if only flags)
+    # But usually it's handled by default=
+    initial_script = args.script
 
-    app = AlgoRaveApp(device=device, sample_rate=args.rate)
+    app = AlgoRaveApp(
+        device=device,
+        sample_rate=args.rate,
+        volume=args.volume,
+        initial_file=initial_script,
+    )
     app.run()
 
 

@@ -33,7 +33,9 @@ class LiveSession:
         self.log_callback = cb
 
     def log(self, msg: str):
-        print(msg)
+        # Use sys.__stdout__ to avoid infinite loops when redirecting globals
+        sys.__stdout__.write(str(msg) + "\n")
+        sys.__stdout__.flush()
         if hasattr(self, "log_callback") and self.log_callback:
             self.log_callback(msg)
 
@@ -74,7 +76,9 @@ class LiveSession:
                 from contextlib import redirect_stdout, redirect_stderr
 
                 with redirect_stdout(log_stream), redirect_stderr(log_stream):
+                    self.log(f"Executing module: {module_name}")
                     spec.loader.exec_module(module)
+                self.log(f"Module execution complete for: {module_name}")
 
                 # Check for 'sequencer'
                 if hasattr(module, "sequencer") and isinstance(module.sequencer, Value):
@@ -100,14 +104,22 @@ class LiveSession:
         if status:
             print(f"Stream status: {status}")
 
+        # Align with nasong's preference for float32
+        # TUI/Session uses cursor to track absolute time
         with self.lock:
+            # Periodic logging to help user see if audio is active
+            if self.log_callback and self.cursor % (self.sample_rate * 2) < frames:
+                # We calculate peak before scaling for the log
+                # This peak is calculated AFTER the engine filling it?
+                # Actually outdata is filled by us. Let's calculate peak of the generated audio.
+                pass
+
             if self.user_module and hasattr(self.user_module, "sequencer"):
                 seq = self.user_module.sequencer
 
                 # Generate time array for this block (seconds)
                 t_start = self.cursor / self.sample_rate
                 t_end = (self.cursor + frames) / self.sample_rate
-                # Align with nasong's preference for float32
                 time_array = np.linspace(
                     t_start, t_end, frames, endpoint=False, dtype=np.float32
                 )
@@ -122,6 +134,15 @@ class LiveSession:
                     # Safety Clip
                     audio = np.clip(audio, -1.0, 1.0)
 
+                    if (
+                        self.log_callback
+                        and self.cursor % (self.sample_rate * 2) < frames
+                    ):
+                        peak = float(np.max(np.abs(audio)))
+                        self.log_callback(
+                            f"Audio peak: {peak:.4f} (Vol: {self.volume:.1f})"
+                        )
+
                     # Stereo Duplication
                     outdata[:, 0] = audio
                     outdata[:, 1] = audio
@@ -130,6 +151,8 @@ class LiveSession:
                     print(f"Error during audio generation: {e}")
                     outdata.fill(0)
             else:
+                if self.log_callback and self.cursor % (self.sample_rate * 5) < frames:
+                    self.log_callback("Status: No sequencer loaded.")
                 outdata.fill(0)
 
         self.cursor += frames
