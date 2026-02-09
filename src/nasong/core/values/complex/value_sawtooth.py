@@ -42,10 +42,16 @@ class Sawtooth(Value):
 
         #
         self.value: Value = value
-        self.frequency: Value = frequency
-        self.amplitude: Value = amplitude
-        self.delta: Value = delta
-        self.direction: Value = direction
+        self.frequency: Value = (
+            frequency if isinstance(frequency, Value) else Constant(frequency)
+        )
+        self.amplitude: Value = (
+            amplitude if isinstance(amplitude, Value) else Constant(amplitude)
+        )
+        self.delta: Value = delta if isinstance(delta, Value) else Constant(delta)
+        self.direction: Value = (
+            direction if isinstance(direction, Value) else Constant(direction)
+        )
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:

@@ -24,7 +24,9 @@ class HighPass(Value):
 
         #
         self.value: Value = value
-        self.min_value: Value = min_value
+        self.min_value: Value = (
+            min_value if isinstance(min_value, Value) else Constant(min_value)
+        )
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:

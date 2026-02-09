@@ -41,10 +41,16 @@ class Square(Value):
 
         #
         self.value: Value = value
-        self.frequency: Value = frequency
-        self.amplitude: Value = amplitude
-        self.delta: Value = delta
-        self.duty_cycle: Value = duty_cycle
+        self.frequency: Value = (
+            frequency if isinstance(frequency, Value) else Constant(frequency)
+        )
+        self.amplitude: Value = (
+            amplitude if isinstance(amplitude, Value) else Constant(amplitude)
+        )
+        self.delta: Value = delta if isinstance(delta, Value) else Constant(delta)
+        self.duty_cycle: Value = (
+            duty_cycle if isinstance(duty_cycle, Value) else Constant(duty_cycle)
+        )
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:

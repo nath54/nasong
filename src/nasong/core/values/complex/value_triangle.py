@@ -38,9 +38,13 @@ class Triangle(Value):
 
         #
         self.value: Value = value
-        self.frequency: Value = frequency
-        self.amplitude: Value = amplitude
-        self.delta: Value = delta
+        self.frequency: Value = (
+            frequency if isinstance(frequency, Value) else Constant(frequency)
+        )
+        self.amplitude: Value = (
+            amplitude if isinstance(amplitude, Value) else Constant(amplitude)
+        )
+        self.delta: Value = delta if isinstance(delta, Value) else Constant(delta)
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:

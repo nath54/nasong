@@ -28,8 +28,12 @@ class Clamp(Value):
 
         #
         self.value: Value = value
-        self.min_value: Value = min_value
-        self.max_value: Value = max_value
+        self.min_value: Value = (
+            min_value if isinstance(min_value, Value) else Constant(min_value)
+        )
+        self.max_value: Value = (
+            max_value if isinstance(max_value, Value) else Constant(max_value)
+        )
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:

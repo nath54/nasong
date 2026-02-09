@@ -48,8 +48,12 @@ class BandLimitedSawtooth(Value):
 
         #
         self.time: Value = time
-        self.frequency: Value = frequency
-        self.amplitude: Value = amplitude
+        self.frequency: Value = (
+            frequency if isinstance(frequency, Value) else Constant(frequency)
+        )
+        self.amplitude: Value = (
+            amplitude if isinstance(amplitude, Value) else Constant(amplitude)
+        )
         self.num_harmonics: int = max(1, num_harmonics)
         self.pi2: float = 2 * math.pi
 

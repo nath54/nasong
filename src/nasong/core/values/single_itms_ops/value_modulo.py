@@ -21,13 +21,11 @@ class Modulo(Value):
 
     #
     def __init__(self, value: Value, modulo_value: Value = Constant(1.0)) -> None:
-
-        #
         super().__init__()
-
-        #
         self.value: Value = value
-        self.modulo_value: Value = modulo_value
+        self.modulo_value: Value = (
+            modulo_value if isinstance(modulo_value, Value) else Constant(modulo_value)
+        )
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:

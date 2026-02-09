@@ -31,8 +31,14 @@ class MaskTreshold(Value):
         #
         self.value: Value = value
         self.mask: Value = mask
-        self.treshold_to_mask: Value = treshold_to_mask
-        self.mask_value: Value = mask_value
+        self.treshold_to_mask: Value = (
+            treshold_to_mask
+            if isinstance(treshold_to_mask, Value)
+            else Constant(treshold_to_mask)
+        )
+        self.mask_value: Value = (
+            mask_value if isinstance(mask_value, Value) else Constant(mask_value)
+        )
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:

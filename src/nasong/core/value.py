@@ -213,6 +213,38 @@ class Value:
             other = Constant(other)
         return Product([other, Pow(self, Constant(-1.0))])
 
+    def __mod__(self, other):
+        from nasong.core.values.single_itms_ops.value_modulo import Modulo
+        from nasong.core.values.basic.value_constant import Constant
+
+        if not isinstance(other, Value):
+            other = Constant(other)
+        return Modulo(self, other)
+
+    def __rmod__(self, other):
+        from nasong.core.values.single_itms_ops.value_modulo import Modulo
+        from nasong.core.values.basic.value_constant import Constant
+
+        if not isinstance(other, Value):
+            other = Constant(other)
+        return Modulo(other, self)
+
+    def __pow__(self, other):
+        from nasong.core.values.complex.value_pow import Pow
+        from nasong.core.values.basic.value_constant import Constant
+
+        if not isinstance(other, Value):
+            other = Constant(other)
+        return Pow(self, other)
+
+    def __rpow__(self, other):
+        from nasong.core.values.complex.value_pow import Pow
+        from nasong.core.values.basic.value_constant import Constant
+
+        if not isinstance(other, Value):
+            other = Constant(other)
+        return Pow(other, self)
+
     def backward(
         self,
         grad_output: NDArray[np.float32],
