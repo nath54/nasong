@@ -47,7 +47,12 @@ class Sequencer(Value):
             #   PianoNote(time, *note_data)
             # where note_data = (frequency, start_time, duration)
             #
-            notes.append(instrument_factory(time, *note_data))
+            val = instrument_factory(time, *note_data)
+            if val is None:
+                raise ValueError(
+                    f"Instrument factory returned None for note_data: {note_data}"
+                )
+            notes.append(val)
 
         #
         ### The sequencer's total output is simply the sum of all notes. ###

@@ -9,8 +9,10 @@ from textual.widgets import (
     Button,
     Tree,
     Input,
+    RichLog,
 )
 from textual.containers import Container, Horizontal, Vertical
+from textual.screen import Screen
 from textual.binding import Binding
 from textual.reactive import reactive
 import os
@@ -79,6 +81,21 @@ class DocBrowser(Container):
             self.add_docs_to_tree(node, sub_docs, name)
 
 
+class LogScreen(Screen):
+    """
+    Screen to display application logs.
+    """
+
+    BINDINGS = [("escape", "app.pop_screen", "Close Logs")]
+
+    def compose(self) -> ComposeResult:
+        yield Label("Application Logs (Press ESC to close)", classes="header")
+        yield RichLog(highlight=True, markup=True, id="log-view")
+
+    def on_mount(self):
+        self.query_one("#log-view", RichLog).write("Log Console Started...")
+
+
 class AlgoRaveApp(App):
     """
     The main TUI application for live coding music.
@@ -121,6 +138,24 @@ class AlgoRaveApp(App):
     #status-bar {
         dock: bottom;
         height: 1;
+        background: $primary;
+        color: $text;
+        text-align: center;
+    }
+    
+    #status-bar.reloading {
+        background: $warning;
+        color: $text;
+    }
+    
+    #status-bar.success {
+        background: $success;
+        color: $text;
+    }
+    
+    #status-bar.error {
+        background: $error;
+        color: $text;
     }
     """
 
@@ -129,8 +164,11 @@ class AlgoRaveApp(App):
         Binding("ctrl+w", "close_tab", "Close Tab"),
         Binding("f5", "reload_code", "Reload Code"),
         Binding("ctrl+s", "save_file", "Save File"),
+        Binding("ctrl+l", "toggle_log", "Log"),
         ("q", "quit", "Quit"),
     ]
+
+    SCREENS = {"log": LogScreen}
 
     current_file = reactive("")
     is_playing = reactive(False)
@@ -141,6 +179,26 @@ class AlgoRaveApp(App):
         super().__init__()
         self.session = LiveSession()
         self.session.set_error_callback(self.on_session_error)
+        self.session.set_log_callback(self.log_message)
+
+    def log_message(self, msg: str):
+        # Forward specific messages to Status Bar if desirable, or always simple status
+        # And always write to LogScreen
+        if self.is_mounted:
+            # We can't access screen widgets directly if not active,
+            # but we can access installed screens?
+            # Or just push to log when screen is active?
+            # Better: Keep a buffer or try to access the screen instance.
+            try:
+                # This assumes 'log' screen is instantiated.
+                # Textual lazy loads screens usually, but we installed it in SCREENS.
+                # Only writes if screen is instantiated.
+                self.install_screen(
+                    LogScreen(), "log"
+                ) if "log" not in self._installed_screens else None
+                self.get_screen("log").query_one(RichLog).write(msg)
+            except Exception:
+                pass
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -168,6 +226,7 @@ class AlgoRaveApp(App):
 
                 with Container(classes="box"):
                     yield DocBrowser()
+        yield Label("Ready", id="status-bar")
         yield Footer()
 
     def on_mount(self) -> None:
@@ -193,6 +252,12 @@ class AlgoRaveApp(App):
     def action_reload_code(self) -> None:
         if self.current_file:
             self.notify(f"Reloading {self.current_file}...")
+
+            # Update Status Bar
+            status = self.query_one("#status-bar", Label)
+            status.update("Reloading...")
+            status.classes = "reloading"
+
             self.action_save_file()
             # Pass globals? No, load_script just re-imports.
             # We need to consider how BPM interacts.
@@ -204,8 +269,15 @@ class AlgoRaveApp(App):
                 self.notify(
                     "Reloaded Successfully!", title="Success", severity="information"
                 )
+                status.update("Code Compiled Successfully (Green)")
+                status.classes = "success"
             else:
                 self.notify("Reload Failed!", title="Error", severity="error")
+                status.update("Compilation Failed (Red) - Check Logs (Ctrl+L)")
+                status.classes = "error"
+
+    def action_toggle_log(self) -> None:
+        self.push_screen("log")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-audio":

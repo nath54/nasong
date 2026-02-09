@@ -27,6 +27,14 @@ class LiveSession:
     def set_error_callback(self, cb):
         self.error_callback = cb
 
+    def set_log_callback(self, cb):
+        self.log_callback = cb
+
+    def log(self, msg: str):
+        print(msg)
+        if hasattr(self, "log_callback") and self.log_callback:
+            self.log_callback(msg)
+
     def set_volume(self, vol: float):
         self.volume = max(0.0, min(1.0, vol))
 
@@ -35,6 +43,21 @@ class LiveSession:
         Loads or reloads the user script.
         """
         module_name = "user_script_live"
+
+        # Custom stream to capture prints from user script
+        class LogStream:
+            def __init__(self, logger):
+                self.logger = logger
+
+            def write(self, text):
+                if text.strip():
+                    self.logger(text.rstrip())
+
+            def flush(self):
+                pass
+
+        log_stream = LogStream(self.log)
+
         try:
             # Check if file exists
             with open(script_path, "r"):
@@ -44,23 +67,28 @@ class LiveSession:
             if spec and spec.loader:
                 module = importlib.util.module_from_spec(spec)
                 sys.modules[module_name] = module
-                spec.loader.exec_module(module)
+
+                # Capture stdout/stderr during execution
+                from contextlib import redirect_stdout, redirect_stderr
+
+                with redirect_stdout(log_stream), redirect_stderr(log_stream):
+                    spec.loader.exec_module(module)
 
                 # Check for 'sequencer'
                 if hasattr(module, "sequencer") and isinstance(module.sequencer, Value):
                     with self.lock:
                         self.user_module = module
-                        print(f"Loaded {script_path}")
+                        self.log(f"Loaded {script_path}")
                     return True
                 else:
                     err = f"Error: {script_path} must define 'sequencer' variable of type nasong.core.Value."
-                    print(err)
+                    self.log(err)
                     if self.error_callback:
                         self.error_callback(err)
                     return False
         except Exception as e:
             err = f"Failed to load script: {e}\n{traceback.format_exc()}"
-            print(err)
+            self.log(err)
             if self.error_callback:
                 self.error_callback(err)
             return False

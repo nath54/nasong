@@ -194,6 +194,17 @@ prog = Progression.from_roman_numerals(Western.major("C4"), ["I", "vi", "IV", "V
 sequencer = render(prog, time_value, my_synth, bpm=120)
 ```
 
+**Included Examples:**
+Check out `nasong_examples/live_rave/` for ready-to-run scripts:
+- `01_techno_kick.py`: A basic techno beat.
+- `02_ambient_drone.py`: Generative ambient textures using pure math.
+- `03_generative_melody.py`: Python randomized melody generation.
+
+To run an example:
+1. Launch `nasong-rave`.
+2. Open the file (or copy-paste code).
+3. Press `F5` or `Ctrl+S` to load and hear it.
+
 ### 9. Advanced Music Theory
 
 NaSong now includes comprehensive music theory support.

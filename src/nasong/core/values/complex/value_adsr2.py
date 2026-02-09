@@ -32,10 +32,12 @@ class ADSR2(Value):
         self.time: Value = time
         self.note_start: float = note_start
         self.note_duration: float = note_duration
-        self.attack_time: float = attack_time
-        self.decay_time: float = decay_time
-        self.sustain_level: float = sustain_level
-        self.release_time: float = release_time
+        # Prevent division by zero
+        eps = 1e-6
+        self.attack_time: float = max(attack_time, eps)
+        self.decay_time: float = max(decay_time, eps)
+        self.sustain_level: float = sustain_level  # Sustain is level, not time
+        self.release_time: float = max(release_time, eps)
 
         #
         ### Pre-calculate stage end times for clarity. ###
@@ -102,6 +104,9 @@ class ADSR2(Value):
         t: NDArray[np.float32] = self.time.getitem_np(
             indexes_buffer=indexes_buffer, sample_rate=sample_rate
         )
+        if not isinstance(t, (np.ndarray, np.generic)):
+            print(f"DEBUG ADSR2: t type is {type(t)}. self.time is {type(self.time)}")
+            print(f"DEBUG ADSR2: indexes_buffer type is {type(indexes_buffer)}")
         #
         relative_time: NDArray[np.float32] = t - self.note_start
 

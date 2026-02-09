@@ -20,6 +20,11 @@ class Sum(Value):
 
         #
         self.values: list[Value] = input_args_to_values(values=values)
+        for i, v in enumerate(self.values):
+            if v is None:
+                raise ValueError(
+                    f"Sum created with None value at index {i}. input_args_to_values returned {self.values}"
+                )
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:

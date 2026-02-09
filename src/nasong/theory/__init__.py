@@ -71,6 +71,10 @@ def render(obj, time_value, instrument_factory, bpm: float = 120.0):
         bpm: Beats per minute (assumes Quarter note = 1 beat).
     """
     from nasong.core.values.single_itms_ops.value_sequencer import Sequencer
+    from nasong.core.values.basic.value_identity import Identity
+
+    if time_value is None:
+        time_value = Identity()
 
     # Calculate duration of a quarter note in seconds
     # BPM = quarters per minute
