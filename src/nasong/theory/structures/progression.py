@@ -15,8 +15,19 @@ class Progression:
     A sequence of chords.
     """
 
-    chords: List[Chord]
+    chords: List[Union[Chord, "Pitch"]]
     scale: Optional[Scale] = None  # Content for analysis/generation
+
+    def __post_init__(self):
+        # Allow passing Pitch objects and wrap them into simple Chords
+        from nasong.theory.core.pitch import Pitch
+
+        if self.chords and isinstance(self.chords[0], Pitch):
+            adapted = []
+            for p in self.chords:
+                # Wrap Pitch into a simple Chord with no intervals
+                adapted.append(Chord(p, intervals=[]))
+            self.chords = adapted
 
     @property
     def duration(self) -> Duration:

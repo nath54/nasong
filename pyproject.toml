@@ -32,6 +32,7 @@ nasong-evaluate = "nasong.scripts.evaluate:main"
 nasong-leaderboard = "nasong.scripts.leaderboard:main"
 nasong-monitor = "nasong.scripts.monitor_cli:main"
 nasong-rave = "nasong.app.main_tui:main"
+nasong-rave-dev = "nasong.app.main_headless:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

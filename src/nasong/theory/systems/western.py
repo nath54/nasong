@@ -6,7 +6,21 @@ from nasong.theory.core.scale import Scale, _SCALE_PATTERNS
 from nasong.theory.core.pitch import Note, Tuning
 
 
-class Western:
+class WesternMeta(type):
+    """
+    Metaclass to support dynamic note access (e.g., Western.C4).
+    """
+
+    def __getattr__(cls, name):
+        try:
+            return Note(name)
+        except ValueError:
+            raise AttributeError(
+                f"type object '{cls.__name__}' has no attribute '{name}'"
+            )
+
+
+class Western(metaclass=WesternMeta):
     """
     Namespace for Western music theory constants and factories.
     """

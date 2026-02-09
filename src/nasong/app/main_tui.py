@@ -103,7 +103,6 @@ class AlgoRaveApp(App):
 
     CSS = """
     Screen {
-        layout: horizontal;
     }
     
     #main-content {
@@ -138,24 +137,25 @@ class AlgoRaveApp(App):
     #status-bar {
         dock: bottom;
         height: 1;
-        background: $primary;
+        background: $surface;
         color: $text;
-        text-align: center;
+        text-align: right;
+        padding: 0 1;
     }
     
     #status-bar.reloading {
-        background: $warning;
-        color: $text;
+        color: yellow;
+        text-style: bold;
     }
     
     #status-bar.success {
-        background: $success;
-        color: $text;
+        color: green;
+        text-style: bold;
     }
     
     #status-bar.error {
-        background: $error;
-        color: $text;
+        color: red;
+        text-style: bold;
     }
     """
 
@@ -269,11 +269,11 @@ class AlgoRaveApp(App):
                 self.notify(
                     "Reloaded Successfully!", title="Success", severity="information"
                 )
-                status.update("Code Compiled Successfully (Green)")
+                status.update("● ONLINE")
                 status.classes = "success"
             else:
                 self.notify("Reload Failed!", title="Error", severity="error")
-                status.update("Compilation Failed (Red) - Check Logs (Ctrl+L)")
+                status.update("● ERROR")
                 status.classes = "error"
 
     def action_toggle_log(self) -> None:

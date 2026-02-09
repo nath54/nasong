@@ -17,162 +17,117 @@ class ADSR2(Value):
     def __init__(
         self,
         time: Value,
-        note_start: float,
-        note_duration: float,
-        attack_time: float = 0.05,
-        decay_time: float = 0.1,
-        sustain_level: float = 0.7,
-        release_time: float = 0.2,
+        note_start: Value | float,
+        note_duration: Value | float,
+        attack_time: Value | float = 0.05,
+        decay_time: Value | float = 0.1,
+        sustain_level: Value | float = 0.7,
+        release_time: Value | float = 0.2,
     ) -> None:
+        from nasong.core.values.basic.value_constant import Constant
 
         #
         super().__init__()
 
         #
         self.time: Value = time
-        self.note_start: float = note_start
-        self.note_duration: float = note_duration
-        # Prevent division by zero
-        eps = 1e-6
-        self.attack_time: float = max(attack_time, eps)
-        self.decay_time: float = max(decay_time, eps)
-        self.sustain_level: float = sustain_level  # Sustain is level, not time
-        self.release_time: float = max(release_time, eps)
 
-        #
-        ### Pre-calculate stage end times for clarity. ###
-        #
-        self.attack_end: float = self.attack_time
-        self.decay_end: float = self.attack_time + self.decay_time
-        self.sustain_end: float = self.note_duration  # This is the "note off" event
-        self.release_end: float = self.note_duration + self.release_time
+        def wrap(v):
+            return v if isinstance(v, Value) else Constant(v)
+
+        self.note_start: Value = wrap(note_start)
+        self.note_duration: Value = wrap(note_duration)
+        self.attack_time: Value = wrap(attack_time)
+        self.decay_time: Value = wrap(decay_time)
+        self.sustain_level: Value = wrap(sustain_level)
+        self.release_time: Value = wrap(release_time)
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
-
-        #
         t: float = self.time.get_item(index=index, sample_rate=sample_rate)
-        relative_time: float = t - self.note_start
+        start: float = self.note_start.get_item(index=index, sample_rate=sample_rate)
+        dur: float = self.note_duration.get_item(index=index, sample_rate=sample_rate)
+        att: float = max(
+            self.attack_time.get_item(index=index, sample_rate=sample_rate), 1e-6
+        )
+        dec: float = max(
+            self.decay_time.get_item(index=index, sample_rate=sample_rate), 1e-6
+        )
+        sus: float = self.sustain_level.get_item(index=index, sample_rate=sample_rate)
+        rel: float = max(
+            self.release_time.get_item(index=index, sample_rate=sample_rate), 1e-6
+        )
 
-        #
-        ### Gate: if we are before the note or after the release, output 0. ###
-        #
-        if relative_time < 0 or relative_time > self.release_end:
-            #
+        relative_time: float = t - start
+        release_end = dur + rel
+
+        if relative_time < 0 or relative_time > release_end:
             return 0.0
 
-        #
-        ### Attack phase. ###
-        #
-        if relative_time < self.attack_end:
-            #
-            return relative_time / self.attack_time
+        att_end = att
+        dec_end = att + dec
+        sus_end = dur
 
-        #
-        ### Decay phase. ###
-        #
-        elif relative_time < self.decay_end:
-            #
-            decay_progress: float = (relative_time - self.attack_time) / self.decay_time
-            #
-            return 1.0 - (1.0 - self.sustain_level) * decay_progress
-
-        #
-        ### Sustain phase. ###
-        #
-        elif relative_time < self.sustain_end:
-            #
-            return self.sustain_level
-
-        #
-        ### Release phase. ###
-        #
+        if relative_time < att_end:
+            return relative_time / att
+        elif relative_time < dec_end:
+            decay_progress = (relative_time - att) / dec
+            return 1.0 - (1.0 - sus) * decay_progress
+        elif relative_time < sus_end:
+            return sus
         else:
-            #
-            release_progress: float = (
-                relative_time - self.note_duration
-            ) / self.release_time
-            #
-            return self.sustain_level * (1.0 - release_progress)
+            release_progress = (relative_time - dur) / rel
+            return sus * (1.0 - release_progress)
 
     #
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
-
-        #
-        t: NDArray[np.float32] = self.time.getitem_np(
-            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        t = self.time.getitem_np(indexes_buffer, sample_rate)
+        start = self.note_start.getitem_np(indexes_buffer, sample_rate)
+        dur = self.note_duration.getitem_np(indexes_buffer, sample_rate)
+        att = np.clip(
+            self.attack_time.getitem_np(indexes_buffer, sample_rate), 1e-6, None
         )
-        if not isinstance(t, (np.ndarray, np.generic)):
-            print(f"DEBUG ADSR2: t type is {type(t)}. self.time is {type(self.time)}")
-            print(f"DEBUG ADSR2: indexes_buffer type is {type(indexes_buffer)}")
-        #
-        relative_time: NDArray[np.float32] = t - self.note_start
-
-        #
-        ### Gate: Create a mask for all samples inside the envelope's lifetime. ###
-        #
-        gate_mask: NDArray[np.bool_] = (relative_time >= 0) & (
-            relative_time <= self.release_end
+        dec = np.clip(
+            self.decay_time.getitem_np(indexes_buffer, sample_rate), 1e-6, None
+        )
+        sus = self.sustain_level.getitem_np(indexes_buffer, sample_rate)
+        rel = np.clip(
+            self.release_time.getitem_np(indexes_buffer, sample_rate), 1e-6, None
         )
 
-        #
+        relative_time = t - start
+        release_end = dur + rel
+
+        gate_mask = (relative_time >= 0) & (relative_time <= release_end)
         if not np.any(gate_mask):
-            #
             return np.zeros_like(indexes_buffer, dtype=np.float32)
 
-        #
-        ### Define the 4 stages and their values. ###
-        #
-        attack_mask: NDArray[np.bool_] = relative_time < self.attack_end
-        attack_val: NDArray[np.float32] = relative_time / self.attack_time
+        att_end = att
+        dec_end = att + dec
+        sus_end = dur
 
-        #
-        decay_mask: NDArray[np.bool_] = relative_time < self.decay_end
-        decay_progress: NDArray[np.float32] = (
-            relative_time - self.attack_time
-        ) / self.decay_time
-        decay_val: NDArray[np.float32] = (
-            1.0 - (1.0 - self.sustain_level) * decay_progress
-        ).astype(dtype=np.float32)
+        attack_mask = relative_time < att_end
+        attack_val = relative_time / att
 
-        #
-        sustain_mask: NDArray[np.bool_] = relative_time < self.sustain_end
-        sustain_val: NDArray[np.float32] = np.full_like(
-            relative_time, self.sustain_level
-        )
+        decay_mask = (relative_time >= att_end) & (relative_time < dec_end)
+        decay_progress = (relative_time - att) / dec
+        decay_val = (1.0 - (1.0 - sus) * decay_progress).astype(np.float32)
 
-        #
-        ### The final 'else' is the release phase. ###
-        #
-        release_progress: NDArray[np.float32] = (
-            relative_time - self.note_duration
-        ) / self.release_time
-        release_val: NDArray[np.float32] = (
-            self.sustain_level * (1.0 - release_progress)
-        ).astype(dtype=np.float32)
+        sustain_mask = (relative_time >= dec_end) & (relative_time < sus_end)
+        sustain_val = sus
 
-        #
-        ### Build the envelope with nested np.where. ###
-        #
-        env: NDArray[np.float32] = np.where(
-            attack_mask,
-            attack_val,
-            np.where(
-                decay_mask,
-                decay_val,
-                np.where(
-                    sustain_mask,
-                    sustain_val,
-                    release_val,  # The final 'else' case
-                ),
-            ),
-        )
+        release_mask = relative_time >= sus_end
+        release_progress = (relative_time - dur) / rel
+        release_val = (sus * (1.0 - release_progress)).astype(np.float32)
 
-        #
-        ### Apply the main gate mask to ensure output is 0 outside the envelope. ###
-        #
+        env = np.zeros_like(relative_time, dtype=np.float32)
+        env = np.where(attack_mask, attack_val, env)
+        env = np.where(decay_mask, decay_val, env)
+        env = np.where(sustain_mask, sustain_val, env)
+        env = np.where(release_mask, release_val, env)
+
         return env * gate_mask
 
     #

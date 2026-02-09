@@ -11,6 +11,7 @@ src/nasong.egg-info/top_level.txt
 src/nasong/app/__init__.py
 src/nasong/app/docs_utils.py
 src/nasong/app/live_session.py
+src/nasong/app/main_headless.py
 src/nasong/app/main_tui.py
 src/nasong/core/__init__.py
 src/nasong/core/all_values.py
