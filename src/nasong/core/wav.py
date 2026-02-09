@@ -48,8 +48,8 @@ class WavUtils:
             #
             wavfile.write(filename, sample_rate, audio_data)  # type: ignore
             #
-            print(f"✅ Successfully saved audio to '{filename}'")
+            print(f"[SUCCESS] Successfully saved audio to '{filename}'")
         #
         except Exception as e:
             #
-            print(f"❌ Error saving WAV file: {e}")
+            print(f"[ERROR] Error saving WAV file: {e}")
