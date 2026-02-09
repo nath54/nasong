@@ -25,6 +25,7 @@ class LiveSession:
         self.error_callback: Optional[callable] = None
         self.volume = 0.8
         self.log_callback: Optional[callable] = None
+        self.reload_cursor: Optional[int] = None  # Marker for visualization
 
     def set_error_callback(self, cb):
         self.error_callback = cb
@@ -84,6 +85,7 @@ class LiveSession:
                 if hasattr(module, "sequencer") and isinstance(module.sequencer, Value):
                     with self.lock:
                         self.user_module = module
+                        self.reload_cursor = self.cursor  # Set marker
                         self.log(f"Loaded {script_path}")
                     return True
                 else:

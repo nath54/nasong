@@ -33,12 +33,12 @@ def main():
         print(f"Error: Script file not found at {script_abs_path}")
         sys.exit(1)
 
-    print(f"--- Headless Algo-Rave Started ---")
+    print("--- Headless Algo-Rave Started ---")
     print(f"Target Script: {script_abs_path}")
     print(f"Device: {device if device is not None else 'Default'}")
     print(f"Sample Rate: {args.rate} Hz")
     print(f"Volume: {args.volume}")
-    print(f"----------------------------------")
+    print("----------------------------------")
 
     # Initial load
     success = session.load_script(script_abs_path)

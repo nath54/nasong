@@ -1,4 +1,4 @@
-from nasong.core.all_values import Sin, Constant, ADSR2
+from nasong.core.all_values import Sin, ADSR2
 from nasong.theory import render
 from nasong.theory.structures.progression import Progression
 from nasong.theory.systems.western import Western

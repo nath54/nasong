@@ -24,13 +24,13 @@ time = Identity() % LOOP_SECONDS
 def acid_bass(time, freq, start, dur, vel):
     """A gritty bass with LFO resonant filter."""
     # Envelopes
-    env = ADSR2(time, start, dur, 0.005, 0.1, 0.6, 0.05)
+    env = ADSR2(time, start, dur, 0.05, 0.1, 0.8, 0.5)
 
     # Osc: Saw + Square for thickness
     osc = (Sawtooth(time, freq) + Square(time, freq)) * 0.5
 
     # Wobble LFO (modulating filter cutoff)
-    wobble = (Sin(time, 4.0) + 1.0) * 0.5  # 0 to 1
+    wobble = (Sin(time, 2.0) + 1.0) * 0.5  # 0 to 1
     cutoff = 300 + (wobble * 2000 * env)  # Env also affects cutoff
 
     res_bass = LowPass(osc, cutoff)
@@ -51,7 +51,7 @@ def space_pad(time, freq, start, dur, vel):
 
 # 3. Composition
 # A cool minor progression
-bass_prog = Progression([Western.C2, Western.Eb2, Western.F2, Western.Bb1])
+bass_prog = Progression([Western.D2, Western.Eb2, Western.G2, Western.Bb1])
 pad_prog = Progression([Western.C4, Western.Eb4, Western.G4, Western.Bb3])
 
 # 4. Render to Sequencer

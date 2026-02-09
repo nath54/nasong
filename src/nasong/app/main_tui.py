@@ -148,6 +148,25 @@ class AlgoRaveApp(App):
         color: red;
         text-style: bold;
     }
+
+    .sidebar-row {
+        height: 3;
+        margin-bottom: 1;
+    }
+
+    .sidebar-btn {
+        width: 1fr;
+        height: 3;
+        margin: 0 1;
+    }
+
+    .sidebar-label {
+        width: 1fr;
+        text-align: center;
+        content-align: center middle;
+    }
+
+
     """
 
     BINDINGS = [
@@ -205,20 +224,37 @@ class AlgoRaveApp(App):
             with Vertical(id="sidebar"):
                 with Container(classes="box"):
                     yield Label("Live Settings", classes="header")
-                    yield Button("Start Audio", id="btn-audio", variant="success")
+                    with Horizontal(classes="sidebar-row"):
+                        yield Button(
+                            "Start Audio",
+                            id="btn-audio",
+                            variant="success",
+                            classes="sidebar-btn",
+                        )
+                        yield Button(
+                            "Reload (F5)",
+                            id="btn-reload",
+                            variant="primary",
+                            classes="sidebar-btn",
+                        )
 
-                    yield Label(f"BPM: {self.bpm}", id="lbl-bpm")
-                    with Horizontal():
-                        yield Button("-", id="btn-bpm-dec")
-                        yield Button("+", id="btn-bpm-inc")
+                    with Horizontal(classes="sidebar-row"):
+                        # BPM Row
+                        with Vertical(classes="sidebar-label"):
+                            yield Label(f"BPM: {self.bpm}", id="lbl-bpm")
+                            with Horizontal():
+                                yield Button("-", id="btn-bpm-dec")
+                                yield Button("+", id="btn-bpm-inc")
 
-                    yield Label(f"Volume: {int(self.volume * 100)}%", id="lbl-vol")
-                    # Volume controls could be buttons or slider if available
-                    with Horizontal():
-                        yield Button("-", id="btn-vol-dec")
-                        yield Button("+", id="btn-vol-inc")
-
-                    yield Button("Reload Code (F5)", id="btn-reload", variant="primary")
+                    with Horizontal(classes="sidebar-row"):
+                        # Volume Row
+                        with Vertical(classes="sidebar-label"):
+                            yield Label(
+                                f"Volume: {int(self.volume * 100)}%", id="lbl-vol"
+                            )
+                            with Horizontal():
+                                yield Button("-", id="btn-vol-dec")
+                                yield Button("+", id="btn-vol-inc")
 
                 with Container(classes="box"):
                     yield DocBrowser()
@@ -251,18 +287,28 @@ class AlgoRaveApp(App):
         except Exception as e:
             self.log_message(f"Could not load {target}: {e}")
 
-    def action_save_file(self) -> None:
+    def save_current_file(self) -> None:
+        """Helper to save the current file content."""
         editor = self.query_one("#editor-demo", Editor)
         content = editor.text
         if self.current_file:
             with open(self.current_file, "w") as f:
                 f.write(content)
             self.notify(f"Saved {self.current_file}")
-            if self.is_playing:
-                self.action_reload_code()
+
+    def action_save_file(self) -> None:
+        """Saves file and optionally reloads if playing."""
+        self.save_current_file()
+        if self.is_playing:
+            self.action_reload_code()
 
     def action_reload_code(self) -> None:
+        """Reloads the code. Saves first."""
         if self.current_file:
+            # We ONLY save here. We do NOT call action_save_file()
+            # because that might trigger action_reload_code again!
+            self.save_current_file()
+
             self.notify(f"Reloading {self.current_file}...")
 
             # Update Status Bar
@@ -270,7 +316,6 @@ class AlgoRaveApp(App):
             status.update("Reloading...")
             status.classes = "reloading"
 
-            self.action_save_file()
             # Pass globals? No, load_script just re-imports.
             # We need to consider how BPM interacts.
             # If the script uses `render(..., bpm=120)`, it is hardcoded.
