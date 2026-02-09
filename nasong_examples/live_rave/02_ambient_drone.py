@@ -1,5 +1,4 @@
-from nasong.core.all_values import Value, Constant, Sin, LFO, Identity
-import numpy as np
+from nasong.core.all_values import Constant, Sin, LFO, Identity
 
 # === Ambient Drone (Generative) ===
 # No sequencer, just pure math functions of Time.

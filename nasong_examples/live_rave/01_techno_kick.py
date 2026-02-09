@@ -1,18 +1,13 @@
-import numpy as np
 from nasong.core.all_values import (
     Value,
     Constant,
     Sin,
     ADSR2,
-    SimpleMelody,
-    LFO,
     WhiteNoise,
-    LowPass,
 )
 from nasong.theory import render
-from nasong.theory.structures.rhythm import Rhythm
 from nasong.theory.structures.progression import Progression
-from nasong.theory.core.time import QUARTER, SIXTEENTH
+from nasong.theory.core.time import QUARTER
 from nasong.theory.systems.western import Western
 
 # === 1. Define Instruments ===

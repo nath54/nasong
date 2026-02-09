@@ -1,9 +1,9 @@
 import random
-from nasong.core.all_values import Value, Constant, Triangle, ADSR2, Sin
+from nasong.core.all_values import Triangle, ADSR2, Sin, ExponentialDecay
 from nasong.theory import render
 from nasong.theory.structures.progression import Progression
 from nasong.theory.structures.chord import Chord
-from nasong.theory.core.time import QUARTER, EIGHTH, SIXTEENTH
+from nasong.theory.core.time import QUARTER, EIGHTH
 from nasong.theory.systems.western import Western
 from nasong.theory.systems.east_asian import EastAsian
 
@@ -57,7 +57,7 @@ def generate_progression(length=16):
 
 def plucky_synth(time, freq, start, duration, velocity):
     # Short pluck
-    osc = Triangle(time, freq)
+    _osc = Triangle(time, freq)
     # FM modulation for texture
     mod = Sin(time, freq * 2.0) * 500.0 * ExponentialDecay(time, start, 0.1)
     osc_mod = Triangle(time, freq + mod)

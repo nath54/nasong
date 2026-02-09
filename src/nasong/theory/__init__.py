@@ -1,14 +1,8 @@
-from .core.pitch import Pitch, Note, Hz
-from .core.interval import Interval
-from .core.scale import Scale
-from .core.time import TimeSignature, Duration, WHOLE, HALF, QUARTER, EIGHTH, SIXTEENTH
-
 from .structures.note import Note as NoteEvent
 from .structures.chord import Chord
 from .structures.progression import Progression
-from .structures.rhythm import Rhythm
 
-from typing import List, Union
+from typing import List
 
 
 def expand(obj) -> List[NoteEvent]:

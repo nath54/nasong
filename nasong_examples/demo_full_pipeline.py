@@ -1,9 +1,9 @@
 import numpy as np
 from nasong.theory.systems.western import Western
 from nasong.theory.structures.progression import Progression
-from nasong.theory.core.time import QUARTER, HALF
+from nasong.theory.core.time import HALF
 from nasong.theory import render
-from nasong.core.all_values import Constant, Sawtooth, ADSR2, Value
+from nasong.core.all_values import Constant, Sawtooth, ADSR2
 from nasong.core.wav import WavUtils
 from scipy.io import wavfile
 
