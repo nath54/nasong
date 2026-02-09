@@ -10,6 +10,8 @@ Nasong is a Python-based music synthesizer and sequencer that allows you to crea
 - **Trainable Instruments**: Differentiable instruments that can learn parameters from target audio samples.
 - **Experiment Tracking**: Built-in system to track training runs, metrics, and parameters.
 - **High Quality Output**: Generates standard WAV files.
+- **Music Theory System**: Built-in support for scales, chords, progressions, and advanced systems (Raga, Maqam, Gamelan).
+- **Algo-Rave Engine**: A TUI application for live coding music with hot-reloading and real-time controls.
 
 ## Philosophy & Core Concepts
 
@@ -55,6 +57,7 @@ This installation exposes the following CLI commands:
 - `nasong-vis`: Visualize audio.
 - `nasong-train`: Train instruments.
 - `nasong-monitor`: Manage experiments.
+- `nasong-rave`: Launch the live coding TUI environment.
 
 ## Usage
 
@@ -162,6 +165,47 @@ Generate a global leaderboard comparing all trained models.
 ```bash
 nasong-leaderboard --output results_analysis/leaderboards.md
 ```
+
+### 8. Algo-Rave (Live Coding)
+
+Launch the Terminal User Interface (TUI) for an immersive live coding session.
+
+```bash
+nasong-rave
+```
+
+**Features:**
+- **Live Editor**: Write python code using the NaSong DSL and Theory modules.
+- **Hot-Reloading**: Saving the file (`Ctrl+S`) automatically reloads the audio generation script without stopping playback.
+- **Live Settings**: Adjust BPM and Volume in real-time.
+- **Docs Browser**: Built-in documentation for all available modules.
+
+**Example Script:**
+```python
+from nasong.theory.systems.western import Western
+from nasong.theory.structures.progression import Progression
+from nasong.theory import render
+# ... standard NaSong imports ...
+
+# Define a progression
+prog = Progression.from_roman_numerals(Western.major("C4"), ["I", "vi", "IV", "V"])
+
+# Render to audio
+sequencer = render(prog, time_value, my_synth, bpm=120)
+```
+
+### 9. Advanced Music Theory
+
+NaSong now includes comprehensive music theory support.
+
+**Systems:**
+- **Western**: Major, Minor, Modes.
+- **Non-Western**: `Raga` (Indian), `Maqam` (Arabic), `Gamelan` (Indonesian).
+
+**Style Generators:**
+- **Jazz**: `nasong.theory.generators.styles.jazz` (e.g. ii-V-I).
+- **EDM**: `nasong.theory.generators.styles.edm`.
+- **Lofi**: `nasong.theory.generators.styles.lofi`.
 
 ## Experiment Tracking & Inference
 
