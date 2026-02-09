@@ -14,6 +14,7 @@ Requires-Dist: matplotlib
 Requires-Dist: pandas
 Requires-Dist: PyYAML
 Requires-Dist: tabulate
+Requires-Dist: textual[syntax]
 Dynamic: license-file
 
 # Nasong
@@ -271,3 +272,9 @@ def song(time: lv.Value) -> lv.Value:
 - `src/nasong/trainable/`: Training logic and trainable instrument definitions.
 - `song_examples/`: Example song definitions.
 - `tests/`: Automated tests.
+
+## TODOLIST
+
+- Create an app like the nasong-rave but for the base nasong files, and act like a DAW, where we have the code of the nasong file, and we can edit it in real time, and it will update the audio in real time. And it has a timeline where we can see kinda a spectrogram of the audio (but with the limitations of `textual`), but the most important is the time cursor, where we can move it, and when we change a thing in the code, and that we click on the reload button, it remember where the time cursor was, and when we click play, it play the audio from that point. And there are of course quick options to go to the start of the song or to each quarter of the song timeline. And there is an option, with a quick keyboard shortcut or from a button, we switch from the code editor (with the python color syntax) to a file explorer, and we can easily switch from nasong code files.
+
+
