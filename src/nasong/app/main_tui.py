@@ -22,17 +22,6 @@ from nasong.app.docs_utils import get_module_docs
 
 
 class Editor(TextArea):
-    # ... (skip to watch_volume)
-
-    def watch_volume(self, val):
-        self.session.set_volume(val)
-        try:
-            self.query_one("#lbl-vol", Label).update(f"Volume: {int(val * 100)}%")
-        except:
-            pass
-
-
-class Editor(TextArea):
     """
     Code editor widget.
     """
@@ -175,9 +164,9 @@ class AlgoRaveApp(App):
     bpm = reactive(120.0)
     volume = reactive(0.8)
 
-    def __init__(self):
+    def __init__(self, device=None, sample_rate=44100):
         super().__init__()
-        self.session = LiveSession()
+        self.session = LiveSession(device=device, sample_rate=sample_rate)
         self.session.set_error_callback(self.on_session_error)
         self.session.set_log_callback(self.log_message)
 
@@ -312,8 +301,7 @@ class AlgoRaveApp(App):
     def watch_volume(self, val):
         try:
             self.query_one("#lbl-vol", Label).update(f"Volume: {int(val * 100)}%")
-            # Update volume in session?
-            # session doesn't have set_volume yet.
+            self.session.set_volume(val)
         except:
             pass
 
@@ -325,7 +313,20 @@ class AlgoRaveApp(App):
 
 
 def main():
-    app = AlgoRaveApp()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="NaSong Algo-Rave TUI")
+    parser.add_argument(
+        "--rate", type=int, default=44100, help="Sample rate (try 48000 if silent)"
+    )
+    args = parser.parse_args()
+
+    # Normalize device if it's a digit
+    device = args.device
+    if device and device.isdigit():
+        device = int(device)
+
+    app = AlgoRaveApp(device=device, sample_rate=args.rate)
     app.run()
 
 

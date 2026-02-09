@@ -13,9 +13,10 @@ class LiveSession:
     Manages the audio stream and the 'hot' user code.
     """
 
-    def __init__(self, sample_rate=44100, block_size=2048):
+    def __init__(self, sample_rate=44100, block_size=2048, device=None):
         self.sample_rate = sample_rate
         self.block_size = block_size
+        self.device = device
         self.stream: Optional[sd.OutputStream] = None
         self.user_module: Optional[Any] = None
         self.cursor = 0  # absolute sample index
@@ -23,6 +24,7 @@ class LiveSession:
         self.lock = threading.Lock()
         self.error_callback: Optional[callable] = None
         self.volume = 0.8
+        self.log_callback: Optional[callable] = None
 
     def set_error_callback(self, cb):
         self.error_callback = cb
@@ -36,7 +38,7 @@ class LiveSession:
             self.log_callback(msg)
 
     def set_volume(self, vol: float):
-        self.volume = max(0.0, min(1.0, vol))
+        self.volume = max(0.0, vol)  # ALLOW Over-amplification for testing!
 
     def load_script(self, script_path: str) -> bool:
         """
@@ -139,6 +141,7 @@ class LiveSession:
             self.stream = sd.OutputStream(
                 samplerate=self.sample_rate,
                 blocksize=self.block_size,
+                device=self.device,
                 channels=2,
                 callback=self.audio_callback,
             )

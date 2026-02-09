@@ -9,11 +9,22 @@ def main():
     parser = argparse.ArgumentParser(description="Headless NaSong Algo-Rave (Dev Tool)")
     parser.add_argument("script", help="Path to the user script (e.g., demo_theory.py)")
     parser.add_argument(
-        "--volume", type=float, default=0.8, help="Master volume (0.0 - 1.0)"
+        "--volume", type=float, default=0.8, help="Master volume (0.0+)"
+    )
+    parser.add_argument(
+        "--device", type=str, default=None, help="Audio device index or name"
+    )
+    parser.add_argument(
+        "--rate", type=int, default=44100, help="Sample rate (try 48000 if silent)"
     )
     args = parser.parse_args()
 
-    session = LiveSession()
+    # Normalize device if it's a digit
+    device = args.device
+    if device and device.isdigit():
+        device = int(device)
+
+    session = LiveSession(device=device, sample_rate=args.rate)
     session.set_volume(args.volume)
 
     script_abs_path = os.path.abspath(args.script)
@@ -24,7 +35,8 @@ def main():
 
     print(f"--- Headless Algo-Rave Started ---")
     print(f"Target Script: {script_abs_path}")
-    print(f"BPM: (Managed by script)")
+    print(f"Device: {device if device is not None else 'Default'}")
+    print(f"Sample Rate: {args.rate} Hz")
     print(f"Volume: {args.volume}")
     print(f"----------------------------------")
 

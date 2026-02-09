@@ -66,6 +66,7 @@ src/nasong/dsl/decorators.py
 src/nasong/dsl/units.py
 src/nasong/dsl/utils.py
 src/nasong/dummy/__init__.py
+src/nasong/dummy/check_audio.py
 src/nasong/instruments/__init__.py
 src/nasong/instruments/bass.py
 src/nasong/instruments/bowed_strings.py
