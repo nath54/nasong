@@ -2,26 +2,32 @@ from textual.app import App, ComposeResult
 from textual.widgets import (
     Header,
     Footer,
-    Static,
     Label,
     TabbedContent,
     TabPane,
     TextArea,
     Button,
-    DirectoryTree,
     Tree,
     Input,
 )
-from textual.containers import Container, Horizontal, Vertical, ScrollableContainer
+from textual.containers import Container, Horizontal, Vertical
 from textual.binding import Binding
 from textual.reactive import reactive
-from textual.message import Message
-from pathlib import Path
 import os
-import sounddevice as sd
 
 from nasong.app.live_session import LiveSession
-from nasong.app.docs_utils import get_module_docs, flatten_docs
+from nasong.app.docs_utils import get_module_docs
+
+
+class Editor(TextArea):
+    # ... (skip to watch_volume)
+
+    def watch_volume(self, val):
+        self.session.set_volume(val)
+        try:
+            self.query_one("#lbl-vol", Label).update(f"Volume: {int(val * 100)}%")
+        except:
+            pass
 
 
 class Editor(TextArea):
