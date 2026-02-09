@@ -22,9 +22,13 @@ class LiveSession:
         self.is_running = False
         self.lock = threading.Lock()
         self.error_callback: Optional[callable] = None
+        self.volume = 0.8
 
     def set_error_callback(self, cb):
         self.error_callback = cb
+
+    def set_volume(self, vol: float):
+        self.volume = max(0.0, min(1.0, vol))
 
     def load_script(self, script_path: str) -> bool:
         """
@@ -32,6 +36,10 @@ class LiveSession:
         """
         module_name = "user_script_live"
         try:
+            # Check if file exists
+            with open(script_path, "r"):
+                pass
+
             spec = importlib.util.spec_from_file_location(module_name, script_path)
             if spec and spec.loader:
                 module = importlib.util.module_from_spec(spec)
@@ -77,6 +85,9 @@ class LiveSession:
                 try:
                     # Get audio from sequencer
                     audio = seq.getitem_np(time_array, self.sample_rate)
+
+                    # Apply Master Volume
+                    audio = audio * self.volume
 
                     # Safety Clip
                     audio = np.clip(audio, -1.0, 1.0)
