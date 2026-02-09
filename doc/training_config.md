@@ -87,13 +87,6 @@ python -m nasong.trainable.train --config training_configs/base.yaml --epochs 50
 Depending on the selected method, you may need to install additional packages:
 
 - **Legacy**: No extra dependencies.
-- **Basic Pitch (ONNX)**:
-  ```bash
-  pip install basic-pitch onnxruntime
-  # For GPU support (optional):
-  # pip install onnxruntime-gpu
-  ```
-  Note: TensorFlow is *not* required if using ONNX mode as configured.
 - **Librosa**:
   ```bash
   pip install librosa
@@ -106,7 +99,10 @@ Depending on the selected method, you may need to install additional packages:
   ```bash
   pip install audioflux
   ```
+- **Crepe ONNX**:
+  ```bash
+  pip install onnxruntime
+  ```
 
 ### Notes on Other Libraries
-- **NeuralNote**: This is supported via the `neural_note` method alias. It uses the same underlying **Basic Pitch** algorithm with **ONNX Runtime**, providing the same SOTA polyphonic detection without TensorFlow dependencies.
 - **Omnizart**: This library was evaluated but is currently not supported due to its heavy reliance on outdated dependencies (Librosa < 0.9, Python < 3.12) which would conflict with modern environments.
