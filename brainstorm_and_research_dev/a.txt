@@ -1,0 +1,73 @@
+In a previous conversation, I asked that:
+
+```
+Okay, I like that. Can you start the full implementation of all of that please?
+
+Be very careful and organize well the work because there are a **LOT** of things to implement.
+
+Prepare implementation in multiple steps with tests and verification, but avoid to overwhelm yourself to avoid hallucination and lower quality.
+```
+
+Based on 
+
+You started the implementation, but you didn't really organized a good roadmap.
+And there seems to be some errors, be careful.
+
+Use the .venv Python Venv please.
+
+
+
+Trajectory ID: 27148764-3343-46ff-9da0-df8e2430ad55
+Error: model unreachable: UNAVAILABLE (code 503): No capacity available for model gemini-3-pro-high on the server: UNAVAILABLE (code 503): No capacity available for model gemini-3-pro-high on the server: model api cannot be reached
+(1) attached stack trace
+  -- stack trace:
+  | google3/third_party/gemini_coder/framework/generator/generator.(*PlannerGenerator).generateWithModelOutputRetry
+  | 	third_party/gemini_coder/framework/generator/planner_generator.go:194
+  | google3/third_party/gemini_coder/framework/generator/generator.(*PlannerGenerator).Generate
+  | 	third_party/gemini_coder/framework/generator/planner_generator.go:95
+  | google3/third_party/gemini_coder/framework/executor/executor.(*Executor).Execute
+  | 	third_party/gemini_coder/framework/executor/executor.go:303
+  | google3/third_party/jetski/cortex/cortex.(*CascadeManager).executeHelper.func1
+  | 	third_party/jetski/cortex/cascade_manager.go:1558
+  | [...repeated from below...]
+Wraps: (2) secondary error attachment
+  | UNAVAILABLE (code 503): No capacity available for model gemini-3-pro-high on the server: UNAVAILABLE (code 503): No capacity available for model gemini-3-pro-high on the server
+  | (1) tags: map[stream_receive_count:0 streaming_duration:0s]
+  | Wraps: (2) attached stack trace
+  |   -- stack trace:
+  |   | google3/third_party/gemini_coder/framework/generator/generator.(*streamResponseHandler).processStream
+  |   | 	third_party/gemini_coder/framework/generator/stream_handler.go:338
+  |   | google3/third_party/gemini_coder/framework/generator/generator.(*PlannerGenerator).attemptGenerate
+  |   | 	third_party/gemini_coder/framework/generator/planner_generator.go:437
+  |   | google3/third_party/gemini_coder/framework/generator/generator.(*PlannerGenerator).generateWithAPIRetry
+  |   | 	third_party/gemini_coder/framework/generator/planner_generator.go:278
+  |   | google3/third_party/gemini_coder/framework/generator/generator.(*PlannerGenerator).generateWithModelOutputRetry
+  |   | 	third_party/gemini_coder/framework/generator/planner_generator.go:154
+  |   | google3/third_party/gemini_coder/framework/generator/generator.(*PlannerGenerator).Generate
+  |   | 	third_party/gemini_coder/framework/generator/planner_generator.go:95
+  |   | google3/third_party/gemini_coder/framework/executor/executor.(*Executor).Execute
+  |   | 	third_party/gemini_coder/framework/executor/executor.go:303
+  |   | google3/third_party/jetski/cortex/cortex.(*CascadeManager).executeHelper.func1
+  |   | 	third_party/jetski/cortex/cascade_manager.go:1558
+  |   | google3/third_party/jetski/cortex/cortex.(*CascadeManager).executeHelper.func2
+  |   | 	third_party/jetski/cortex/cascade_manager.go:1676
+  |   | runtime.goexit
+  |   | 	third_party/go/gc/src/runtime/asm_amd64.s:1771
+  | Wraps: (3) UNAVAILABLE (code 503): No capacity available for model gemini-3-pro-high on the server
+  | Wraps: (4) UNAVAILABLE (code 503): No capacity available for model gemini-3-pro-high on the server
+  | Error types: (1) *go_utils.withTags (2) *withstack.withStack (3) *errutil.withPrefix (4) *utils.HTTPError
+Wraps: (3) model unreachable: UNAVAILABLE (code 503): No capacity available for model gemini-3-pro-high on the server: UNAVAILABLE (code 503): No capacity available for model gemini-3-pro-high on the server
+Wraps: (4) attached stack trace
+  -- stack trace:
+  | google3/third_party/jetski/cortex/shared/shared.init
+  | 	third_party/jetski/cortex/shared/interfaces.go:21
+  | runtime.doInit1
+  | 	third_party/go/gc/src/runtime/proc.go:8105
+  | runtime.doInit
+  | 	third_party/go/gc/src/runtime/proc.go:8072
+  | runtime.main
+  | 	third_party/go/gc/src/runtime/proc.go:258
+  | runtime.goexit
+  | 	third_party/go/gc/src/runtime/asm_amd64.s:1771
+Wraps: (5) model api cannot be reached
+Error types: (1) *withstack.withStack (2) *secondary.withSecondaryError (3) *errutil.withPrefix (4) *withstack.withStack (5) *errutil.leafError
