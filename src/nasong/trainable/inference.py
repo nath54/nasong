@@ -1,12 +1,40 @@
+# Copyright (C) 2026 Nathan Cerisara <https://github.com/nath54/nasong>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+
+"""
+TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""
+
+#
+### Import Modules. ###
+#
+from typing import Callable
+
+#
 import os
 import json
 import functools
-from typing import Callable
+
+#
 from nasong.scripts.experiment_manager import ExperimentManager, Experiment
 from nasong.trainable.extract import get_trainable_instrument
 from nasong.core.value import ParameterContext
 
 
+#
 def load_trained_instrument(experiment_id_or_path: str) -> Callable:
     """
     Load a trained instrument from an experiment and return a usable function.
@@ -50,13 +78,8 @@ def load_trained_instrument(experiment_id_or_path: str) -> Callable:
                     status="completed",
                 )
                 # Monkey-patch path
-                original_path_prop = Experiment.path
+                _original_path_prop = Experiment.path
                 exp.__dict__["path"] = experiment_id_or_path
-                # We need to ensure exp.path returns the directory.
-                # Since Experiment.path is a property based on ID/timestamp usually,
-                # we might need to override it or just set it if we control the class.
-                # But Experiment class property calculates it.
-                # Let's simple create a mock object or use the fact that we need exp.path later.
 
                 class MockExperiment:
                     def __init__(self, path, params):

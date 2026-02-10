@@ -1,10 +1,31 @@
+# Copyright (C) 2026 Nathan Cerisara <https://github.com/nath54/nasong>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+
 """
-Core Scale Definitions.
+TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
 """
 
-from dataclasses import dataclass, field
-from typing import List, Union, Dict
-from .pitch import Note, Hz, Pitch, Tuning, DEFAULT_TUNING
+#
+### Import Modules. ###
+#
+from typing import List, Dict
+from dataclasses import dataclass
+
+#
+from .pitch import Note, Hz, Pitch
 from .interval import Interval
 
 
@@ -26,29 +47,14 @@ class Scale:
         """
         Generate the notes of the scale relative to the root.
         """
-        notes = []
-        for interval in self.intervals:
-            # Add interval to root
-            # Interval.add_to(Note) -> Note
-            # We assume Interval(0) is the first element for the root itself
-            # If not present, we should add it?
-            # Convention: intervals list usually includes 0 or we act as if it does.
-            # Let's enforce 0 being present or add root manually.
-            pass
 
-        # New approach: Interval list defines steps FROM ROOT.
-        # e.g. Major: [0, 2, 4, 5, 7, 9, 11]
+        # Major: [0, 2, 4, 5, 7, 9, 11]
         valid_notes = []
         for iv in self.intervals:
             new_pitch = iv.add_to(self.root)
             if isinstance(new_pitch, Note):
                 valid_notes.append(new_pitch)
             else:
-                # Handle microtonal resulting pitch?
-                # For now, simplistic implementation keeps it if it's a Note.
-                # If we get Hz, we might need a "DetunedNote" or just keep Hz.
-                # But 'notes' property implies Note objects.
-                # Let's store generalized Pitch objects.
                 valid_notes.append(new_pitch)
         return valid_notes
 
@@ -70,11 +76,6 @@ class Scale:
         local_idx = idx % num_notes
 
         base_note = self._notes[local_idx]
-
-        # Transpose base_note by octave_shift * 12 semitones?
-        # This assumes 12-TET. For generic scales, we should use the 'period' (last interval?)
-        # For standard scales, the period is an octave (12 semitones).
-        # Let's assume octave period for now.
 
         if isinstance(base_note, Note):
             return base_note.transpose(octave_shift * 12)

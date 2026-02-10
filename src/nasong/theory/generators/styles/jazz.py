@@ -1,10 +1,29 @@
+# Copyright (C) 2026 Nathan Cerisara <https://github.com/nath54/nasong>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+
+"""
+TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""
+
+#
+### Import Modules. ###
+#
 from nasong.theory.core.scale import Scale
+from nasong.theory.core.time import QUARTER
 from nasong.theory.structures.progression import Progression
-from nasong.theory.structures.chord import Chord
-from nasong.theory.core.time import Duration, QUARTER
-from nasong.theory.systems.western import Western
-from typing import List
-import random
 
 
 class Jazz:
@@ -26,16 +45,15 @@ class Jazz:
 
         if minor:
             # Basic minor ii-V-i
-            qualities = ["min7b5", "dom7", "min7"]
+            _qualities = ["min7b5", "dom7", "min7"]
             degrees = [
                 "ii",
                 "V",
                 "i",
-            ]  # Roman numerals might need parsing support for lower case
-            # Current implementation supports basic strings
+            ]
+            #
             prog = Progression.from_roman_numerals(scale, degrees, duration=QUARTER)
-            # Adjust qualities manually if needed, or rely on scale logic
-            # This is a placeholder for more advanced logic
+            #
             return prog
         else:
             return Progression.from_roman_numerals(

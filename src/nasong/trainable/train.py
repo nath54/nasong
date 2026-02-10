@@ -1,10 +1,52 @@
+# Copyright (C) 2026 Nathan Cerisara <https://github.com/nath54/nasong>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+
+"""
+TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""
+
+#
+### Import Modules. ###
+#
+from typing import Tuple, Dict, Any
+
+#
 import os
 import argparse
 import datetime
-from typing import Tuple, Dict, Any
+import scipy.io.wavfile as wavfile
+
+#
 import numpy as np
 from numpy.typing import NDArray
 
+#
+import nasong.core.all_values as lv
+import nasong.trainable.extract as learnable
+from nasong.trainable.config import TrainingConfig
+from nasong.trainable.note_detection.create import create_note_detector
+
+#
+from nasong.trainable.engines.base import BaseTrainingEngine
+from nasong.trainable.engines.numpy_engine import NumpyEngine
+from nasong.trainable.engines.autograd_engine import AutogradEngine
+
+#
+### Try importing torch, handle failure gracefully ###
+#
 try:
     import torch
 
@@ -13,19 +55,8 @@ except (ImportError, OSError):
     HAS_TORCH = False
     torch = Any
 
-import scipy.io.wavfile as wavfile
 
-import nasong.core.all_values as lv
-import nasong.trainable.extract as learnable
-from nasong.trainable.config import TrainingConfig
-from nasong.trainable.note_detection.create import create_note_detector
-
-# Engines
-from nasong.trainable.engines.base import BaseTrainingEngine
-from nasong.trainable.engines.numpy_engine import NumpyEngine
-from nasong.trainable.engines.autograd_engine import AutogradEngine
-
-
+#
 def get_engine(config: TrainingConfig) -> BaseTrainingEngine:
     if config.engine_type == "numpy":
         return NumpyEngine(config)
@@ -244,14 +275,7 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
         prefix = tn["prefix"]
 
         if config.instrument_name in ["kick", "snare", "hihat_closed", "hihat_open"]:
-            # Percussion instruments
-            # Note: "kick", "snare" usually take (time, start_time)
-            # "hihat_closed"/"hihat_open" might map to TrainableHiHat with is_open flag
-
-            # We need to check signature or handle specific mapping if get_trainable_instrument
-            # returns the raw function.
-            # Assuming get_trainable_instrument returns the function directly.
-
+            #
             if config.instrument_name == "hihat_open":
                 nv = instrument_blueprint(
                     time=time_val,
@@ -313,28 +337,7 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
     print(f"Starting training for {config.epochs} epochs...")
 
     for epoch in range(config.epochs):
-        # Engine Compute Loss & Step
-        # Note: Some engines (Torch) might need batching logic or handles it internally.
-        # But for Autograd/Numpy, we often do full-batch or simple slicing.
-        # The Abstract Engine interface handles strict compute_loss -> step flow.
-        # However, TorchEngine might need to handle its own loop or we feed it data.
-
-        # For this refactor, we stick to the interface:
-        # 1. compute_loss(target, blueprint, sr)
-        # 2. step()
-
-        # NOTE: Autograd/NumPy engines usually assume they can hold the whole graph/arrays in memory
-        # or handle their own batching if implemented.
-        # If we need batching for Torch, we should probably move the batch loop INTO the TorchEngine
-        # or make the Engine expose a `train_epoch(dataset)` method.
-
-        # Given arguments, `compute_loss` takes `target_audio` (numpy array).
-        # We will feed the FULL training audio to `compute_loss` for Autograd/Numpy.
-        # For Torch, if it requires batching, it should probably happen inside `compute_loss` or we risk OOM?
-        # Actually AutogradEngine.compute_loss computes loss on the full input provided.
-
-        # Let's try full batch for now as Autograd usually implies smaller data or full batch.
-
+        #
         loss_val = engine.compute_loss(train_audio, synth_output, sr)
         metrics = engine.step()
 
@@ -379,8 +382,6 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
             wavfile.write(target_path, sr, (target_audio * 32767).astype(np.int16))
 
     # Render TRAIN
-    # We use valid render mechanism (Chunks via Torch usually fastest for rendering even if training was Autograd)
-    # But if device is CPU, it will use CPU.
     train_pred = render_audio_in_chunks(
         synth_output, len(train_audio), sr, config.device, start_sample=0
     )

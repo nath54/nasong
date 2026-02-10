@@ -12,11 +12,16 @@ Usage:
     nasong-leaderboard [options]
 """
 
+#
+### Import Modules. ###
+#
+from typing import Dict, Any, List
+
+#
 import os
 import json
 import yaml
 import argparse
-from typing import Dict, Any, List
 import pandas as pd
 
 

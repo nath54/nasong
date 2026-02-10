@@ -1,9 +1,39 @@
-import os
-import urllib.request
-from typing import List, Dict, Any
-import numpy as np
+# Copyright (C) 2026 Nathan Cerisara <https://github.com/nath54/nasong>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-# Try importing onnxruntime, handle failure gracefully
+
+"""
+TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""
+
+#
+### Import Modules. ###
+#
+from typing import List, Dict, Any
+
+#
+import os
+import numpy as np
+import urllib.request
+
+#
+from .base import NoteDetector
+
+#
+### Try importing onnxruntime, handle failure gracefully ###
+#
 try:
     import onnxruntime as ort
 
@@ -11,7 +41,9 @@ try:
 except ImportError:
     HAS_ORT = False
 
-# Try importing scipy for resampling
+#
+### Try importing scipy for resampling ###
+#
 try:
     from scipy import signal
 
@@ -19,23 +51,14 @@ try:
 except ImportError:
     HAS_SCIPY = False
 
-from .base import NoteDetector
 
 # Constants for CREPE
 CREPE_MODEL_URL = (
     "https://github.com/yqzhishen/onnxcrepe/releases/download/v1.1.0/tiny.onnx"
 )
-# We use tiny model by default locally to be fast and light.
-# If user wants full, we can change URL or make it configurable.
-# But tiny is surprisingly good.
-# Let's use 'full' if we want "SOTA", but 'tiny' is usually enough.
-# The search result mentioned 'crepe-pitch-estimation' which might be full.
-# Let's stick to a known working URL pattern or the one found.
-# The search said "ymp-engr-dept/crepe-pitch-estimation".
-# Let's try to verify if it's the full model. Usually tiny is ~3MB, full ~10MB.
-# I'll use a generic name implementation.
 
 
+#
 class OnnxCrepeDetector(NoteDetector):
     """
     Note detection using CREPE with ONNX Runtime.

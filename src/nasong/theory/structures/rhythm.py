@@ -1,10 +1,31 @@
+# Copyright (C) 2026 Nathan Cerisara <https://github.com/nath54/nasong>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+
 """
-Rhythm Generators.
+TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
 """
 
+#
+### Import Modules. ###
+#
+from typing import List, Iterator
 from dataclasses import dataclass
-from typing import List, Iterator, Tuple
-from nasong.theory.core.time import Duration, QUARTER, SIXTEENTH, EIGHTH
+
+#
+from nasong.theory.core.time import Duration, QUARTER, SIXTEENTH
 
 
 @dataclass
@@ -67,14 +88,7 @@ def four_on_the_floor() -> Rhythm:
 
 
 def swing_eighths() -> Rhythm:
-    # Approximate swing feel with triplets?
-    # Quarter note encoded as triplet pattern: 2/3 + 1/3
-    # Or just use relative durations if engine supports it.
-    # For now, let's use exact durations based on triplet math.
-    long_8 = Duration(
-        EIGHTH.value * (2 / 1.5)
-    )  # Wait, normal 8th is 0.5. Triplet 8th is 1/3.
-    # Swing pair: Long (2/3 of beat), Short (1/3 of beat). Beat = Quarter (1.0).
+    #
     long_d = Duration(1.0 * (2 / 3))
     short_d = Duration(1.0 * (1 / 3))
 

@@ -1,4 +1,26 @@
-from typing import List
+# Copyright (C) 2026 Nathan Cerisara <https://github.com/nath54/nasong>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+
+"""
+TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""
+
+#
+### Import Modules. ###
+#
 from nasong.theory.core.scale import Scale
 from nasong.theory.core.pitch import Note
 from nasong.theory.core.interval import Interval
@@ -13,23 +35,6 @@ class Maqam:
     # Half sharp = 0.5 (50 cents)
     # 1 step = 2 semitones = 200 cents
     # 3/4 step = 1.5 semitones = 150 cents
-
-    # Bayati: 0, 1.5, 3, 5, 7, 8, 10
-    # Intervals in semitones: 1.5, 1.5, 2, 2, 1, 2, 2 (Approximated)
-    # Actually:
-    # Root -> 2nd (Half flat): ~1.5 semitones?
-    # No, Half flat 2nd is ~1.5 semitones from root?
-    # Let's use standard definitions:
-    # Rast: C, D0.5b, E0.5b, F, G, A0.5b, B0.5b
-    # Intervals: 2, 1.75, 1.25, 2, 1.75, 1.25 ?
-    # Let's use float semitones.
-
-    # Common Ajnas (sets):
-    # Ajam (Major-like): 2, 2, 1
-    # Nahawand (Minor-like): 2, 1, 2
-    # Rast: 2, 1.5, 1.5 (approx neutral third)
-    # Bayati: 1.5, 1.5, 2
-    # Hijaz: 1, 3, 1
 
     PATTERNS = {
         "ajam": [2, 2, 1, 2, 2, 2, 1],  # Major

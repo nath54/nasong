@@ -1,7 +1,37 @@
+# Copyright (C) 2026 Nathan Cerisara <https://github.com/nath54/nasong>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+
+"""
+TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""
+
+#
+### Import Modules. ###
+#
 from typing import List, Dict, Any
+
+#
 import numpy as np
+
+#
 from .base import NoteDetector
 
+#
+### Try to import audioflux. ###
+#
 try:
     import audioflux as af
 except ImportError:
@@ -35,7 +65,7 @@ class AudioFluxDetector(NoteDetector):
 
         pitches = []
         times = []
-        confidences = []  # PEF might not return confidence directly in same way as YIN
+        _confidences = []  # PEF might not return confidence directly in same way as YIN
 
         if algo_type == "YIN":
             # YIN implementation in AudioFlux
@@ -51,7 +81,7 @@ class AudioFluxDetector(NoteDetector):
             pitches = fre_arr
             num_frames = len(fre_arr)
             times = np.arange(num_frames) * (slide_length / sample_rate)
-            confidences = val2_arr  # approximation
+            _confidences = val2_arr  # approximation
 
         else:  # PEF
             pitch_obj = af.PitchPEF(
@@ -67,7 +97,7 @@ class AudioFluxDetector(NoteDetector):
             num_frames = len(fre_arr)
             times = np.arange(num_frames) * (slide_length / sample_rate)
             # PEF doesn't return confidence directly in pitch(), so we use dummy 1.0s or maybe magnitude if separate call
-            confidences = np.ones_like(fre_arr)
+            _confidences = np.ones_like(fre_arr)
         # Segmentation Logic (Simple voicing check)
         notes = []
         current_start = None

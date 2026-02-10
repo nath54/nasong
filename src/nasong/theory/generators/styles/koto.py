@@ -1,9 +1,29 @@
-from nasong.theory.core.scale import Scale
-from nasong.theory.structures.progression import Progression
+# Copyright (C) 2026 Nathan Cerisara <https://github.com/nath54/nasong>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+
+"""
+TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""
+
+#
+### Import Modules. ###
+#
+from nasong.theory.core.time import QUARTER
 from nasong.theory.systems.east_asian import EastAsian
-from nasong.theory.core.time import QUARTER, EIGHTH
-from typing import List
-import random
+from nasong.theory.structures.progression import Progression
 
 
 class Koto:
@@ -17,13 +37,6 @@ class Koto:
         Generates a motif using the In scale.
         """
         scale = EastAsian.in_scale(root)
-
-        # Koto music often uses arpeggiated clusters or specific intervals (4ths, 5ths)
-        # Not typically chord progressions in the Western sense.
-        # Returning a sequence of notes as a single-chord "Progression" for now?
-        # Or a "Melody"?
-        # DSL structure needs to support Melodies better.
-        # For now, using Progression as a container of chords where each chord is a single note (monophonic)
 
         # Example pattern: Root -> 5th -> 4th -> Root
         # Indices: 0, 3, 2, 0

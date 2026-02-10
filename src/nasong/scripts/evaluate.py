@@ -18,6 +18,12 @@ Options:
     --methods LIST        Comma-separated list of methods to test (default: all)
 """
 
+#
+### Import Modules. ###
+#
+from typing import Dict, Any, List, Optional
+
+#
 import os
 import glob
 import json
@@ -25,20 +31,30 @@ import argparse
 import numpy as np
 import soundfile as sf
 import matplotlib.pyplot as plt
-from typing import Dict, Any, List, Optional
 
-# Nasong imports
+#
+### Nasong imports ###
+#
 try:
+    #
     from nasong.trainable.config import NoteDetectionConfig
     from nasong.trainable.note_detection.create import create_note_detector
+#
 except ImportError:
-    # Fallback if running as script without package installed
+    #
+    ### Fallback if running as script without package installed ###
+    #
     import sys
 
+    #
     sys.path.append(os.path.join(os.path.dirname(__file__), "../../..", "src"))
+
+    #
     from nasong.trainable.config import NoteDetectionConfig
     from nasong.trainable.note_detection.create import create_note_detector
 
+
+#
 ALL_METHODS = ["legacy", "basic_pitch", "librosa", "torchcrepe", "audioflux"]
 
 
@@ -242,10 +258,10 @@ def process_experiment(
             print(f"   📊 Split: {split_key}")
 
             # 1. Evaluate
-            print(f"     🔍 Evaluating Target...")
+            print("     🔍 Evaluating Target...")
             target_res = evaluate_audio(target_path, methods)
 
-            print(f"     🔍 Evaluating Trained...")
+            print("     🔍 Evaluating Trained...")
             trained_res = evaluate_audio(trained_path, methods)
 
             all_split_results[split_key] = {
@@ -313,7 +329,7 @@ def main():
             os.path.basename(args.target_wav).replace("_target.wav", "") or "unknown"
         )
 
-        print(f"📂 Processing specific files...")
+        print("📂 Processing specific files...")
         target_results = evaluate_audio(args.target_wav, methods)
         trained_results = evaluate_audio(args.trained_wav, methods)
 

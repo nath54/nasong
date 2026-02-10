@@ -1,14 +1,20 @@
 """
+TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+
+
 Signal Chaining DSL.
 Allows syntax like: Osc(freq) >> Filter(cutoff) >> Reverb()
 """
 
+#
+### Import Modules. ###
+#
+from typing import Union
+
+#
 from nasong.core.value import Value
-from nasong.core.values.single_itms_ops.value_basic_scaling import (
-    BasicScaling,
-)  # as Amp?
 from nasong.core.values.mult_itms_ops.value_product import Product
-from typing import Union, List
+from nasong.core.values.basic.value_constant import Constant
 
 
 class Chainable:
@@ -72,15 +78,6 @@ class Processor:
 
     def __call__(self, source: Value) -> Value:
         raise NotImplementedError
-
-
-# We need to wrap NaSong core `Value`s to be chainable?
-# Or we can monkey-patch `Value.__rshift__`?
-# Monkey-patching is risky but clean for DSL.
-# Let's try to define a wrapper `Signal` that inherits from Value?
-# Or just use `Chainable` wrapper in the DSL context.
-
-from nasong.core.values.basic.value_constant import Constant
 
 
 class Gain(Processor):
