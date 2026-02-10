@@ -7,7 +7,7 @@ name = "nasong"
 version = "0.1.0"
 description = "A powerful audio generation library and application."
 authors = [
-  { name="Nathan Cerisara", email="nathan.cerisara@example.com" },
+  { name="Nathan Cerisara", email="nathan.cerisara@protonmail.com" },
 ]
 readme = "README.md"
 requires-python = ">=3.9"

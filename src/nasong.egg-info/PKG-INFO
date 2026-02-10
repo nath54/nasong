@@ -2,7 +2,7 @@ Metadata-Version: 2.4
 Name: nasong
 Version: 0.1.0
 Summary: A powerful audio generation library and application.
-Author-email: Nathan Cerisara <nathan.cerisara@example.com>
+Author-email: Nathan Cerisara <nathan.cerisara@protonmail.com>
 Classifier: Programming Language :: Python :: 3
 Classifier: Operating System :: OS Independent
 Requires-Python: >=3.9

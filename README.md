@@ -1,5 +1,9 @@
 # Nasong
 
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+![Python Version](https://img.shields.io/badge/python-3.12%2B-blue)
+![GitHub issues](https://img.shields.io/github/issues/nath54/nasong)
+
 Nasong is a Python-based music synthesizer and sequencer that allows you to create music programmatically. It provides a framework for defining instruments, effects, and songs using Python code, which are then rendered to WAV files.
 
 ## Features
@@ -254,8 +258,7 @@ def song(time: lv.Value) -> lv.Value:
 - `song_examples/`: Example song definitions.
 - `tests/`: Automated tests.
 
-## TODOLIST
+## License
 
-- Create an app like the nasong-rave but for the base nasong files, and act like a DAW, where we have the code of the nasong file, and we can edit it in real time, and it will update the audio in real time. And it has a timeline where we can see kinda a spectrogram of the audio (but with the limitations of `textual`), but the most important is the time cursor, where we can move it, and when we change a thing in the code, and that we click on the reload button, it remember where the time cursor was, and when we click play, it play the audio from that point. And there are of course quick options to go to the start of the song or to each quarter of the song timeline. And there is an option, with a quick keyboard shortcut or from a button, we switch from the code editor (with the python color syntax) to a file explorer, and we can easily switch from nasong code files.
-
-
+This project is licensed under the terms of the GPLv3 license.
+For more information, see the [LICENSE](LICENSE) file.
