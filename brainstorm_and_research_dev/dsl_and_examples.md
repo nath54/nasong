@@ -22,15 +22,15 @@ def neuromancer_bass(freq: Value, gate: Value) -> Value:
     # Operators
     op1 = Osc.Sine(freq)
     op2 = Osc.Sine(freq * 2.01) # Slight detune
-    
+
     # FM Modulation
     modulator = Osc.Sine(freq * 0.5) * Env.ADSR(gate, 0.01, 0.2, 0, 0) * 500
     carrier = Osc.Saw(freq + modulator)
-    
+
     # Filter
     cutoff = Env.ADSR(gate, 0.1, 0.5, 0.2, 1.0) * 2000 + 100
     filtered = Filter.LowPass(carrier, cutoff)
-    
+
     # Amp
     amp = Env.ADSR(gate, 0.05, 0.2, 0.8, 0.3)
     return filtered * amp
@@ -42,12 +42,12 @@ def neuromancer_bass(freq: Value, gate: Value) -> Value:
 def neuromancer_bass(f, g):
     # Parameter inputs automatically wrapped
     mod = Sine(f * 0.5) * ADSR(g, 0.01, 0.2) * 500
-    
+
     src = (
         Saw(f + mod)                 # Carrier with FM
         + Sine(f * 2.01) * 0.5       # Sub-oscillator
     )
-    
+
     # Signal Chain: Source -> Distortion -> Filter -> Amp
     return src >> Distort.Tanh(2.0) \
                >> LPF(cutoff=ADSR(g, 0.1, 0.5, 0.2) * 2000 + 100) \
@@ -67,7 +67,7 @@ with Session(bpm=135, key="C#", scale="minor"):
     # 1. Drums: Pattern-based sequencing
     kick = Kick909() \
            .trig("x---x---x---x---")
-           
+
     hats = HiHat() \
            .trig("x-x-x-x-xxx-x-x-") \
            .humanize(amount=0.05) # Add jitter
@@ -99,22 +99,22 @@ def song(t):
         # Create 3 slow layers
         layer1 = Pad().play(chord="I", duration=10)
         layer2 = Pad().play(chord="IV", duration=10).delay(5)
-        
+
         # Slow LFO controlling filter globally
-        global_movement = LFO.Sine(freq=0.05) 
-        
+        global_movement = LFO.Sine(freq=0.05)
+
         texture = (layer1 + layer2) >> HPF(cutoff=global_movement.map(100, 500))
-        
+
         return texture
 ```
 
 ## 3. Potential Constraints & Challenges identified from these examples
 
 1.  **State Management (The "Click" Problem)**:
-    *   *Issue*: In the Algo-Rave example, if I change the bass rhythm from `hits=5` to `hits=6` and reload the code *while* the song is at bar 3, beat 2... what happens? 
+    *   *Issue*: In the Algo-Rave example, if I change the bass rhythm from `hits=5` to `hits=6` and reload the code *while* the song is at bar 3, beat 2... what happens?
     *   *Risk*: If the new generator resets to default (pulse 0), the bass will jump out of sync with the drums.
     *   *Solution needed*: The `Seq` generators must be "stateless functions of global time" (derived from `t`) OR the system needs to persist state maps key-ed by variable name (fragile).
-    
+
 2.  **Resource Heavy Graphs**:
     *   *Issue*: `>> Reverb()` implies a complex convolution or feedback delay network. Doing this per-voice in `neuromancer_bass` (if it were polyphonic) kills CPU.
     *   *Solution*: Distinguish between *Voice-Level* graph (per note) and *Bus-Level* graph (global effects). The DSL must make this distinction clear (e.g., `Voice()` vs `Mix()`).

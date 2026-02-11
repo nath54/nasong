@@ -25,7 +25,7 @@ def drums():
 def bass():
     # Syncs automatically to next bar
     progression = ["C2", "F2", "G2", "C2"]
-    
+
     for note in progression:
         # Trigger synth with parameters
         start(BassSynth, freq=note, decay=0.2)
@@ -90,7 +90,7 @@ bass = MoogBass(cutoff=500)
 # 2. Define Patterns (Clips)
 def techno_beat(ctx):
     # imperatively add events to the current grid
-    ctx.kick(0, 1, 2, 3) 
+    ctx.kick(0, 1, 2, 3)
     ctx.hats(0.5, 1.5, 2.5, 3.5)
 
 def rolling_bass(ctx):
@@ -101,7 +101,7 @@ def rolling_bass(ctx):
 # You edit this part live to switch sections
 session.bpm = 128
 session.track("Drums").play(techno_beat)
-session.track("Bass").play(rolling_bass) 
+session.track("Bass").play(rolling_bass)
 ```
 
 **How it works with Chunks:**

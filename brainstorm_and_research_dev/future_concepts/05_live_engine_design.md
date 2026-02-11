@@ -1,4 +1,6 @@
 # 05_live_engine_design.py
+
+```py
 # TECHNICAL PROTOTYPE: NaSong Live Engine Internals
 # This file demonstrates HOW the "Chunk System" works under the hood.
 
@@ -205,22 +207,23 @@ class LiveEngine:
 def song(t, state):
     # 't' is a vector of time for the current chunk
     # 'state' is a dict compatible object
-    
+
     # 1. Tempo Sync
     bpm = 130
     beat = t * (bpm / 60.0)
-    
+
     # 2. Access Persistent Counter
     # If we didn't use state, 'counter' would reset every chunk!
-    # But here we just derive everything from 'beat' (Time), 
+    # But here we just derive everything from 'beat' (Time),
     # so we might NOT need explicit state for patterns.
     # Statelesness is preferred for Time!
-    
+
     kick_trig = (beat % 1.0) < 0.1
-    
+
     # 3. State is useful for "Latching"
     # e.g. "Run this random seed only once"
     curr_seed = state.get_or_set("seed", 42)
-    
+
     return Osc.Sine(440) * kick_trig
 """
+```

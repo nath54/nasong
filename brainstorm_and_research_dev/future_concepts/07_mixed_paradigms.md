@@ -1,4 +1,6 @@
 # 07_mixed_paradigms.py
+
+```py
 # DEMONSTRATION: The "Polyglot" Engine
 # This file proves that we can support MULTIPLE user styles in one session.
 # The `Session` object acts as a generic host for different "Sequencer Strategies".
@@ -73,3 +75,4 @@ def texture(t):
 #   raw audio output directly.
 #
 # Result: They all output audio/events to the same bus!
+```

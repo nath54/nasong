@@ -1,4 +1,6 @@
 # 02_instrument_dsl.py
+
+```py
 # This file demonstrates the "NaSL" (NaSong Language) Internal DSL.
 # The goal is to make signal graphs (patching) readable and concise.
 
@@ -92,3 +94,4 @@ def song():
     )
 
     return Mix([bass, lead_line])
+```

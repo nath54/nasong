@@ -1,4 +1,6 @@
 # 03_live_session.py
+
+```py
 # This simulates the structure of a live-code file during an "Algo-Rave".
 # The user edits this file, saves it, and the engine hot-swaps the audio generation.
 
@@ -83,3 +85,4 @@ def atmosphere(t):
 @session.master
 def master_bus(audio_in):
     return audio_in >> Compressor(threshold=-10, ratio=4) >> Limiter()
+```

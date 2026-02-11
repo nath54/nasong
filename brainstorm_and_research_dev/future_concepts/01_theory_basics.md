@@ -1,4 +1,6 @@
 # 01_theory_basics.py
+
+```py
 # This file demonstrates the core Music Theory API for NaSong.
 
 from nasong.theory.core import Note, Scale, Interval, Hz
@@ -91,3 +93,4 @@ oscillator_freqs = c_maj7.to_values()
 
 # This allows:
 # song = Mix([Osc.Sine(f) for f in oscillator_freqs])
+```

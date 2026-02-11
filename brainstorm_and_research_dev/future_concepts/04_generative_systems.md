@@ -1,4 +1,6 @@
 # 04_generative_systems.py
+
+```py
 # Advanced examples showing "Systemic" or "Generative" music.
 # This goes beyond simple loops into rule-based composition.
 
@@ -104,3 +106,4 @@ def fractal_melody():
             "B": "-1st",  # Down 1 semitone
         },
     )
+```
