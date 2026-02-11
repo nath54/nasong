@@ -13,7 +13,15 @@ class TestADSR_Piano:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = instruments.effects.ADSR_Piano()
+        # -- Setup Constructor Arguments --
+        time = None
+        note_freq = 0.0
+        attack = 0.0
+        decay = 0.0
+        sustain_level = 0.0
+        release = 0.0
+        note_duration = 0.0
+        self.instance = instruments.effects.ADSR_Piano(time, note_freq, attack, decay, sustain_level, release, note_duration)
 
     def test_get_item(self):
         """Test for ADSR_Piano.get_item."""
@@ -46,7 +54,12 @@ class TestVibrato:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = instruments.effects.Vibrato()
+        # -- Setup Constructor Arguments --
+        time = None
+        base_frequency = 0.0
+        vibrato_rate = 0.0
+        vibrato_depth = 0.0
+        self.instance = instruments.effects.Vibrato(time, base_frequency, vibrato_rate, vibrato_depth)
 
     def test_get_item(self):
         """Test for Vibrato.get_item."""

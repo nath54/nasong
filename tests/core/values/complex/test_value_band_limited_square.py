@@ -13,7 +13,12 @@ class TestBandLimitedSquare:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.complex.value_band_limited_square.BandLimitedSquare()
+        # -- Setup Constructor Arguments --
+        time = None
+        frequency = None
+        amplitude = None
+        num_harmonics = 0
+        self.instance = core.values.complex.value_band_limited_square.BandLimitedSquare(time, frequency, amplitude, num_harmonics)
 
     def test_get_item(self):
         """Test for BandLimitedSquare.get_item."""

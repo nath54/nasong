@@ -13,7 +13,13 @@ class TestSawtooth:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.complex.value_sawtooth.Sawtooth()
+        # -- Setup Constructor Arguments --
+        value = None
+        frequency = None
+        amplitude = None
+        delta = None
+        direction = None
+        self.instance = core.values.complex.value_sawtooth.Sawtooth(value, frequency, amplitude, delta, direction)
 
     def test_get_item(self):
         """Test for Sawtooth.get_item."""

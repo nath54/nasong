@@ -13,7 +13,9 @@ class TestAbs:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.single_itms_ops.value_abs.Abs()
+        # -- Setup Constructor Arguments --
+        value = None
+        self.instance = core.values.single_itms_ops.value_abs.Abs(value)
 
     def test_get_item(self):
         """Test for Abs.get_item."""

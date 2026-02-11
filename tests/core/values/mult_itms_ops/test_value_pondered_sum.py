@@ -13,7 +13,9 @@ class TestPonderedSum:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.mult_itms_ops.value_pondered_sum.PonderedSum()
+        # -- Setup Constructor Arguments --
+        values = []
+        self.instance = core.values.mult_itms_ops.value_pondered_sum.PonderedSum(values)
 
     def test_get_item(self):
         """Test for PonderedSum.get_item."""

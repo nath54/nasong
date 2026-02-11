@@ -92,6 +92,8 @@ BUILTIN_NAMES: Set[str] = {
     "zip",
 }
 
+TEXTUAL_BASES: Set[str] = {"App", "Widget", "Screen", "Container", "TextArea", "Static"}
+
 
 def default_value_for_type(type_str: Optional[str]) -> str:
     """Return a sensible default literal for a given type-annotation string."""
@@ -163,6 +165,7 @@ class ClassInfo:
     name: str
     lineno: int
     methods: List[FuncInfo] = field(default_factory=list)
+    bases: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -211,7 +214,11 @@ class SourceAnalyzer(ast.NodeVisitor):
 
         NOTE: Must be named ``visit_ClassDef`` — see visit_FunctionDef.
         """
-        ci = ClassInfo(name=node.name, lineno=node.lineno)
+        ci = ClassInfo(
+            name=node.name,
+            lineno=node.lineno,
+            bases=[ast.unparse(b) for b in node.bases],
+        )
         self._current_class = ci
         self.generic_visit(node)  # will call visit_FunctionDef for methods
         self._current_class = None
@@ -336,15 +343,52 @@ def generate_class_stub(
     """Generate a test class stub for a source class."""
     indent = "    "
     indent2 = "        "
+    indent3 = "            "
     lines: List[str] = []
     class_test_name = f"Test{ci.name}"
+
+    is_textual_app = any(b == "App" for b in ci.bases)
+
+    if is_textual_app:
+        lines.append("@pytest.mark.asyncio")
 
     lines.append(f"class {class_test_name}:")
     lines.append(f'{indent}"""Tests for {ci.name}."""')
     lines.append("")
+
+    if is_textual_app:
+        # Specialized pilot test for Apps
+        lines.append(f"{indent}async def test_app_run(self):")
+        lines.append(f'{indent2}"""Test that the app starts and closes."""')
+        lines.append(f"{indent2}# -- Setup --")
+        init_info = next((m for m in ci.methods if m.name == "__init__"), None)
+        init_args_str = ""
+        if init_info:
+            lines.extend(_arg_setup_lines(init_info, indent2))
+            init_args_str = ", ".join(init_info.args)
+
+        lines.append(
+            f"{indent2}application = {module_import}.{ci.name}({init_args_str})"
+        )
+        lines.append(f"{indent2}# -- Act & Assert --")
+        lines.append(f"{indent2}async with application.run_test() as pilot:")
+        lines.append(f"{indent3}# Simulate exit")
+        lines.append(f'{indent3}await pilot.press("q")')
+        return "\n".join(lines)
+
+    # Standard setup_method
     lines.append(f"{indent}def setup_method(self):")
     lines.append(f'{indent2}"""Create a fresh instance for each test."""')
-    lines.append(f"{indent2}self.instance = {module_import}.{ci.name}()")
+
+    # Find __init__ to get constructor arguments
+    init_info = next((m for m in ci.methods if m.name == "__init__"), None)
+    init_args_str = ""
+    if init_info:
+        lines.append(f"{indent2}# -- Setup Constructor Arguments --")
+        lines.extend(_arg_setup_lines(init_info, indent2))
+        init_args_str = ", ".join(init_info.args)
+
+    lines.append(f"{indent2}self.instance = {module_import}.{ci.name}({init_args_str})")
 
     for mi in ci.methods:
         if mi.name.startswith("__") and mi.name.endswith("__"):

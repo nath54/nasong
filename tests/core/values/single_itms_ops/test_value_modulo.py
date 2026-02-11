@@ -13,7 +13,10 @@ class TestModulo:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.single_itms_ops.value_modulo.Modulo()
+        # -- Setup Constructor Arguments --
+        value = None
+        modulo_value = None
+        self.instance = core.values.single_itms_ops.value_modulo.Modulo(value, modulo_value)
 
     def test_get_item(self):
         """Test for Modulo.get_item."""

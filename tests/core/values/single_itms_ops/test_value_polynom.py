@@ -13,7 +13,10 @@ class TestPolynom:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.single_itms_ops.value_polynom.Polynom()
+        # -- Setup Constructor Arguments --
+        X = None
+        terms = []
+        self.instance = core.values.single_itms_ops.value_polynom.Polynom(X, terms)
 
     def test_get_item(self):
         """Test for Polynom.get_item."""

@@ -13,7 +13,10 @@ class TestWhiteNoise:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.basic.value_white_noise.WhiteNoise()
+        # -- Setup Constructor Arguments --
+        seed = 0
+        scale = 0.0
+        self.instance = core.values.basic.value_white_noise.WhiteNoise(seed, scale)
 
     def test_get_item(self):
         """Test for WhiteNoise.get_item."""

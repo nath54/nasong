@@ -13,7 +13,18 @@ class TestExponentialADSR:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.complex.value_exponential_adsr.ExponentialADSR()
+        # -- Setup Constructor Arguments --
+        time = None
+        note_start = 0.0
+        note_duration = 0.0
+        attack_time = 0.0
+        decay_time = 0.0
+        sustain_level = 0.0
+        release_time = 0.0
+        attack_curve = 0.0
+        decay_curve = 0.0
+        release_curve = 0.0
+        self.instance = core.values.complex.value_exponential_adsr.ExponentialADSR(time, note_start, note_duration, attack_time, decay_time, sustain_level, release_time, attack_curve, decay_curve, release_curve)
 
     def test_get_item(self):
         """Test for ExponentialADSR.get_item."""

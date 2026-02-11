@@ -1,3 +1,6 @@
+
+
+
 """Auto-generated test stubs for app.render_engine."""
 
 import pytest
@@ -10,7 +13,10 @@ class TestRenderEngine:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = app.render_engine.RenderEngine()
+        # -- Setup Constructor Arguments --
+        sample_rate = None
+        chunk_size = None
+        self.instance = app.render_engine.RenderEngine(sample_rate, chunk_size)
 
     def test_set_sequencer(self):
         """Test for RenderEngine.set_sequencer."""
@@ -70,7 +76,7 @@ class TestRenderEngine:
         # mock_zeros = MagicMock(return_value=None)
         # mock_astype = MagicMock(return_value=None)
         # -- Act --
-        # result = self.instance._render_loop()
+        result = self.instance._render_loop()
         # -- Assert --
         assert result == None
 

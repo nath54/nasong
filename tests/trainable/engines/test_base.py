@@ -13,7 +13,9 @@ class TestBaseTrainingEngine:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = trainable.engines.base.BaseTrainingEngine()
+        # -- Setup Constructor Arguments --
+        config = None
+        self.instance = trainable.engines.base.BaseTrainingEngine(config)
 
     def test_compute_loss(self):
         """Test for BaseTrainingEngine.compute_loss."""

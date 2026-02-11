@@ -13,7 +13,12 @@ class TestSin:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.complex.value_sin.Sin()
+        # -- Setup Constructor Arguments --
+        value = None
+        frequency = None
+        amplitude = None
+        delta = None
+        self.instance = core.values.complex.value_sin.Sin(value, frequency, amplitude, delta)
 
     def test_get_item(self):
         """Test for Sin.get_item."""

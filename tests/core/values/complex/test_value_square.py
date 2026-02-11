@@ -13,7 +13,13 @@ class TestSquare:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.complex.value_square.Square()
+        # -- Setup Constructor Arguments --
+        value = None
+        frequency = None
+        amplitude = None
+        delta = None
+        duty_cycle = None
+        self.instance = core.values.complex.value_square.Square(value, frequency, amplitude, delta, duty_cycle)
 
     def test_get_item(self):
         """Test for Square.get_item."""

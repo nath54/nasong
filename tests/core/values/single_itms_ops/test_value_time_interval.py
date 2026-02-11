@@ -13,7 +13,12 @@ class TestTimeInterval:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.single_itms_ops.value_time_interval.TimeInterval()
+        # -- Setup Constructor Arguments --
+        value_inside = None
+        value_outside = None
+        min_sample_idx = None
+        max_sample_idx = None
+        self.instance = core.values.single_itms_ops.value_time_interval.TimeInterval(value_inside, value_outside, min_sample_idx, max_sample_idx)
 
     def test_get_item(self):
         """Test for TimeInterval.get_item."""

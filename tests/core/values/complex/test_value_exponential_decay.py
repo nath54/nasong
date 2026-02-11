@@ -13,7 +13,11 @@ class TestExponentialDecay:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.complex.value_exponential_decay.ExponentialDecay()
+        # -- Setup Constructor Arguments --
+        time = None
+        start_time = 0.0
+        decay_rate = 0.0
+        self.instance = core.values.complex.value_exponential_decay.ExponentialDecay(time, start_time, decay_rate)
 
     def test_get_item(self):
         """Test for ExponentialDecay.get_item."""

@@ -13,7 +13,9 @@ class TestNoteDetector:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = trainable.note_detection.base.NoteDetector()
+        # -- Setup Constructor Arguments --
+        config = {}
+        self.instance = trainable.note_detection.base.NoteDetector(config)
 
     def test_detect(self):
         """Test for NoteDetector.detect."""

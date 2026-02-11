@@ -23,7 +23,9 @@ class TestConstant:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.basic.value_constant.Constant()
+        # -- Setup Constructor Arguments --
+        value = None
+        self.instance = core.values.basic.value_constant.Constant(value)
 
     def test_get_item(self):
         """Test for Constant.get_item."""

@@ -13,7 +13,9 @@ class TestChainable:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = dsl.chain.Chainable()
+        # -- Setup Constructor Arguments --
+        value = None
+        self.instance = dsl.chain.Chainable(value)
 
     def test_val(self):
         """Test for Chainable.val."""
@@ -35,4 +37,6 @@ class TestGain:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = dsl.chain.Gain()
+        # -- Setup Constructor Arguments --
+        amount = None
+        self.instance = dsl.chain.Gain(amount)

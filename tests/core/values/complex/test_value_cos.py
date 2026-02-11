@@ -13,7 +13,12 @@ class TestCos:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.complex.value_cos.Cos()
+        # -- Setup Constructor Arguments --
+        value = None
+        frequency = None
+        amplitude = None
+        delta = None
+        self.instance = core.values.complex.value_cos.Cos(value, frequency, amplitude, delta)
 
     def test_get_item(self):
         """Test for Cos.get_item."""

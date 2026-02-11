@@ -13,7 +13,10 @@ class TestHighPass:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.single_itms_ops.value_high_pass.HighPass()
+        # -- Setup Constructor Arguments --
+        value = None
+        min_value = None
+        self.instance = core.values.single_itms_ops.value_high_pass.HighPass(value, min_value)
 
     def test_get_item(self):
         """Test for HighPass.get_item."""

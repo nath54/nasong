@@ -13,7 +13,12 @@ class TestMaskTreshold:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.single_itms_ops.value_mask_treshold.MaskTreshold()
+        # -- Setup Constructor Arguments --
+        value = None
+        mask = None
+        treshold_to_mask = None
+        mask_value = None
+        self.instance = core.values.single_itms_ops.value_mask_treshold.MaskTreshold(value, mask, treshold_to_mask, mask_value)
 
     def test_get_item(self):
         """Test for MaskTreshold.get_item."""

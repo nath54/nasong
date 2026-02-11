@@ -20,7 +20,9 @@ class TestTorchEngine:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = trainable.engines.torch_engine.TorchEngine()
+        # -- Setup Constructor Arguments --
+        config = None
+        self.instance = trainable.engines.torch_engine.TorchEngine(config)
 
     def test_spectral_loss(self):
         """Test for TorchEngine.spectral_loss."""

@@ -13,7 +13,10 @@ class TestLog:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.complex.value_log.Log()
+        # -- Setup Constructor Arguments --
+        value = None
+        base = None
+        self.instance = core.values.complex.value_log.Log(value, base)
 
     def test_get_item(self):
         """Test for Log.get_item."""

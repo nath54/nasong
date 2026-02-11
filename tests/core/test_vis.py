@@ -87,7 +87,10 @@ class TestAudioAnalyzer:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.vis.AudioAnalyzer()
+        # -- Setup Constructor Arguments --
+        audio_data = None
+        sample_rate = 0
+        self.instance = core.vis.AudioAnalyzer(audio_data, sample_rate)
 
     def test_get_rms(self):
         """Test for AudioAnalyzer.get_rms."""

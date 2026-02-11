@@ -20,6 +20,7 @@ class TestValue:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
+        # -- Setup Constructor Arguments --
         self.instance = core.value.Value()
 
     def test_get_item(self):
@@ -72,7 +73,11 @@ class TestParameterContext:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.value.ParameterContext()
+        # -- Setup Constructor Arguments --
+        parameters = {}
+        capture = False
+        ignore_unknown = False
+        self.instance = core.value.ParameterContext(parameters, capture, ignore_unknown)
 
     def test_get_current(self):
         """Test for ParameterContext.get_current."""
@@ -87,7 +92,10 @@ class TestValueTrainableParameter:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.value.ValueTrainableParameter()
+        # -- Setup Constructor Arguments --
+        initial_value = None
+        name = None
+        self.instance = core.value.ValueTrainableParameter(initial_value, name)
 
     def test_value(self):
         """Test for ValueTrainableParameter.value."""

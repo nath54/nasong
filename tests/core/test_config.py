@@ -13,4 +13,8 @@ class TestConfig:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.config.Config()
+        # -- Setup Constructor Arguments --
+        sample_rate = 0
+        total_duration = 0.0
+        output_filename = ""
+        self.instance = core.config.Config(sample_rate, total_duration, output_filename)

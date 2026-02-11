@@ -13,7 +13,12 @@ class TestBandLimitedSawtooth:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.complex.value_band_limited_sawtooth.BandLimitedSawtooth()
+        # -- Setup Constructor Arguments --
+        time = None
+        frequency = None
+        amplitude = None
+        num_harmonics = 0
+        self.instance = core.values.complex.value_band_limited_sawtooth.BandLimitedSawtooth(time, frequency, amplitude, num_harmonics)
 
     def test_get_item(self):
         """Test for BandLimitedSawtooth.get_item."""

@@ -45,6 +45,7 @@ class Testdevice:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
+        # -- Setup Constructor Arguments --
         self.instance = core.song.device()
 
 class Testcuda:
@@ -67,7 +68,10 @@ class TestSong:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.song.Song()
+        # -- Setup Constructor Arguments --
+        config = None
+        value_of_time = None
+        self.instance = core.song.Song(config, value_of_time)
 
     def test_render(self):
         """Test for Song.render."""

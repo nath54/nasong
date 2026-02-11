@@ -13,7 +13,15 @@ class TestADSR2:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.complex.value_adsr2.ADSR2()
+        # -- Setup Constructor Arguments --
+        time = None
+        note_start = None
+        note_duration = None
+        attack_time = None
+        decay_time = None
+        sustain_level = None
+        release_time = None
+        self.instance = core.values.complex.value_adsr2.ADSR2(time, note_start, note_duration, attack_time, decay_time, sustain_level, release_time)
 
     def test_get_item(self):
         """Test for ADSR2.get_item."""

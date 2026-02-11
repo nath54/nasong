@@ -13,7 +13,9 @@ class TestNumpyEngine:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = trainable.engines.numpy_engine.NumpyEngine()
+        # -- Setup Constructor Arguments --
+        config = None
+        self.instance = trainable.engines.numpy_engine.NumpyEngine(config)
 
     def test_spectral_loss(self):
         """Test for NumpyEngine.spectral_loss."""

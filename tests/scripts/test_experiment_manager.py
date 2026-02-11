@@ -13,7 +13,14 @@ class TestExperiment:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = scripts.experiment_manager.Experiment()
+        # -- Setup Constructor Arguments --
+        experiment_id = ""
+        name = ""
+        timestamp = 0.0
+        metrics = {}
+        params = {}
+        status = ""
+        self.instance = scripts.experiment_manager.Experiment(experiment_id, name, timestamp, metrics, params, status)
 
     def test_path(self):
         """Test for Experiment.path."""
@@ -68,7 +75,9 @@ class TestExperimentManager:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = scripts.experiment_manager.ExperimentManager()
+        # -- Setup Constructor Arguments --
+        base_dir = ""
+        self.instance = scripts.experiment_manager.ExperimentManager(base_dir)
 
     def test_create_experiment(self):
         """Test for ExperimentManager.create_experiment."""

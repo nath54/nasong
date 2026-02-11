@@ -13,6 +13,7 @@ class TestMax:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
+        # -- Setup Constructor Arguments --
         self.instance = core.values.mult_itms_ops.value_max.Max()
 
     def test_get_item(self):

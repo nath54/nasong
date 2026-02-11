@@ -13,7 +13,11 @@ class TestSequencer:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.single_itms_ops.value_sequencer.Sequencer()
+        # -- Setup Constructor Arguments --
+        time = None
+        instrument_factory = None
+        note_data_list = []
+        self.instance = core.values.single_itms_ops.value_sequencer.Sequencer(time, instrument_factory, note_data_list)
 
     def test_get_item(self):
         """Test for Sequencer.get_item."""

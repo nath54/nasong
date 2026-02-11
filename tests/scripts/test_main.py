@@ -59,4 +59,5 @@ class Testdevice:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
+        # -- Setup Constructor Arguments --
         self.instance = scripts.main.device()

@@ -26,7 +26,9 @@ class TestTimelineWidget:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = app.main_daw.TimelineWidget()
+        # -- Setup Constructor Arguments --
+        session = None
+        self.instance = app.main_daw.TimelineWidget(session)
 
     def test_on_mount(self):
         """Test for TimelineWidget.on_mount."""
@@ -67,6 +69,7 @@ class TestEditor:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
+        # -- Setup Constructor Arguments --
         self.instance = app.main_daw.Editor()
 
 class TestNasongDAWApp:
@@ -74,7 +77,10 @@ class TestNasongDAWApp:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = app.main_daw.NasongDAWApp()
+        # -- Setup Constructor Arguments --
+        initial_file = None
+        sample_rate = None
+        self.instance = app.main_daw.NasongDAWApp(initial_file, sample_rate)
 
     def test_compose(self):
         """Test for NasongDAWApp.compose."""

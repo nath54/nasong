@@ -35,4 +35,8 @@ class TestFormant:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.formant.Formant()
+        # -- Setup Constructor Arguments --
+        freq = 0.0
+        gain_db = 0.0
+        q = 0.0
+        self.instance = core.values.formant.Formant(freq, gain_db, q)

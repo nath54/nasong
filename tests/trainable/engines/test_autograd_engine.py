@@ -13,7 +13,9 @@ class TestAutogradEngine:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = trainable.engines.autograd_engine.AutogradEngine()
+        # -- Setup Constructor Arguments --
+        config = None
+        self.instance = trainable.engines.autograd_engine.AutogradEngine(config)
 
     def test__patch_context(self):
         """Test for AutogradEngine._patch_context."""

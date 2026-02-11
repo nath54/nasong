@@ -13,7 +13,11 @@ class TestClamp:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.single_itms_ops.value_clamp.Clamp()
+        # -- Setup Constructor Arguments --
+        value = None
+        min_value = None
+        max_value = None
+        self.instance = core.values.single_itms_ops.value_clamp.Clamp(value, min_value, max_value)
 
     def test_get_item(self):
         """Test for Clamp.get_item."""

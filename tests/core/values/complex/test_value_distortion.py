@@ -13,7 +13,10 @@ class TestDistortion:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.complex.value_distortion.Distortion()
+        # -- Setup Constructor Arguments --
+        value = None
+        gain = None
+        self.instance = core.values.complex.value_distortion.Distortion(value, gain)
 
     def test_get_item(self):
         """Test for Distortion.get_item."""

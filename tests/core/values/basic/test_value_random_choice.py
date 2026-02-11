@@ -13,7 +13,9 @@ class TestRandomChoice:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.basic.value_random_choice.RandomChoice()
+        # -- Setup Constructor Arguments --
+        choices = []
+        self.instance = core.values.basic.value_random_choice.RandomChoice(choices)
 
     def test_get_item(self):
         """Test for RandomChoice.get_item."""

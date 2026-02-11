@@ -13,7 +13,11 @@ class TestBasicScaling:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.single_itms_ops.value_basic_scaling.BasicScaling()
+        # -- Setup Constructor Arguments --
+        value = None
+        mult_scale = None
+        sum_scale = None
+        self.instance = core.values.single_itms_ops.value_basic_scaling.BasicScaling(value, mult_scale, sum_scale)
 
     def test_get_item(self):
         """Test for BasicScaling.get_item."""

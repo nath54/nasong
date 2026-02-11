@@ -13,7 +13,10 @@ class TestRandomFloat:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.basic.value_random_float.RandomFloat()
+        # -- Setup Constructor Arguments --
+        min_range = None
+        max_range = None
+        self.instance = core.values.basic.value_random_float.RandomFloat(min_range, max_range)
 
     def test_get_item(self):
         """Test for RandomFloat.get_item."""

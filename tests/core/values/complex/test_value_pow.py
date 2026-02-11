@@ -13,7 +13,10 @@ class TestPow:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = core.values.complex.value_pow.Pow()
+        # -- Setup Constructor Arguments --
+        exponent = None
+        base = None
+        self.instance = core.values.complex.value_pow.Pow(exponent, base)
 
     def test_get_item(self):
         """Test for Pow.get_item."""

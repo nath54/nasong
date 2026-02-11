@@ -13,7 +13,11 @@ class TestLiveSession:
 
     def setup_method(self):
         """Create a fresh instance for each test."""
-        self.instance = app.live_session.LiveSession()
+        # -- Setup Constructor Arguments --
+        sample_rate = None
+        block_size = None
+        device = None
+        self.instance = app.live_session.LiveSession(sample_rate, block_size, device)
 
     def test_set_error_callback(self):
         """Test for LiveSession.set_error_callback."""

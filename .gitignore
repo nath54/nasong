@@ -10,3 +10,4 @@ tmp.sh
 **old
 results_analysis
 htmlcov
+log*.txt
