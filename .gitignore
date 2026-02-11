@@ -9,3 +9,4 @@ trained_models
 tmp.sh
 **old
 results_analysis
+htmlcov
