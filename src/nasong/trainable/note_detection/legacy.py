@@ -21,7 +21,7 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 #
 ### Import Modules. ###
 #
-from typing import List, Dict, Any
+from typing import Any
 
 #
 import numpy as np
@@ -38,7 +38,7 @@ class LegacyDetector(NoteDetector):
 
     def detect(
         self, audio_segment: np.ndarray, sample_rate: int
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         # Unpack config
         num_notes = self.config.get("legacy_num_notes", 1)
         use_onset_detection = self.config.get("legacy_use_onset", True)
@@ -133,7 +133,7 @@ class LegacyDetector(NoteDetector):
         max_pitches: int = 3,
         min_freq: float = 50.0,
         max_freq: float = 4000.0,
-    ) -> List[float]:
+    ) -> list[float]:
         """
         Detect multiple pitches using FFT peak detection.
         """

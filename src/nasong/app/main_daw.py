@@ -27,6 +27,7 @@ and an integrated code editor.
 #
 import os
 import sys
+import threading
 import subprocess
 import numpy as np
 
@@ -339,7 +340,7 @@ class NasongDAWApp(App):
                 else:
                     self.notify("Failed to load script logic", severity="warning")
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             self.notify(f"Error loading file: {e}", severity="error")
 
     def action_save_file(self):
@@ -350,7 +351,7 @@ class NasongDAWApp(App):
                 with open(self.current_file, "w", encoding="utf-8") as f:
                     f.write(content)
                 self.notify(f"Saved {self.current_file}")
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-except
                 self.notify(f"Error saving: {e}", severity="error")
         else:
             self.notify("No file loaded to save", severity="warning")
@@ -375,7 +376,7 @@ class NasongDAWApp(App):
                 btn = self.query_one("#btn-play-stop", Button)
                 btn.label = "Play"
                 btn.variant = "success"
-            except Exception:
+            except Exception:  # pylint: disable=broad-except
                 pass
         else:
             self.session.start()
@@ -387,7 +388,7 @@ class NasongDAWApp(App):
                 btn = self.query_one("#btn-play-stop", Button)
                 btn.label = "Stop"
                 btn.variant = "error"
-            except Exception:
+            except Exception:  # pylint: disable=broad-except
                 pass
 
     def on_button_pressed(self, event: Button.Pressed):
@@ -427,11 +428,10 @@ class NasongDAWApp(App):
         # Run in background (non-blocking would be better but simple subprocess for now)
         # To avoid blocking UI, we should probably run in thread, but for now blocking nicely notifies.
         # Actually blocking will freeze UI. Let's use threading.
-        import threading
 
         def compile_thread():
             try:
-                result = subprocess.run(cmd, capture_output=True, text=True)
+                result = subprocess.run(cmd, capture_output=True, text=True, check=True)
                 if result.returncode == 0:
                     self.app.call_from_thread(
                         self.notify,
@@ -446,7 +446,7 @@ class NasongDAWApp(App):
                         title="Compile Failed",
                         severity="error",
                     )
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-except
                 self.app.call_from_thread(self.notify, f"Error: {e}", severity="error")
 
         threading.Thread(target=compile_thread, daemon=True).start()

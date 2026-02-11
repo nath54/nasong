@@ -21,7 +21,7 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 #
 ### Import Modules. ###
 #
-from typing import Dict, Any
+from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 
@@ -114,7 +114,7 @@ class Modulo(Value):
     def backward(
         self,
         grad_output: NDArray[np.float32],
-        context: Dict[str, Any],
+        context: dict[str, Any],
         sample_rate: int,
     ) -> None:
         """

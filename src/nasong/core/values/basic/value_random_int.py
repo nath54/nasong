@@ -27,7 +27,7 @@ import random
 import numpy as np
 from numpy.typing import NDArray
 
-from typing import Dict, Any
+from typing import Any
 
 #
 from nasong.core.value import Value
@@ -155,7 +155,7 @@ class RandomInt(Value):
     def backward(
         self,
         grad_output: NDArray[np.float32],
-        context: Dict[str, Any],
+        context: dict[str, Any],
         sample_rate: int,
     ) -> None:
         """

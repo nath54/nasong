@@ -948,7 +948,7 @@ Below is a more detailed research-style breakdown of these domains, with “what
 
 #### 5.3 Library/function ideas
 - Progression representation:
-  - `Progression(steps: List[ProgressionStep])`, where each step is `(roman_numeral, duration, optional_extensions)`.
+  - `Progression(steps: list[ProgressionStep])`, where each step is `(roman_numeral, duration, optional_extensions)`.
 - Roman numeral parser:
   - `parse_roman(roman_string, scale, key)` → chord (root, type, extensions).
 - Predefined progressions by genre:

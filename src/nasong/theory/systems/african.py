@@ -21,9 +21,6 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 #
 ### Import Modules. ###
 #
-from typing import List, Tuple
-
-#
 from nasong.theory.core.pitch import Note
 from nasong.theory.core.scale import Scale
 from nasong.theory.core.interval import Interval
@@ -48,8 +45,8 @@ class African:
 
     @staticmethod
     def polyrhythm(
-        ratio: Tuple[int, int], length: int = 12
-    ) -> Tuple[List[int], List[int]]:
+        ratio: tuple[int, int], length: int = 12
+    ) -> tuple[list[int], list[int]]:
         """
         Generates two rhythmic patterns representing a polyrhythm (e.g., 3:2).
         Returns two lists of onset indices.

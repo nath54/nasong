@@ -21,7 +21,7 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 #
 ### Import Modules. ###
 #
-from typing import Dict, Any, List
+from typing import Any
 
 #
 from scipy import signal
@@ -53,13 +53,13 @@ class NumpyEngine(BaseTrainingEngine):
         self.loss_type = getattr(config, "loss_type", "mse")  # "mse" or "spectral"
 
         # State for Adam
-        self.m: Dict[ValueTrainableParameter, NDArray[np.float32]] = {}
-        self.v: Dict[ValueTrainableParameter, NDArray[np.float32]] = {}
+        self.m: dict[ValueTrainableParameter, NDArray[np.float32]] = {}
+        self.v: dict[ValueTrainableParameter, NDArray[np.float32]] = {}
         self.t = 0
 
         # Captured parameters and their gradients
-        self.captured_params: List[ValueTrainableParameter] = []
-        self.gradients: Dict[ValueTrainableParameter, NDArray[np.float32]] = {}
+        self.captured_params: list[ValueTrainableParameter] = []
+        self.gradients: dict[ValueTrainableParameter, NDArray[np.float32]] = {}
 
     def spectral_loss(
         self,
@@ -140,7 +140,7 @@ class NumpyEngine(BaseTrainingEngine):
 
         return float(loss)
 
-    def step(self) -> Dict[str, float]:
+    def step(self) -> dict[str, float]:
         """
         Performs the backward pass and optimization step.
         """
@@ -187,13 +187,13 @@ class NumpyEngine(BaseTrainingEngine):
 
         return {"lr": self.learning_rate}
 
-    def get_parameter_values(self) -> Dict[str, float]:
+    def get_parameter_values(self) -> dict[str, float]:
         """
         Retrieves current parameter values.
         """
         return {p.name or str(id(p)): float(p.value) for p in self.captured_params}
 
-    def set_parameter_values(self, parameters: Dict[str, float]) -> None:
+    def set_parameter_values(self, parameters: dict[str, float]) -> None:
         """
         Injects parameter values.
         """

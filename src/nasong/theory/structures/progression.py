@@ -21,7 +21,7 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 #
 ### Import Modules. ###
 #
-from typing import List, Union, Optional
+from typing import Optional
 from dataclasses import dataclass
 
 #
@@ -37,7 +37,7 @@ class Progression:
     A sequence of chords.
     """
 
-    chords: List[Union[Chord, "Pitch"]]
+    chords: list[Chord | "Pitch"]
     #
     ### Content for analysis/generation ###
     #
@@ -71,7 +71,7 @@ class Progression:
 
     @classmethod
     def from_roman_numerals(
-        cls, scale: Scale, numerals: List[str], duration: Duration = QUARTER
+        cls, scale: Scale, numerals: list[str], duration: Duration = QUARTER
     ) -> "Progression":
         """
         Generate a progression from a scale and roman numerals.

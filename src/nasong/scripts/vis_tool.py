@@ -51,7 +51,7 @@ def load_audio(input_path: str, sample_rate: int = 44100) -> tuple[np.ndarray, i
                 data = data[:, 0]
 
             return data, sr
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             print(f"❌ Error loading WAV file: {e}")
             sys.exit(1)
 
@@ -81,7 +81,7 @@ def load_audio(input_path: str, sample_rate: int = 44100) -> tuple[np.ndarray, i
             audio_buffer = song.render()
             return audio_buffer, sample_rate
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             print(f"❌ Error generating audio from Python file: {e}")
             sys.exit(1)
     else:

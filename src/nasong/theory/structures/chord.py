@@ -21,7 +21,6 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 #
 ### Import Modules. ###
 #
-from typing import List
 from dataclasses import dataclass
 
 #
@@ -38,7 +37,7 @@ class Chord:
     """
 
     root: Pitch
-    intervals: List[Interval]
+    intervals: list[Interval]
     duration: Duration = QUARTER
     velocity: float = 1.0
     name: str = "custom"
@@ -49,7 +48,7 @@ class Chord:
             self.root = CoreNote(self.root)
 
     @property
-    def pitches(self) -> List[Pitch]:
+    def pitches(self) -> list[Pitch]:
         """
         Returns the pitches in the chord, accounting for inversion.
         """
@@ -75,7 +74,7 @@ class Chord:
         return raw_pitches
 
     @property
-    def notes(self) -> List[Note]:
+    def notes(self) -> list[Note]:
         """
         Returns a list of Note events for this chord.
         """

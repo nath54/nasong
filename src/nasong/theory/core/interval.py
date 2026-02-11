@@ -21,7 +21,6 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 #
 ### Import Modules. ###
 #
-from typing import Union
 from dataclasses import dataclass
 
 #
@@ -38,7 +37,7 @@ class Interval:
     semitones: float = 0.0
     ratio: float = 1.0
 
-    def __init__(self, value: Union[int, float, str]):
+    def __init__(self, value: int | float | str):
         """
         Args:
             value:

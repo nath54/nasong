@@ -21,7 +21,6 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 #
 ### Import Modules. ###
 #
-from typing import List, Dict
 from dataclasses import dataclass
 
 #
@@ -36,14 +35,14 @@ class Scale:
     """
 
     root: Note
-    intervals: List[Interval]
+    intervals: list[Interval]
     name: str = "custom"
 
     def __post_init__(self):
         # Cache the notes
         self._notes = self._generate_notes()
 
-    def _generate_notes(self) -> List[Note]:
+    def _generate_notes(self) -> list[Note]:
         """
         Generate the notes of the scale relative to the root.
         """
@@ -59,7 +58,7 @@ class Scale:
         return valid_notes
 
     @property
-    def notes(self) -> List[Pitch]:
+    def notes(self) -> list[Pitch]:
         return self._notes
 
     def degree(self, index: int) -> Pitch:
@@ -100,7 +99,7 @@ class Scale:
 
 
 # Predefined Scale Patterns (Semitones from root)
-_SCALE_PATTERNS: Dict[str, List[int]] = {
+_SCALE_PATTERNS: dict[str, list[int]] = {
     "major": [0, 2, 4, 5, 7, 9, 11],
     "minor": [0, 2, 3, 5, 7, 8, 10],  # Natural minor
     "aeolian": [0, 2, 3, 5, 7, 8, 10],

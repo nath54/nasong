@@ -21,7 +21,7 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 #
 ### Import Modules. ###
 #
-from typing import Dict, Any
+from typing import Any
 
 #
 from abc import ABC, abstractmethod
@@ -69,7 +69,7 @@ class BaseTrainingEngine(ABC):
         pass
 
     @abstractmethod
-    def step(self) -> Dict[str, float]:
+    def step(self) -> dict[str, float]:
         """
         Performs a single optimization step (backward + update).
 
@@ -79,14 +79,14 @@ class BaseTrainingEngine(ABC):
         pass
 
     @abstractmethod
-    def get_parameter_values(self) -> Dict[str, float]:
+    def get_parameter_values(self) -> dict[str, float]:
         """
         Retrieves the current values of all trainable parameters.
         """
         pass
 
     @abstractmethod
-    def set_parameter_values(self, parameters: Dict[str, float]) -> None:
+    def set_parameter_values(self, parameters: dict[str, float]) -> None:
         """
         Injects values into the trainable parameters.
         """

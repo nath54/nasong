@@ -21,9 +21,6 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 #
 ### Import Modules. ###
 #
-from typing import List
-
-#
 from nasong.theory.structures.note import Note
 from nasong.theory.structures.chord import Chord
 from nasong.theory.core.time import Duration
@@ -31,8 +28,8 @@ from nasong.theory.core.pitch import Note as CoreNote
 
 
 def arpeggiate(
-    chord: Chord, pattern: List[int] = [0, 1, 2], duration: Duration = Duration(0.25)
-) -> List[Note]:
+    chord: Chord, pattern: list[int] = [0, 1, 2], duration: Duration = Duration(0.25)
+) -> list[Note]:
     """
     Arpeggiate a chord using a pattern of indices.
     [0, 1, 2] -> Root, 3rd, 5th (if triad).

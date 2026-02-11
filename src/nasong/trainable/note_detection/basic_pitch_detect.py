@@ -21,7 +21,7 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 #
 ### Import Modules. ###
 #
-from typing import List, Dict, Any
+from typing import Any
 
 #
 import os
@@ -50,7 +50,7 @@ class BasicPitchDetector(NoteDetector):
 
     def detect(
         self, audio_segment: np.ndarray, sample_rate: int
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         if predict is None:
             raise ImportError(
                 "Basic Pitch or SoundFile is not installed. Please install 'basic-pitch' and 'soundfile'."
@@ -83,7 +83,7 @@ class BasicPitchDetector(NoteDetector):
             # note_events is returned directly as list of tuples in 0.4.0
             file_events = note_events
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             # Check if basic-pitch error is related to missing ONNX runtime
             if "onnxruntime" in str(e).lower():
                 raise ImportError(

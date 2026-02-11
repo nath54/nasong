@@ -70,6 +70,6 @@ class WavUtils:
             #
             print(f"[SUCCESS] Successfully saved audio to '{filename}'")
         #
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             #
             print(f"[ERROR] Error saving WAV file: {e}")

@@ -24,7 +24,7 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 import numpy as np
 from numpy.typing import NDArray
 
-from typing import Dict, Any
+from typing import Any
 
 #
 from nasong.core.value import Value
@@ -80,7 +80,7 @@ class Constant(Value):
     def backward(
         self,
         grad_output: NDArray[np.float32],
-        context: Dict[str, Any],
+        context: dict[str, Any],
         sample_rate: int,
     ) -> None:
         """Constant has no inputs, so backward does nothing."""

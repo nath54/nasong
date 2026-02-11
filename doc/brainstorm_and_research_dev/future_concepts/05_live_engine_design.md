@@ -103,7 +103,7 @@ class LiveEngine:
         except SyntaxError as e:
             print(f"Syntax Error in user code: {e}")
             # Do NOT stop playback, keep running old code
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             print(f"Runtime Error during reload: {e}")
 
     # ------------------------------------------

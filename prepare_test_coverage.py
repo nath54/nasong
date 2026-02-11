@@ -14,14 +14,14 @@ import sys
 import textwrap
 from pathlib import Path
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set
+from typing import Optional
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 # Built-in names we never want to mock (non-exhaustive but catches the common
 # ones so generated stubs stay clean).
-BUILTIN_NAMES: Set[str] = {
+BUILTIN_NAMES: set[str] = {
     "abs",
     "all",
     "any",
@@ -92,7 +92,7 @@ BUILTIN_NAMES: Set[str] = {
     "zip",
 }
 
-TEXTUAL_BASES: Set[str] = {"App", "Widget", "Screen", "Container", "TextArea", "Static"}
+TEXTUAL_BASES: set[str] = {"App", "Widget", "Screen", "Container", "TextArea", "Static"}
 
 
 def default_value_for_type(type_str: Optional[str]) -> str:
@@ -167,10 +167,10 @@ class FuncInfo:
 
     name: str
     lineno: int
-    args: List[str]  # param names (without 'self')
-    arg_types: Dict[str, Optional[str]]  # param_name -> annotation str
+    args: list[str]  # param names (without 'self')
+    arg_types: dict[str, Optional[str]]  # param_name -> annotation str
     return_type: Optional[str]
-    calls: List[CallInfo]
+    calls: list[CallInfo]
     is_method: bool = False
     class_name: Optional[str] = None
 
@@ -181,18 +181,18 @@ class ClassInfo:
 
     name: str
     lineno: int
-    methods: List[FuncInfo] = field(default_factory=list)
-    bases: List[str] = field(default_factory=list)
+    methods: list[FuncInfo] = field(default_factory=list)
+    bases: list[str] = field(default_factory=list)
 
 
 @dataclass
 class FileAnalysis:
     """Full analysis of a single source file."""
 
-    functions: List[FuncInfo] = field(default_factory=list)
-    classes: List[ClassInfo] = field(default_factory=list)
+    functions: list[FuncInfo] = field(default_factory=list)
+    classes: list[ClassInfo] = field(default_factory=list)
     # Lookup:  func_name → return_type  (all funcs and methods in the file)
-    return_type_lookup: Dict[str, Optional[str]] = field(default_factory=dict)
+    return_type_lookup: dict[str, Optional[str]] = field(default_factory=dict)
 
 
 class SourceAnalyzer(ast.NodeVisitor):
@@ -251,7 +251,7 @@ class SourceAnalyzer(ast.NodeVisitor):
         args = [a for a in raw_args if a not in ("self", "cls")]
 
         # Argument type annotations
-        arg_types: Dict[str, Optional[str]] = {}
+        arg_types: dict[str, Optional[str]] = {}
         for a in node.args.args:
             if a.arg in ("self", "cls"):
                 continue
@@ -261,7 +261,7 @@ class SourceAnalyzer(ast.NodeVisitor):
         ret = ast.unparse(node.returns) if node.returns else None
 
         # Calls inside the body
-        calls: List[CallInfo] = []
+        calls: list[CallInfo] = []
         for child in ast.walk(node):
             if not isinstance(child, ast.Call):
                 continue
@@ -292,13 +292,13 @@ def analyse_file(source: str) -> FileAnalysis:
 
 
 def _mock_lines(
-    calls: List[CallInfo],
-    return_type_lookup: Dict[str, Optional[str]],
+    calls: list[CallInfo],
+    return_type_lookup: dict[str, Optional[str]],
     indent: str,
-) -> List[str]:
+) -> list[str]:
     """Generate commented-out mock setup lines for the calls in a function."""
-    lines: List[str] = []
-    seen: Set[str] = set()
+    lines: list[str] = []
+    seen: set[str] = set()
     for c in calls:
         if c.name in seen or c.name in BUILTIN_NAMES:
             continue
@@ -312,9 +312,9 @@ def _mock_lines(
 def _arg_setup_lines(
     fi: FuncInfo,
     indent: str,
-) -> List[str]:
+) -> list[str]:
     """Generate variable assignments for function arguments with defaults."""
-    lines: List[str] = []
+    lines: list[str] = []
     for arg in fi.args:
         ann = fi.arg_types.get(arg)
         val = get_smart_default(arg, ann)
@@ -325,11 +325,11 @@ def _arg_setup_lines(
 def generate_function_stub(
     fi: FuncInfo,
     module_import: str,
-    lookup: Dict[str, Optional[str]],
+    lookup: dict[str, Optional[str]],
 ) -> str:
     """Generate a test stub for a standalone function."""
     indent = "    "
-    lines: List[str] = []
+    lines: list[str] = []
     test_name = f"test_{fi.name}"
     lines.append(f"def {test_name}():")
     lines.append(f'{indent}"""Test for {fi.name}."""')
@@ -360,14 +360,14 @@ def generate_function_stub(
 def generate_class_stub(
     ci: ClassInfo,
     module_import: str,
-    lookup: Dict[str, Optional[str]],
+    lookup: dict[str, Optional[str]],
 ) -> str:
     """Generate a test class stub for a source class."""
     indent = "    "
     indent2 = "        "
     indent3 = "            "
     indent4 = "                "
-    lines: List[str] = []
+    lines: list[str] = []
     class_test_name = f"Test{ci.name}"
 
     is_textual_app = any(b == "App" for b in ci.bases)
@@ -448,9 +448,9 @@ def generate_class_stub(
 # ── Test file management ─────────────────────────────────────────────────────
 
 
-def _existing_test_names(content: str) -> Set[str]:
+def _existing_test_names(content: str) -> set[str]:
     """Return the set of test-function / test-method names already present."""
-    names: Set[str] = set()
+    names: set[str] = set()
     try:
         tree = ast.parse(content)
     except SyntaxError:
@@ -462,9 +462,9 @@ def _existing_test_names(content: str) -> Set[str]:
     return names
 
 
-def _existing_class_names(content: str) -> Set[str]:
+def _existing_class_names(content: str) -> set[str]:
     """Return test class names already present in the test file."""
-    names: Set[str] = set()
+    names: set[str] = set()
     try:
         tree = ast.parse(content)
     except SyntaxError:
@@ -475,9 +475,9 @@ def _existing_class_names(content: str) -> Set[str]:
     return names
 
 
-def _methods_in_test_class(content: str, class_name: str) -> Set[str]:
+def _methods_in_test_class(content: str, class_name: str) -> set[str]:
     """Return test method names inside a specific test class."""
-    names: Set[str] = set()
+    names: set[str] = set()
     try:
         tree = ast.parse(content)
     except SyntaxError:
@@ -516,10 +516,10 @@ def _generate_method_lines(
     ci_name: str,
     indent: str,
     indent2: str,
-    lookup: Dict[str, Optional[str]],
-) -> List[str]:
+    lookup: dict[str, Optional[str]],
+) -> list[str]:
     """Generate the lines for a single method test."""
-    lines: List[str] = []
+    lines: list[str] = []
     test_method_name = f"test_{mi.name}"
     lines.append(f"{indent}def {test_method_name}(self):")
     lines.append(f'{indent2}"""Test for {ci_name}.{mi.name}."""')
@@ -550,7 +550,7 @@ def _generate_method_lines(
 def _generate_method_stub_for_existing_class(
     mi: FuncInfo,
     ci_name: str,
-    lookup: Dict[str, Optional[str]],
+    lookup: dict[str, Optional[str]],
 ) -> str:
     """Generate a standalone method stub to append inside an existing test class."""
     lines = _generate_method_lines(mi, ci_name, "    ", "        ", lookup)
@@ -622,7 +622,7 @@ def process_file(
     existing_classes = _existing_class_names(existing)
 
     # Accumulate new content to append
-    new_blocks: List[str] = []
+    new_blocks: list[str] = []
 
     # If file is brand new, add the header
     if not existing.strip():
@@ -631,7 +631,7 @@ def process_file(
     # -- For lines to insert into existing test classes ---------------------
     # We track these separately because they need to be injected at specific
     # positions rather than appended at the end.
-    class_injections: Dict[str, List[str]] = {}  # test_class_name -> [stubs]
+    class_injections: dict[str, list[str]] = {}  # test_class_name -> [stubs]
 
     # -- Generate stubs for top-level functions ----------------------------
     for fi in sorted(analysis.functions, key=lambda f: f.lineno):

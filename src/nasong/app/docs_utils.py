@@ -25,7 +25,7 @@ within the TUI/DAW.
 #
 ### Import Modules. ###
 #
-from typing import Dict, List, Any
+from typing import Any
 
 #
 import inspect
@@ -33,7 +33,7 @@ import pkgutil
 import importlib
 
 
-def get_module_docs(package_name: str) -> Dict[str, Any]:
+def get_module_docs(package_name: str) -> dict[str, Any]:
     """
     Recursively inspects a package and returns its documentation structure.
 
@@ -69,7 +69,7 @@ def get_module_docs(package_name: str) -> Dict[str, Any]:
     return results
 
 
-def flatten_docs(docs: Dict, prefix: str = "") -> List[tuple]:
+def flatten_docs(docs: dict[str, Any], prefix: str = "") -> list[tuple]:
     """
     Flattens the hierarchical documentation structure for linear display (e.g., in a tree).
 

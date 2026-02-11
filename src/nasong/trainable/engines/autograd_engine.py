@@ -21,7 +21,7 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 #
 ### Import Modules. ###
 #
-from typing import Dict, Any, List
+from typing import Any
 
 #
 import sys
@@ -53,12 +53,12 @@ class AutogradEngine(BaseTrainingEngine):
         self.loss_type = getattr(config, "loss_type", "mse")
 
         # State for Adam
-        self.m: Dict[ValueTrainableParameter, Any] = {}
-        self.v: Dict[ValueTrainableParameter, Any] = {}
+        self.m: dict[ValueTrainableParameter, Any] = {}
+        self.v: dict[ValueTrainableParameter, Any] = {}
         self.t = 0
 
-        self.captured_params: List[ValueTrainableParameter] = []
-        self.gradients: Dict[ValueTrainableParameter, NDArray[np.float64]] = {}
+        self.captured_params: list[ValueTrainableParameter] = []
+        self.gradients: dict[ValueTrainableParameter, NDArray[np.float64]] = {}
 
     @contextmanager
     def _patch_context(self):
@@ -93,7 +93,7 @@ class AutogradEngine(BaseTrainingEngine):
 
     def _collect_parameters(
         self, node: Any, seen: set
-    ) -> List[ValueTrainableParameter]:
+    ) -> list[ValueTrainableParameter]:
         """Deeply traverses the Value graph to find all trainable parameters."""
         params = []
         if id(node) in seen:
@@ -170,7 +170,7 @@ class AutogradEngine(BaseTrainingEngine):
                 val = val._value
             p.value = float(val)
 
-    def step(self) -> Dict[str, float]:
+    def step(self) -> dict[str, float]:
         self.compute_gradients()
 
         for p in self.captured_params:
@@ -208,10 +208,10 @@ class AutogradEngine(BaseTrainingEngine):
 
         return {"loss": self.current_loss, "lr": self.learning_rate}
 
-    def get_parameter_values(self) -> Dict[str, float]:
+    def get_parameter_values(self) -> dict[str, float]:
         return {p.name or str(id(p)): float(p.value) for p in self.captured_params}
 
-    def set_parameter_values(self, parameters: Dict[str, float]) -> None:
+    def set_parameter_values(self, parameters: dict[str, float]) -> None:
         for p in self.captured_params:
             if p.name and p.name in parameters:
                 p.value = parameters[p.name]

@@ -21,7 +21,7 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 #
 ### Import Modules. ###
 #
-from typing import Tuple, Dict, Any
+from typing import Any
 
 #
 import os
@@ -85,7 +85,7 @@ def load_wav_segment(
     start_time: float = 0.0,
     duration: float = 5.0,
     target_sample_rate: int = 44100,
-) -> Tuple[NDArray[np.float32], int]:
+) -> tuple[NDArray[np.float32], int]:
     """Load a segment from a WAV file."""
     if not os.path.exists(wav_path):
         raise FileNotFoundError(f"WAV file not found: {wav_path}")
@@ -167,7 +167,7 @@ def render_audio_in_chunks(
     return np.concatenate(audio_chunks)
 
 
-def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
+def train_instrument(config: TrainingConfig) -> dict[str, Any]:
     """
     Train an instrument using the configured Engine.
     """

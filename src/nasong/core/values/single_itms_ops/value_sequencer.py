@@ -21,7 +21,7 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 #
 ### Import Modules. ###
 #
-from typing import Callable, Any, Dict
+from typing import Callable, Any
 import numpy as np
 from numpy.typing import NDArray
 
@@ -121,7 +121,7 @@ class Sequencer(Value):
     def backward(
         self,
         grad_output: NDArray[np.float32],
-        context: Dict[str, Any],
+        context: dict[str, Any],
         sample_rate: int,
     ) -> None:
         """

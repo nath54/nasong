@@ -21,7 +21,7 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 #
 ### Import Modules. ###
 #
-from typing import List, Dict, Any
+from typing import Any
 
 #
 from abc import ABC, abstractmethod
@@ -36,7 +36,7 @@ class NoteDetector(ABC):
     Abstract base class for note detection algorithms.
     """
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         """
         Initialize the detector with configuration parameters.
 
@@ -46,7 +46,7 @@ class NoteDetector(ABC):
         self.config = config
 
     @abstractmethod
-    def detect(self, audio_data: np.ndarray, sample_rate: int) -> List[Dict[str, Any]]:
+    def detect(self, audio_data: np.ndarray, sample_rate: int) -> list[dict[str, Any]]:
         """
         Detect notes in the given audio segment.
 
@@ -61,7 +61,7 @@ class NoteDetector(ABC):
                 {
                     'start_time': float,  # Start time in seconds
                     'duration': float,    # Duration in seconds
-                    'frequencies': List[float], # List of frequencies in Hz (for polyphony)
+                    'frequencies': list[float], # List of frequencies in Hz (for polyphony)
                     'confidence': float,   # Optional confidence score
                 },
                 ...

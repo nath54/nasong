@@ -15,19 +15,21 @@ Usage:
 #
 ### Import Modules. ###
 #
-from typing import Dict, Any, List
+from typing import Any
 
 #
 import os
 import json
-import yaml
 import argparse
+import yaml
 import pandas as pd
 
 
 def calculate_note_score(
-    target_notes: List[Dict], predicted_notes: List[Dict], tolerance: float = 0.05
-) -> Dict[str, float]:
+    target_notes: list[dict[str, Any]],
+    predicted_notes: list[dict[str, Any]],
+    tolerance: float = 0.05,
+) -> dict[str, float]:
     """
     Calculate Precision, Recall, and F1-score for detected notes.
     Matching is based on frequency overlap within tolerance.
@@ -79,7 +81,7 @@ def calculate_note_score(
     return {"precision": precision, "recall": recall, "f1": f1}
 
 
-def load_experiment_data(exp_dir: str) -> Dict[str, Any]:
+def load_experiment_data(exp_dir: str) -> dict[str, Any]:
     """Load all relevant data for an experiment."""
     data = {"name": os.path.basename(exp_dir)}
 
@@ -169,7 +171,7 @@ def load_experiment_data(exp_dir: str) -> Dict[str, Any]:
     return data
 
 
-def generate_markdown(experiments: List[Dict[str, Any]], output_path: str):
+def generate_markdown(experiments: list[dict[str, Any]], output_path: str):
     """Generate markdown table."""
 
     df = pd.DataFrame(experiments)

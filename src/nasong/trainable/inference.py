@@ -56,7 +56,7 @@ def load_trained_instrument(experiment_id_or_path: str) -> Callable:
     if os.path.exists(experiment_id_or_path) and os.path.isdir(experiment_id_or_path):
         try:
             exp = Experiment.load(experiment_id_or_path)
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             # Fallback: try to construct experiment from config.yaml if meta.json is missing
             config_path = os.path.join(experiment_id_or_path, "config.yaml")
             if os.path.exists(config_path):

@@ -21,7 +21,7 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 #
 ### Import Modules. ###
 #
-from typing import List, Dict, Any
+from typing import Any
 
 #
 import os
@@ -64,7 +64,7 @@ class OnnxCrepeDetector(NoteDetector):
     Note detection using CREPE with ONNX Runtime.
     """
 
-    def detect(self, audio_data: np.ndarray, sample_rate: int) -> List[Dict[str, Any]]:
+    def detect(self, audio_data: np.ndarray, sample_rate: int) -> list[dict[str, Any]]:
         if not HAS_ORT:
             raise ImportError(
                 "onnxruntime is required for OnnxCrepeDetector. Please install 'onnxruntime'."
@@ -83,7 +83,7 @@ class OnnxCrepeDetector(NoteDetector):
             try:
                 urllib.request.urlretrieve(CREPE_MODEL_URL, model_path)
                 print("Download complete.")
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-except
                 raise RuntimeError(
                     f"Failed to download CREPE model from {CREPE_MODEL_URL}. Error: {e}"
                 ) from e

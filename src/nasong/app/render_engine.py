@@ -24,7 +24,7 @@ of audio chunks with a priority system based on the current playback cursor.
 #
 ### Import Modules. ###
 #
-from typing import Optional, Dict, Set
+from typing import Optional, Any
 
 #
 import queue
@@ -65,7 +65,7 @@ class RenderEngine:
         self.render_queue = queue.PriorityQueue()
 
         # Cache: start_sample -> (numpy array, version_id)
-        self.cache: Dict[int, tuple[np.ndarray, int]] = {}
+        self.cache: dict[int, tuple[np.ndarray, int]] = {}
         self.cache_lock = threading.Lock()
 
         self.current_version_id = 0
@@ -74,7 +74,7 @@ class RenderEngine:
         self.render_thread = threading.Thread(target=self._render_loop, daemon=True)
 
         # To avoid re-adding same chunks
-        self.queued_chunks: Set[int] = set()
+        self.queued_chunks: set[int] = set()
         self.queued_lock = threading.Lock()
 
         self.render_thread.start()
@@ -264,7 +264,7 @@ class RenderEngine:
                         # else:
                         #     pass # print(f"Render {start_sample}: AUDIO produced. Peak={peak}")
 
-                    except Exception as e:
+                    except Exception as e:  # pylint: disable=broad-except
                         print(f"Render Error at {start_sample}: {e}")
                         import traceback
 
@@ -287,7 +287,7 @@ class RenderEngine:
 
             except queue.Empty:
                 pass
-            except Exception:
+            except Exception:  # pylint: disable=broad-except
                 # logging.error(f"Render Loop Error: {e}")
                 pass
 

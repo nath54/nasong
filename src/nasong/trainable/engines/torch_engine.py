@@ -21,7 +21,7 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 #
 ### Import Modules. ###
 #
-from typing import Dict, List, Any, Optional, Set
+from typing import Any, Optional
 
 #
 import numpy as np
@@ -68,7 +68,7 @@ class TorchEngine(BaseTrainingEngine):
         super().__init__(config)
         self.device: str = getattr(config, "device", "cpu")
         self.optimizer: Optional[optim.Optimizer] = None
-        self.all_params: List[Tensor] = []
+        self.all_params: list[Tensor] = []
 
     def spectral_loss(
         self,
@@ -120,7 +120,7 @@ class TorchEngine(BaseTrainingEngine):
         synthesized: Tensor,
         target: Tensor,
         sample_rate: int = 44100,
-        fft_sizes: Optional[List[int]] = None,
+        fft_sizes: Optional[list[int]] = None,
         high_freq_emphasis: float = 2.0,
     ) -> Tensor:
         """PyTorch implementation of multi-resolution spectral loss."""
@@ -139,8 +139,8 @@ class TorchEngine(BaseTrainingEngine):
         return total_loss / len(fft_sizes)
 
     def collect_trainable_parameters(
-        self, value: Value, params: Optional[Set[Tensor]] = None
-    ) -> List[Tensor]:
+        self, value: Value, params: Optional[set[Tensor]] = None
+    ) -> list[Tensor]:
         """Recursively collects all Torch tensors that require gradients."""
         if params is None:
             params = set()
@@ -166,7 +166,7 @@ class TorchEngine(BaseTrainingEngine):
                             for sub_item in item:
                                 if isinstance(sub_item, Value):
                                     self.collect_trainable_parameters(sub_item, params)
-            except Exception:
+            except Exception:  # pylint: disable=broad-except
                 continue
 
         return list(params)
@@ -205,7 +205,7 @@ class TorchEngine(BaseTrainingEngine):
         # We don't call .backward() here to allow standard compute_loss calls for val/test
         return loss.item()
 
-    def step(self) -> Dict[str, float]:
+    def step(self) -> dict[str, float]:
         """Placeholder for a single step. Real world uses batch loops."""
         # In a real training task, the batch loop handles the .backward() calls.
         # This interface might need refinement if we want the engine to own the loop.
@@ -214,7 +214,7 @@ class TorchEngine(BaseTrainingEngine):
             self.optimizer.zero_grad()
         return {}
 
-    def get_parameter_values(self) -> Dict[str, float]:
+    def get_parameter_values(self) -> dict[str, float]:
         """Returns name:value dictionary of parameters."""
         # Note: Parameters might not have names if they were captured generically.
         # We might need a better way to map names back if we want to save/restore by name.
@@ -223,7 +223,7 @@ class TorchEngine(BaseTrainingEngine):
             results[f"param_{i}"] = p.detach().cpu().item()
         return results
 
-    def set_parameter_values(self, parameters: Dict[str, float]) -> None:
+    def set_parameter_values(self, parameters: dict[str, float]) -> None:
         """Sets tensor values from a dictionary."""
         # This requires a naming convention consistency.
         # For now, we assume simple index-based or name-based if available.

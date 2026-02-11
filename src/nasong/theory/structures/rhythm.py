@@ -21,7 +21,7 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 #
 ### Import Modules. ###
 #
-from typing import List, Iterator
+from typing import Iterator
 from dataclasses import dataclass
 
 #
@@ -41,7 +41,7 @@ class Rhythm:
     A sequence of RhythmEvents.
     """
 
-    events: List[RhythmEvent]
+    events: list[RhythmEvent]
     loop: bool = True
 
     def __post_init__(self):

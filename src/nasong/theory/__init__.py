@@ -2,10 +2,8 @@ from .structures.note import Note as NoteEvent
 from .structures.chord import Chord
 from .structures.progression import Progression
 
-from typing import List
 
-
-def expand(obj) -> List[NoteEvent]:
+def expand(obj) -> list[NoteEvent]:
     """
     Flatten a musical object into a list of NoteEvents.
     """
@@ -33,7 +31,7 @@ def expand(obj) -> List[NoteEvent]:
 
 def track_from_progression(
     progression: Progression, start_time: float = 0.0
-) -> List[tuple[float, NoteEvent]]:
+) -> list[tuple[float, NoteEvent]]:
     """
     Convert a progression into a distinct list of (absolute_start_time, NoteEvent).
     useful for feeding into a Sequencer.

@@ -21,7 +21,7 @@ Options:
 #
 ### Import Modules. ###
 #
-from typing import Dict, Any, List, Optional
+from typing import Any, Optional
 
 #
 import os
@@ -58,7 +58,7 @@ except ImportError:
 ALL_METHODS = ["legacy", "basic_pitch", "librosa", "torchcrepe", "audioflux"]
 
 
-def evaluate_audio(audio_path: str, methods: List[str] = None) -> Dict[str, Any]:
+def evaluate_audio(audio_path: str, methods: list[str] = None) -> dict[str, Any]:
     """
     Run specified note detectors on the given audio.
     """
@@ -71,7 +71,7 @@ def evaluate_audio(audio_path: str, methods: List[str] = None) -> Dict[str, Any]
 
     try:
         audio, file_sr = sf.read(audio_path)
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         print(f"   ⚠️ Failed to read audio: {e}")
         return {"error": str(e)}
 
@@ -123,7 +123,7 @@ def evaluate_audio(audio_path: str, methods: List[str] = None) -> Dict[str, Any]
             }
             print(f"     ✅ {method}: {len(serializable_notes)} notes")
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             results[method] = {"status": "failed", "error": str(e)}
             # print(f"     ❌ {method} failed: {e}")
 
@@ -169,7 +169,7 @@ def visualize_spectrograms(
 
 
 def process_experiment(
-    exp_dir: str, output_dir: Optional[str] = None, methods: List[str] = None
+    exp_dir: str, output_dir: Optional[str] = None, methods: list[str] = None
 ):
     """
     Evaluate a single experiment directory across all available splits (train, val, test).
@@ -192,7 +192,7 @@ def process_experiment(
             with open(config_path, "r", encoding="utf-8") as f:
                 config = yaml.safe_load(f)
                 instrument_name = config.get("instrument_name")
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             print(f"   ⚠️ Failed to read config.yaml: {e}")
 
     # 2. Fallback to filename parsing
@@ -380,7 +380,7 @@ def main():
 
         try:
             process_experiment(exp_dir, args.output_dir, methods)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             print(f"   ❌ Error processing {exp_dir}: {e}")
 
 

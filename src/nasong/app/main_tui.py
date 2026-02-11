@@ -94,7 +94,7 @@ class DocBrowser(Container):
     def add_docs_to_tree(self, root_node, docs, label):
         node = root_node.add(label, expand=False)
 
-        for name, doc in docs.get("classes", {}).items():
+        for name, _doc in docs.get("classes", {}).items():
             node.add(f"Class: {name}", allow_expand=False)
 
         for name, doc in docs.get("functions", {}).items():
@@ -253,7 +253,7 @@ class AlgoRaveApp(App):
                     LogScreen(), "log"
                 ) if "log" not in self._installed_screens else None
                 self.get_screen("log").query_one(RichLog).write(msg)
-            except Exception:
+            except Exception:  # pylint: disable=broad-except
                 pass
 
     def compose(self) -> ComposeResult:
@@ -327,7 +327,7 @@ class AlgoRaveApp(App):
                 else:
                     status.update("● ERROR")
                     status.classes = "error"
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             self.log_message(f"Could not load {target}: {e}")
 
     def save_current_file(self) -> None:

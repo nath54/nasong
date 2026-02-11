@@ -21,7 +21,6 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 #
 ### Import Modules. ###
 #
-from typing import Union
 from dataclasses import dataclass
 
 
@@ -71,7 +70,7 @@ class Duration:
             return Duration(self.value + other.value)
         return NotImplemented
 
-    def __mul__(self, other: Union[int, float]):
+    def __mul__(self, other: int | float):
         return Duration(self.value * float(other))
 
 

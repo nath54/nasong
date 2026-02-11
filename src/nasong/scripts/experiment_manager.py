@@ -21,7 +21,7 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 #
 ### Import Modules. ###
 #
-from typing import Dict, Any, List, Optional
+from typing import Any, Optional
 
 #
 import os
@@ -41,8 +41,8 @@ class Experiment:
         experiment_id: str,
         name: str,
         timestamp: float,
-        metrics: Dict[str, Any],
-        params: Dict[str, Any],
+        metrics: dict[str, Any],
+        params: dict[str, Any],
         status: str = "created",
     ):
         self.id = experiment_id
@@ -73,7 +73,7 @@ class Experiment:
         with open(os.path.join(self.path, "meta.json"), "w", encoding="utf-8") as f:
             json.dump(meta, f, indent=2)
 
-    def save_parameters_json(self, parameters: Dict[str, float]):
+    def save_parameters_json(self, parameters: dict[str, float]):
         """Save the trained instrument parameters for inference."""
         with open(os.path.join(self.path, "params.json"), "w", encoding="utf-8") as f:
             json.dump(parameters, f, indent=2)
@@ -102,7 +102,7 @@ class ExperimentManager:
         self.base_dir = base_dir
         os.makedirs(self.base_dir, exist_ok=True)
 
-    def create_experiment(self, name: str, params: Dict[str, Any] = None) -> Experiment:
+    def create_experiment(self, name: str, params: dict[str, Any] = None) -> Experiment:
         experiment_id = str(uuid.uuid4())[:8]
         timestamp = time.time()
         exp = Experiment(
@@ -116,7 +116,7 @@ class ExperimentManager:
         exp.save_meta()
         return exp
 
-    def list_experiments(self) -> List[Experiment]:
+    def list_experiments(self) -> list[Experiment]:
         experiments = []
         if not os.path.exists(self.base_dir):
             return []
@@ -126,7 +126,7 @@ class ExperimentManager:
             if os.path.isdir(path) and os.path.exists(os.path.join(path, "meta.json")):
                 try:
                     experiments.append(Experiment.load(path))
-                except Exception:
+                except Exception:  # pylint: disable=broad-except
                     continue  # Skip corrupted
 
         # Sort by timestamp desc

@@ -83,7 +83,7 @@ def main():
     try:
         session.start()
         print("Audio stream started.")
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         print(f"Critical Error: Could not start audio stream: {e}")
         sys.exit(1)
 
@@ -98,7 +98,8 @@ def main():
                 mtime = os.path.getmtime(script_abs_path)
                 if mtime > last_mtime:
                     print(
-                        f"\n[RELOAD] Detected change in {os.path.basename(script_abs_path)}. Reloading..."
+                        f"\n[RELOAD] Detected change in {os.path.basename(script_abs_path)}.\
+                            Reloading..."
                     )
                     session.load_script(script_abs_path)
                     last_mtime = mtime

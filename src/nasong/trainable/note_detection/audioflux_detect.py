@@ -21,7 +21,7 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 #
 ### Import Modules. ###
 #
-from typing import List, Dict, Any
+from typing import Any
 
 #
 import numpy as np
@@ -47,7 +47,7 @@ class AudioFluxDetector(NoteDetector):
 
     def detect(
         self, audio_segment: np.ndarray, sample_rate: int
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         if af is None:
             raise ImportError("AudioFlux is not installed. Please install 'audioflux'.")
 

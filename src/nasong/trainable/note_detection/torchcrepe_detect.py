@@ -21,7 +21,7 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 #
 ### Import Modules. ###
 #
-from typing import List, Dict, Any
+from typing import Any
 
 #
 import numpy as np
@@ -57,7 +57,7 @@ class TorchCrepeDetector(NoteDetector):
 
     def detect(
         self, audio_segment: np.ndarray, sample_rate: int
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         if not HAS_TORCH:
             raise ImportError("PyTorch is not installed. Cannot use TorchCrepe.")
 
@@ -97,7 +97,7 @@ class TorchCrepeDetector(NoteDetector):
                 device=device,
                 batch_size=2048,
             )
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             raise RuntimeError(f"TorchCrepe prediction failed: {e}")
 
         # Move to CPU for processing

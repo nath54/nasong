@@ -21,9 +21,6 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 #
 ### Import Modules. ###
 #
-from typing import List
-
-#
 import dataclasses
 from dataclasses import dataclass, field
 
@@ -84,7 +81,7 @@ class SpectralLossConfig:
     n_fft: int = 2048
     hop_length: int = 512
     high_freq_emphasis: float = 2.0
-    fft_sizes: List[int] = field(default_factory=lambda: [2048, 1024, 512])
+    fft_sizes: list[int] = field(default_factory=lambda: [2048, 1024, 512])
 
 
 @dataclass

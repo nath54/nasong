@@ -9,9 +9,6 @@ Allows syntax like: Osc(freq) >> Filter(cutoff) >> Reverb()
 #
 ### Import Modules. ###
 #
-from typing import Union
-
-#
 from nasong.core.value import Value
 from nasong.core.values.mult_itms_ops.value_product import Product
 from nasong.core.values.basic.value_constant import Constant
@@ -81,7 +78,7 @@ class Processor:
 
 
 class Gain(Processor):
-    def __init__(self, amount: Union[float, Value]):
+    def __init__(self, amount: float | Value):
         self.amount = amount if isinstance(amount, Value) else Constant(amount)
 
     def __call__(self, source: Value) -> Value:
