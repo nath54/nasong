@@ -28,6 +28,7 @@ from numpy.typing import NDArray
 #
 from nasong.core.value import Value
 from nasong.core.value import torch, Tensor
+from nasong.core.values.basic.value_constant import Constant
 
 
 #
@@ -47,7 +48,6 @@ class ADSR2(Value):
         sustain_level: Value | float = 0.7,
         release_time: Value | float = 0.2,
     ) -> None:
-        from nasong.core.values.basic.value_constant import Constant
 
         #
         super().__init__()
@@ -166,14 +166,37 @@ class ADSR2(Value):
             indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
         )
         #
-        relative_time: Tensor = t - self.note_start
+        # Fetch current values for all parameters
+        #
+        start: Tensor = self.note_start.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        dur: Tensor = self.note_duration.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        att: Tensor = self.attack_time.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        ).clamp(min=1e-6)
+        dec: Tensor = self.decay_time.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        ).clamp(min=1e-6)
+        sus: Tensor = self.sustain_level.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        rel: Tensor = self.release_time.getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        ).clamp(min=1e-6)
+
+        #
+        relative_time: Tensor = t - start
 
         #
         ### Gate: Create a mask for all samples inside the envelope's lifetime. ###
         #
-        gate_mask: Tensor = (
-            (relative_time >= 0) & (relative_time <= self.release_end)
-        ).to(dtype=torch.float32)
+        release_end = dur + rel
+        gate_mask: Tensor = ((relative_time >= 0) & (relative_time <= release_end)).to(
+            dtype=torch.float32
+        )
 
         #
         if not torch.any(gate_mask):
@@ -183,31 +206,27 @@ class ADSR2(Value):
         #
         ### Define the 4 stages and their values. ###
         #
-        attack_mask: Tensor = relative_time < self.attack_end
-        attack_val: Tensor = relative_time / self.attack_time
+        att_end = att
+        dec_end = att + dec
+        sus_end = dur
+
+        attack_mask: Tensor = relative_time < att_end
+        attack_val: Tensor = relative_time / att
 
         #
-        decay_mask: Tensor = relative_time < self.decay_end
-        decay_progress: Tensor = (relative_time - self.attack_time) / self.decay_time
-        decay_val: Tensor = (1.0 - (1.0 - self.sustain_level) * decay_progress).to(
-            dtype=torch.float32
-        )
+        decay_mask: Tensor = (relative_time >= att_end) & (relative_time < dec_end)
+        decay_progress: Tensor = (relative_time - att) / dec
+        decay_val: Tensor = (1.0 - (1.0 - sus) * decay_progress).to(dtype=torch.float32)
 
         #
-        sustain_mask: Tensor = relative_time < self.sustain_end
-        sustain_val: Tensor = torch.full_like(
-            relative_time, self.sustain_level, device=device
-        )
+        sustain_mask: Tensor = (relative_time >= dec_end) & (relative_time < sus_end)
+        sustain_val: Tensor = sus
 
         #
         ### The final 'else' is the release phase. ###
         #
-        release_progress: Tensor = (
-            relative_time - self.note_duration
-        ) / self.release_time
-        release_val: Tensor = (self.sustain_level * (1.0 - release_progress)).to(
-            dtype=torch.float32
-        )
+        release_progress: Tensor = (relative_time - dur) / rel
+        release_val: Tensor = (sus * (1.0 - release_progress)).to(dtype=torch.float32)
 
         #
         ### Build the envelope with nested torch.where. ###
@@ -255,26 +274,55 @@ class ADSR2(Value):
         t: NDArray[np.float32] = self.time.getitem_np(
             np.zeros(grad_output.shape, dtype=np.float32), sample_rate
         )
-        relative_time: NDArray[np.float32] = t - self.note_start
+        start = self.note_start.getitem_np(
+            np.zeros(grad_output.shape, dtype=np.float32), sample_rate
+        )
+        dur = self.note_duration.getitem_np(
+            np.zeros(grad_output.shape, dtype=np.float32), sample_rate
+        )
+        att = np.clip(
+            self.attack_time.getitem_np(
+                np.zeros(grad_output.shape, dtype=np.float32), sample_rate
+            ),
+            1e-6,
+            None,
+        )
+        dec = np.clip(
+            self.decay_time.getitem_np(
+                np.zeros(grad_output.shape, dtype=np.float32), sample_rate
+            ),
+            1e-6,
+            None,
+        )
+        sus = self.sustain_level.getitem_np(
+            np.zeros(grad_output.shape, dtype=np.float32), sample_rate
+        )
+        rel = np.clip(
+            self.release_time.getitem_np(
+                np.zeros(grad_output.shape, dtype=np.float32), sample_rate
+            ),
+            1e-6,
+            None,
+        )
+
+        relative_time = t - start
+        att_end = att
+        dec_end = att + dec
+        sus_end = dur
+        release_end = dur + rel
 
         dy_dt: NDArray[np.float32] = np.zeros_like(relative_time)
 
         # Stage masks
-        gate_mask = (relative_time >= 0) & (relative_time <= self.release_end)
-        attack_mask = relative_time < self.attack_end
-        decay_mask = (relative_time >= self.attack_end) & (
-            relative_time < self.decay_end
-        )
-        sustain_mask = (relative_time >= self.decay_end) & (
-            relative_time < self.sustain_end
-        )
-        release_mask = (relative_time >= self.sustain_end) & (
-            relative_time <= self.release_end
-        )
+        gate_mask = (relative_time >= 0) & (relative_time <= release_end)
+        attack_mask = relative_time < att_end
+        decay_mask = (relative_time >= att_end) & (relative_time < dec_end)
+        sustain_mask = (relative_time >= dec_end) & (relative_time < sus_end)
+        release_mask = (relative_time >= sus_end) & (relative_time <= release_end)
 
-        dy_dt[attack_mask] = 1.0 / self.attack_time
-        dy_dt[decay_mask] = -(1.0 - self.sustain_level) / self.decay_time
+        dy_dt[attack_mask] = 1.0 / att[attack_mask]
+        dy_dt[decay_mask] = -(1.0 - sus[decay_mask]) / dec[decay_mask]
         dy_dt[sustain_mask] = 0.0
-        dy_dt[release_mask] = -self.sustain_level / self.release_time
+        dy_dt[release_mask] = -sus[release_mask] / rel[release_mask]
 
         self.time.backward(grad_output * dy_dt * gate_mask, context, sample_rate)
