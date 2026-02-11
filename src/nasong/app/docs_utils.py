@@ -15,7 +15,11 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Documentation and introspection utilities for the NaSong application.
+
+This module provides functions to recursively inspect NaSong packages and extract
+docstrings for classes and functions, allowing for dynamic documentation generation
+within the TUI/DAW.
 """
 
 #
@@ -31,14 +35,16 @@ import importlib
 
 def get_module_docs(package_name: str) -> Dict[str, Any]:
     """
-    Recursively inspects a package and returns a dictionary structure:
-    {
-        "module_name": {
-            "classes": { "ClassName": "docstring" },
-            "functions": { "func_name": "docstring" },
-            "submodules": { ... }
-        }
-    }
+    Recursively inspects a package and returns its documentation structure.
+
+    Args:
+        package_name: The fully qualified name of the package/module to inspect.
+
+    Returns:
+        A dictionary containing:
+            - "classes": Maps class names to their docstrings.
+            - "functions": Maps function names to their docstrings.
+            - "submodules": Recursively holds documentation for child modules.
     """
     results = {"classes": {}, "functions": {}, "submodules": {}}
 
@@ -56,7 +62,7 @@ def get_module_docs(package_name: str) -> Dict[str, Any]:
 
     # Recurse into submodules
     if hasattr(package, "__path__"):
-        for _, name, is_pkg in pkgutil.iter_modules(package.__path__):
+        for _, name, _is_pkg in pkgutil.iter_modules(package.__path__):
             full_name = f"{package_name}.{name}"
             results["submodules"][name] = get_module_docs(full_name)
 
@@ -65,8 +71,14 @@ def get_module_docs(package_name: str) -> Dict[str, Any]:
 
 def flatten_docs(docs: Dict, prefix: str = "") -> List[tuple]:
     """
-    Flattens the docs structure for easier tree population.
-    Returns list of (type, name, path, docstring).
+    Flattens the hierarchical documentation structure for linear display (e.g., in a tree).
+
+    Args:
+        docs: The hierarchical documentation dictionary from `get_module_docs`.
+        prefix: Current module path prefix for recursion.
+
+    Returns:
+        A list of tuples: (type, name, path, docstring).
     """
     items = []
 

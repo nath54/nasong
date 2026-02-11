@@ -15,33 +15,61 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Live audio session management for NaSong.
+
+This module provides the `LiveSession` class, which handles the real-time audio
+stream, dynamic loading and execution of user scripts, and coordination with
+the rendering engine.
 """
 
 #
 ### Import Modules. ###
 #
-from typing import Optional, Any
+from typing import Optional, Any, Callable
+import importlib.util
+from contextlib import redirect_stdout, redirect_stderr
 
 #
 import sys
 import threading
 import traceback
 import numpy as np
-import importlib.util
 import sounddevice as sd
 
 #
 from nasong.core.value import Value
 from nasong.app.render_engine import RenderEngine
+from nasong.core.values.basic.value_identity import Identity
 
 
 class LiveSession:
     """
-    Manages the audio stream and the 'hot' user code.
+    Manages a live audio session, including the stream and hot-reloaded user code.
+
+    The LiveSession acts as the bridge between the PortAudio stream (via sounddevice),
+    the RenderEngine which computes audio in the background, and the user-provided
+    Python scripts that define the music.
+
+    Attributes:
+        sample_rate: The audio sample rate (e.g., 44100).
+        block_size: Smallest unit of audio processing (buffer size).
+        device: PortAudio device index or name.
+        cursor: Current absolute sample position in the timeline.
+        is_running: Boolean indicating if the audio stream is active.
+        volume: Master gain multiplier.
     """
 
-    def __init__(self, sample_rate=44100, block_size=2048, device=None):
+    def __init__(
+        self, sample_rate: int = 44100, block_size: int = 2048, device: Any = None
+    ):
+        """
+        Initializes the LiveSession with audio parameters.
+
+        Args:
+            sample_rate: Hardware sample rate.
+            block_size: Buffer size for each audio callback.
+            device: Optional audio device identifier.
+        """
         self.sample_rate = sample_rate
         self.block_size = block_size
         self.device = device
@@ -60,13 +88,31 @@ class LiveSession:
             sample_rate=sample_rate, chunk_size=block_size
         )
 
-    def set_error_callback(self, cb):
+    def set_error_callback(self, cb: callable):
+        """
+        Sets a callback function for asynchronous error reporting.
+
+        Args:
+            cb: A callable that accepts a string error message.
+        """
         self.error_callback = cb
 
-    def set_log_callback(self, cb):
+    def set_log_callback(self, cb: callable):
+        """
+        Sets a callback function for application logging.
+
+        Args:
+            cb: A callable that accepts a string log message.
+        """
         self.log_callback = cb
 
     def log(self, msg: str):
+        """
+        Logs a message to stdout and the registered log callback.
+
+        Args:
+            msg: The message to log.
+        """
         # Use sys.__stdout__ to avoid infinite loops when redirecting globals
         sys.__stdout__.write(str(msg) + "\n")
         sys.__stdout__.flush()
@@ -74,31 +120,66 @@ class LiveSession:
             self.log_callback(msg)
 
     def set_volume(self, vol: float):
+        """
+        Sets the master output volume.
+
+        Args:
+            vol: Volume multiplier. Values > 1.0 are allowed for amplification.
+        """
         self.volume = max(0.0, vol)  # ALLOW Over-amplification for testing!
 
     def load_script(self, script_path: str) -> bool:
         """
-        Loads or reloads the user script.
+        Loads or reloads a user script from the filesystem.
+
+        This method dynamically imports the script as a module, captures its output,
+        and extracts either a 'sequencer' Variable or a 'song' function to use
+        as the audio source.
+
+        Args:
+            script_path: Absolute path to the .py user script.
+
+        Returns:
+            True if the script was successfully loaded and initialized, False otherwise.
         """
         module_name = "user_script_live"
 
         # Custom stream to capture prints from user script
         class LogStream:
-            def __init__(self, logger):
+            """
+            Custom stream to capture prints from user script.
+            """
+
+            def __init__(self, logger: Callable[[str], None]) -> None:
+                """
+                Initializes the LogStream with a logger function.
+
+                Args:
+                    logger: A callable that accepts a string message.
+                """
                 self.logger = logger
 
-            def write(self, text):
+            def write(self, text: str) -> None:
+                """
+                Writes text to the logger if it is not empty.
+
+                Args:
+                    text: The text to write.
+                """
                 if text.strip():
                     self.logger(text.rstrip())
 
-            def flush(self):
-                pass
+            def flush(self) -> None:
+                """
+                Flushes the stream.
+                """
+                pass  # pylint: disable=unnecessary-pass
 
         log_stream = LogStream(self.log)
 
         try:
             # Check if file exists
-            with open(script_path, "r"):
+            with open(script_path, "r", encoding="utf-8"):
                 pass
 
             spec = importlib.util.spec_from_file_location(module_name, script_path)
@@ -107,8 +188,6 @@ class LiveSession:
                 sys.modules[module_name] = module
 
                 # Capture stdout/stderr during execution
-                from contextlib import redirect_stdout, redirect_stderr
-
                 with redirect_stdout(log_stream), redirect_stderr(log_stream):
                     self.log(f"Executing module: {module_name}")
                     spec.loader.exec_module(module)
@@ -140,9 +219,8 @@ class LiveSession:
                         # Let's look at `song_drum_beat.py`:
                         # def song(time: lv.Value) -> lv.Value:
 
-                        # Create a Time Variable, pass it to song(), and the result is the sequencer Value.
-
-                        from nasong.core.values.basic.value_identity import Identity
+                        # Create a Time Variable, pass it to song(),
+                        # and the result is the sequencer Value.
 
                         time_var = Identity()
                         sequencer = module.song(time_var)
@@ -152,11 +230,11 @@ class LiveSession:
                                 "Function 'song' must return a nasong.core.Value"
                             )
 
-                    except Exception as e:
+                    except Exception as e:  # pylint: disable=broad-except
                         self.log(f"Error rendering 'song' function: {e}")
                         sequencer = None
 
-                if sequencer:
+                if sequencer:  # pylint: disable=no-else-return
                     with self.lock:
                         self.user_module = module
                         self.reload_cursor = self.cursor  # Set marker
@@ -170,7 +248,7 @@ class LiveSession:
                     if self.error_callback:
                         self.error_callback(err)
                     return False
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             err = f"Failed to load script: {e}\n{traceback.format_exc()}"
             self.log(err)
             if self.error_callback:
@@ -178,9 +256,21 @@ class LiveSession:
             return False
         return False
 
-    def audio_callback(self, outdata, frames, time_info, status):
-        if status:
-            print(f"Stream status: {status}")
+    def audio_callback(
+        self, outdata: np.ndarray, frames: int, _time_info: Any, _status: Any
+    ):
+        """
+        PortAudio callback for generating the next block of audio.
+
+        This method pulls samples from the RenderEngine, applies master volume,
+        and copies them to the output buffer. It also updates the session cursor.
+
+        Args:
+            outdata: The output buffer to fill.
+            frames: The number of frames requested.
+            time_info: Time-related metadata from PortAudio.
+            status: Stream status flags.
+        """
 
         # Align with nasong's preference for float32
         # TUI/Session uses cursor to track absolute time
@@ -220,7 +310,8 @@ class LiveSession:
 
                     audio_buffer = np.zeros(frames, dtype=np.float32)
 
-                    # We need to fill audio_buffer from current_sample to current_sample + needed_samples
+                    # We need to fill audio_buffer from current_sample
+                    # to current_sample + needed_samples
 
                     # Iterate through needed range
                     filled = 0
@@ -275,7 +366,7 @@ class LiveSession:
                     outdata[:, 0] = audio
                     outdata[:, 1] = audio
 
-                except Exception as e:
+                except Exception as e:  # pylint: disable=broad-except
                     print(f"Error during audio generation: {e}")
                     outdata.fill(0)
             else:
@@ -289,7 +380,10 @@ class LiveSession:
 
     def seek(self, time_seconds: float):
         """
-        Seeks to a specific time in seconds.
+        Seeks the session to a specific point in time.
+
+        Args:
+            time_seconds: The destination time in seconds.
         """
         with self.lock:
             self.cursor = int(time_seconds * self.sample_rate)
@@ -297,6 +391,9 @@ class LiveSession:
             self.log(f"Seek to {time_seconds:.2f}s")
 
     def start(self):
+        """
+        Starts the real-time audio output stream.
+        """
         if self.is_running:
             return
         try:
@@ -309,12 +406,15 @@ class LiveSession:
             )
             self.stream.start()
             self.is_running = True
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             print(f"Failed to start audio stream: {e}")
             if self.error_callback:
                 self.error_callback(str(e))
 
     def stop(self):
+        """
+        Stops the audio stream and shuts down the rendering engine.
+        """
         if not self.is_running:
             return
         self.is_running = False

@@ -63,7 +63,7 @@ def load_trained_instrument(experiment_id_or_path: str) -> Callable:
                 # Import here to avoid circular dependencies if any
                 import yaml
 
-                with open(config_path, "r") as f:
+                with open(config_path, "r", encoding="utf-8") as f:
                     config_data = yaml.safe_load(f)
 
                 # Create a dummy/wrapper experiment object
@@ -109,7 +109,7 @@ def load_trained_instrument(experiment_id_or_path: str) -> Callable:
             f"Experiment {exp.id} has no params.json (was training successful?)"
         )
 
-    with open(params_path, "r") as f:
+    with open(params_path, "r", encoding="utf-8") as f:
         trained_params = json.load(f)
 
     # Get instrument blueprint

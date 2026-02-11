@@ -15,7 +15,11 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+The NaSong DAW (Digital Audio Workstation) TUI application.
+
+This module provides a Textual-based terminal interface for live-coding music,
+featuring a real-time waveform and spectrogram visualization, a file browser,
+and an integrated code editor.
 """
 
 #
@@ -49,7 +53,15 @@ from nasong.app.live_session import LiveSession
 
 class TimelineWidget(Static):
     """
-    Visualizes the audio timeline and handles seeking.
+    A widget that visualizes the audio timeline including waveform and spectrogram.
+
+    This widget renders a character-based visualization of the audio state,
+    indicating which parts of the timeline are cached, stale, or currently being played.
+    It also handles mouse interactions for seeking.
+
+    Attributes:
+        cursor_time: The current playback position in seconds.
+        duration: The total duration visible in the timeline window.
     """
 
     cursor_time = reactive(0.0)
@@ -188,7 +200,10 @@ class TimelineWidget(Static):
 
 class Editor(TextArea):
     """
-    Code editor widget.
+    A specialized code editor widget for Python music scripts.
+
+    Provides syntax highlighting (Dracula theme) and line numbers optimized
+    for the NaSong live-coding workflow.
     """
 
     def __init__(self, *args, **kwargs):
@@ -200,7 +215,16 @@ class Editor(TextArea):
 
 class NasongDAWApp(App):
     """
-    Nasong DAW: Live Coding & Arrangement
+    The main application class for the NaSong DAW.
+
+    Coordinates the TUI layout, audio session integration, file management,
+    and compilation of scripts to WAV files.
+
+    Bindings:
+        space: Toggle Play/Pause.
+        f5: Reload Code.
+        ctrl+s: Save current file.
+        q: Quit the application.
     """
 
     CSS = """
@@ -304,7 +328,7 @@ class NasongDAWApp(App):
 
     def load_file(self, path):
         try:
-            with open(path, "r") as f:
+            with open(path, "r", encoding="utf-8") as f:
                 content = f.read()
                 self.query_one("#code-editor", Editor).text = content
                 self.current_file = str(path)
@@ -323,7 +347,7 @@ class NasongDAWApp(App):
             editor = self.query_one("#code-editor", Editor)
             content = editor.text
             try:
-                with open(self.current_file, "w") as f:
+                with open(self.current_file, "w", encoding="utf-8") as f:
                     f.write(content)
                 self.notify(f"Saved {self.current_file}")
             except Exception as e:
@@ -435,6 +459,11 @@ class NasongDAWApp(App):
 
 
 def main():
+    """
+    Entry point for the nasong-daw application.
+
+    Parses command-line arguments and launches the Textual TUI.
+    """
     import argparse
 
     parser = argparse.ArgumentParser(description="NaSong DAW")

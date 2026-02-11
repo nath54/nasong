@@ -114,7 +114,7 @@ class TrainingConfig:
     @staticmethod
     def from_yaml(path: str) -> "TrainingConfig":
         """Load configuration from a YAML file."""
-        with open(path, "r") as f:
+        with open(path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
         # Recursive helper to load nested dataclasses
@@ -145,5 +145,5 @@ class TrainingConfig:
                 return {k: as_dict(v) for k, v in dataclasses.asdict(obj).items()}
             return obj
 
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             yaml.dump(as_dict(self), f, default_flow_style=False)

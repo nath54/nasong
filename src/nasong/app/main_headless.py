@@ -15,7 +15,10 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Headless entry point for NaSong live-coding.
+
+This module allows running NaSong scripts without a GUI/TUI, monitoring the
+script file for changes and hot-reloading the audio session automatically.
 """
 
 #
@@ -31,6 +34,12 @@ from nasong.app.live_session import LiveSession
 
 
 def main():
+    """
+    Main loop for the headless live-coding environment.
+
+    Parses CLI arguments, initializes a `LiveSession`, and enters a watch-loop
+    that reloads the user script whenever the file is saved.
+    """
     parser = argparse.ArgumentParser(description="Headless NaSong Algo-Rave (Dev Tool)")
     parser.add_argument("script", help="Path to the user script (e.g., demo_theory.py)")
     parser.add_argument(

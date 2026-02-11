@@ -70,12 +70,12 @@ class Experiment:
             "status": self.status,
             "date": datetime.fromtimestamp(self.timestamp).isoformat(),
         }
-        with open(os.path.join(self.path, "meta.json"), "w") as f:
+        with open(os.path.join(self.path, "meta.json"), "w", encoding="utf-8") as f:
             json.dump(meta, f, indent=2)
 
     def save_parameters_json(self, parameters: Dict[str, float]):
         """Save the trained instrument parameters for inference."""
-        with open(os.path.join(self.path, "params.json"), "w") as f:
+        with open(os.path.join(self.path, "params.json"), "w", encoding="utf-8") as f:
             json.dump(parameters, f, indent=2)
 
     @classmethod
@@ -84,7 +84,7 @@ class Experiment:
         if not os.path.exists(meta_path):
             raise FileNotFoundError(f"No experiment found at {path}")
 
-        with open(meta_path, "r") as f:
+        with open(meta_path, "r", encoding="utf-8") as f:
             meta = json.load(f)
 
         return cls(

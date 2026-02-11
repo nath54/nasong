@@ -15,7 +15,10 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+The NaSong Algo-Rave TUI application.
+
+This module provides a multi-tab terminal interface for live-coding music,
+including a documentation browser, application logs, and session controls (BPM, Volume).
 """
 
 #
@@ -50,7 +53,7 @@ from nasong.app.docs_utils import get_module_docs
 
 class Editor(TextArea):
     """
-    Code editor widget.
+    A specialized code editor widget for the Algo-Rave environment.
     """
 
     def __init__(self, *args, **kwargs):
@@ -62,7 +65,10 @@ class Editor(TextArea):
 
 class DocBrowser(Container):
     """
-    Documentation browser.
+    A documentation browser widget that introspects the NaSong API.
+
+    Uses `get_module_docs` to build a navigable tree of classes and functions
+    available in the NaSong DSL and Theory modules.
     """
 
     def compose(self) -> ComposeResult:
@@ -100,7 +106,7 @@ class DocBrowser(Container):
 
 class LogScreen(Screen):
     """
-    Screen to display application logs.
+    A dedicated screen for viewing application-wide logs and errors.
     """
 
     BINDINGS = [("escape", "app.pop_screen", "Close Logs")]
@@ -115,7 +121,18 @@ class LogScreen(Screen):
 
 class AlgoRaveApp(App):
     """
-    The main TUI application for live coding music.
+    The main Algo-Rave application class.
+
+    Provides a rich TUI for live music performance, managing multiple editor tabs,
+    real-time session controls, and background log capturing.
+
+    Bindings:
+        ctrl+n: Open a new tab.
+        ctrl+w: Close the current tab.
+        f5: Reload the current script.
+        ctrl+s: Save the current file.
+        ctrl+l: Toggle the log screen.
+        q: Quit the application.
     """
 
     CSS = """
@@ -291,7 +308,7 @@ class AlgoRaveApp(App):
         self.title = "NaSong Algo-Rave"
         target = self.initial_file or "demo_theory.py"
         try:
-            with open(target, "r") as f:
+            with open(target, "r", encoding="utf-8") as f:
                 content = f.read()
                 editor = self.query_one("#editor-demo", Editor)
                 editor.text = content
@@ -318,7 +335,7 @@ class AlgoRaveApp(App):
         editor = self.query_one("#editor-demo", Editor)
         content = editor.text
         if self.current_file:
-            with open(self.current_file, "w") as f:
+            with open(self.current_file, "w", encoding="utf-8") as f:
                 f.write(content)
             self.notify(f"Saved {self.current_file}")
 
@@ -413,6 +430,11 @@ class AlgoRaveApp(App):
 
 
 def main():
+    """
+    Entry point for the Algo-Rave TUI.
+
+    Parses command-line arguments and launches the application.
+    """
     import argparse
 
     parser = argparse.ArgumentParser(description="NaSong Algo-Rave TUI")

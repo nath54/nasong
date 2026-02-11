@@ -86,7 +86,7 @@ def load_experiment_data(exp_dir: str) -> Dict[str, Any]:
     # 1. Config
     config_path = os.path.join(exp_dir, "config.yaml")
     if os.path.exists(config_path):
-        with open(config_path, "r") as f:
+        with open(config_path, "r", encoding="utf-8") as f:
             config = yaml.safe_load(f)
             data["instrument"] = config.get("instrument_name", "unknown")
             data["epochs"] = config.get("epochs", 0)
@@ -102,7 +102,7 @@ def load_experiment_data(exp_dir: str) -> Dict[str, Any]:
     # 2. History
     history_path = os.path.join(exp_dir, "history.json")
     if os.path.exists(history_path):
-        with open(history_path, "r") as f:
+        with open(history_path, "r", encoding="utf-8") as f:
             history = json.load(f)
             losses = history.get("losses", [])
             data["final_loss"] = losses[-1] if losses else None
@@ -114,7 +114,7 @@ def load_experiment_data(exp_dir: str) -> Dict[str, Any]:
     # 3. Evaluation
     eval_path = os.path.join(exp_dir, "evaluation.json")
     if os.path.exists(eval_path):
-        with open(eval_path, "r") as f:
+        with open(eval_path, "r", encoding="utf-8") as f:
             evaluation = json.load(f)
 
             # Handle new 'splits' structure

@@ -362,7 +362,9 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
     if config.save_history:
         import json
 
-        with open(os.path.join(config.output_dir, "history.json"), "w") as f:
+        with open(
+            os.path.join(config.output_dir, "history.json"), "w", encoding="utf-8"
+        ) as f:
             json.dump(history, f, indent=2)
 
     # 3. Save Audio (All Splits)
@@ -416,12 +418,16 @@ def train_instrument(config: TrainingConfig) -> Dict[str, Any]:
     param_dict = engine.get_parameter_values()
 
     # Save as generic params.json for inference compatibility
-    with open(os.path.join(config.output_dir, "params.json"), "w") as f:
+    with open(
+        os.path.join(config.output_dir, "params.json"), "w", encoding="utf-8"
+    ) as f:
         json.dump(param_dict, f, indent=2)
 
     # Also save with instrument name for reference (optional, keeping backward compat if needed)
     with open(
-        os.path.join(config.output_dir, f"{config.instrument_name}_params.json"), "w"
+        os.path.join(config.output_dir, f"{config.instrument_name}_params.json"),
+        "w",
+        encoding="utf-8",
     ) as f:
         json.dump(param_dict, f, indent=2)
 

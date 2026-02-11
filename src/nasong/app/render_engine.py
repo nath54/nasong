@@ -15,7 +15,10 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Audio rendering engine for NaSong.
+
+This module provides the `RenderEngine` class, which handles background rendering
+of audio chunks with a priority system based on the current playback cursor.
 """
 
 #
@@ -31,10 +34,27 @@ import numpy as np
 
 class RenderEngine:
     """
-    Handles background rendering of audio chunks with prioritization.
+    Handles prioritized background rendering and caching of audio chunks.
+
+    The RenderEngine operates in a separate thread, pre-computing audio samples
+    around the playback cursor to ensure smooth real-time performance. It uses
+    a priority queue to prioritize chunks closest to the cursor.
+
+    Attributes:
+        sample_rate: The audio sample rate (e.g., 44100).
+        chunk_size: Size of each rendered block in samples.
+        cursor_time: Current playback position in seconds (used for prioritization).
+        current_version_id: Increments every time the sequencer is updated to invalidate cache.
     """
 
-    def __init__(self, sample_rate=44100, chunk_size=4096):
+    def __init__(self, sample_rate: int = 44100, chunk_size: int = 4096):
+        """
+        Initializes the RenderEngine and starts the background render thread.
+
+        Args:
+            sample_rate: Hardware sample rate.
+            chunk_size: Number of samples per rendered chunk.
+        """
         self.sample_rate = sample_rate
         self.chunk_size = chunk_size  # In samples
         self.sequencer = None
@@ -59,9 +79,12 @@ class RenderEngine:
 
         self.render_thread.start()
 
-    def set_sequencer(self, sequencer):
+    def set_sequencer(self, sequencer: Any):
         """
-        Updates the sequencer and invalidates the cache.
+        Updates the active sequencer and invalidates existing cached chunks.
+
+        Args:
+            sequencer: The new NaSong Value/Variable to render.
         """
         with self.cache_lock:
             self.sequencer = sequencer
@@ -82,7 +105,10 @@ class RenderEngine:
 
     def update_cursor(self, time_seconds: float):
         """
-        Updates the cursor position and re-prioritizes rendering.
+        Updates the cursor position for rendering prioritization.
+
+        Args:
+            time_seconds: Current playback time in seconds.
         """
         self.cursor_time = time_seconds
         # We don't necessarily need to clear the queue, but we should add
@@ -92,7 +118,7 @@ class RenderEngine:
 
     def _enqueue_chunks_near_cursor(self):
         """
-        Enqueues chunks around the current cursor.
+        Identifies and enqueues chunks within a window around the cursor.
         """
         if not self.sequencer:
             return
@@ -138,7 +164,16 @@ class RenderEngine:
 
     def get_audio_chunk(self, start_sample: int) -> tuple[Optional[np.ndarray], int]:
         """
-        Returns (audio_chunk, version_id). version_id is -1 if not found.
+        Retrieves a rendered audio chunk from the cache.
+
+        If the chunk is not cached, it is queued for background rendering with
+        high priority.
+
+        Args:
+            start_sample: The absolute sample index for the start of the chunk.
+
+        Returns:
+            A tuple of (numpy_array, version_id). version_id is -1 if not found.
         """
         # Align
         aligned_start = (start_sample // self.chunk_size) * self.chunk_size
@@ -169,6 +204,12 @@ class RenderEngine:
         return None, -1
 
     def _render_loop(self):
+        """
+        Internal worker loop for the background render thread.
+
+        Continuously pops chunks from the priority queue, renders them using
+        the sequencer, and stores the results in the cache.
+        """
         while not self.stop_event.is_set():
             try:
                 # Get next chunk to render
@@ -251,6 +292,10 @@ class RenderEngine:
                 pass
 
     def stop(self):
+        """
+        Gracefully stops the background render thread.
+        """
+        self.stop_event.set()
         self.stop_event.set()
         if self.render_thread.is_alive():
             self.render_thread.join()

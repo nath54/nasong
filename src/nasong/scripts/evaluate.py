@@ -189,7 +189,7 @@ def process_experiment(
         try:
             import yaml
 
-            with open(config_path, "r") as f:
+            with open(config_path, "r", encoding="utf-8") as f:
                 config = yaml.safe_load(f)
                 instrument_name = config.get("instrument_name")
         except Exception as e:
@@ -293,7 +293,7 @@ def process_experiment(
         }
 
         json_path = os.path.join(output_dir, "evaluation.json")
-        with open(json_path, "w") as f:
+        with open(json_path, "w", encoding="utf-8") as f:
             json.dump(evaluation_data, f, indent=2)
         print(f"   ✅ Saved full evaluation to {json_path}")
 
@@ -343,7 +343,7 @@ def main():
 
         os.makedirs(out_dir, exist_ok=True)
         json_path = os.path.join(out_dir, "evaluation.json")
-        with open(json_path, "w") as f:
+        with open(json_path, "w", encoding="utf-8") as f:
             json.dump(evaluation_data, f, indent=2)
         print(f"   ✅ Saved evaluation to {json_path}")
 
