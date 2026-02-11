@@ -12,7 +12,7 @@ def test_arpeggiate():
     """Test for arpeggiate."""
     # -- Setup --
     chord = None
-    pattern = []
+    pattern = 0
     duration = None
     # mock_Duration = MagicMock(return_value=None)
     # mock_append = MagicMock(return_value=None)

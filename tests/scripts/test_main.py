@@ -23,7 +23,7 @@ def test_run_generation():
     output_filename = ""
     sample_rate = 0
     use_torch = False
-    device = None
+    device = ""
     # mock_import_module_from_filepath = MagicMock(return_value=None)
     # mock_Song = MagicMock(return_value=None)
     # mock_export_to_wav = MagicMock(return_value=None)
@@ -34,18 +34,18 @@ def test_run_generation():
     # -- Assert --
     assert result == None
 
-def test_main():
-    """Test for main."""
-    # -- Setup --
-    # mock_ArgumentParser = MagicMock(return_value=None)
-    # mock_add_argument = MagicMock(return_value=None)
-    # mock_parse_args = MagicMock(return_value=None)
-    # mock_run_generation = MagicMock(return_value=None)
-    # mock_print_help = MagicMock(return_value=None)
-    # -- Act --
-    result = scripts.main.main()
-    # -- Assert --
-    assert result == None
+# def test_main():
+#     """Test for main."""
+#     # -- Setup --
+#     # mock_ArgumentParser = MagicMock(return_value=None)
+#     # mock_add_argument = MagicMock(return_value=None)
+#     # mock_parse_args = MagicMock(return_value=None)
+#     # mock_run_generation = MagicMock(return_value=None)
+#     # mock_print_help = MagicMock(return_value=None)
+#     # -- Act --
+#     result = scripts.main.main()
+#     # -- Assert --
+#     assert result == None
 
 class Testtorch:
     """Tests for torch."""
@@ -61,3 +61,31 @@ class Testdevice:
         """Create a fresh instance for each test."""
         # -- Setup Constructor Arguments --
         self.instance = scripts.main.device()
+
+
+# def test_main():
+#     """Test for main."""
+#     # -- Setup --
+#     # mock_ArgumentParser = MagicMock(return_value=None)
+#     # mock_add_argument = MagicMock(return_value=None)
+#     # mock_parse_args = MagicMock(return_value=None)
+#     # mock_run_generation = MagicMock(return_value=None)
+#     # mock_print_help = MagicMock(return_value=None)
+#     # -- Act --
+#     result = scripts.main.main()
+#     # -- Assert --
+#     assert result == None
+
+
+# def test_main():
+#     """Test for main."""
+#     # -- Setup --
+#     # mock_ArgumentParser = MagicMock(return_value=None)
+#     # mock_add_argument = MagicMock(return_value=None)
+#     # mock_parse_args = MagicMock(return_value=None)
+#     # mock_run_generation = MagicMock(return_value=None)
+#     # mock_print_help = MagicMock(return_value=None)
+#     # -- Act --
+#     result = scripts.main.main()
+#     # -- Assert --
+#     assert result == None

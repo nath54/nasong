@@ -22,14 +22,14 @@ class TestLegacyDetector:
         sample_rate = 0
         # mock_get = MagicMock(return_value=None)
         # mock_array = MagicMock(return_value=None)
-        # mock__detect_pitches_fft = MagicMock(return_value=[])
+        # mock__detect_pitches_fft = MagicMock(return_value=0.0)
         # mock_append = MagicMock(return_value=None)
         # mock_sqrt = MagicMock(return_value=None)
         # mock_mean = MagicMock(return_value=None)
         # -- Act --
         result = self.instance.detect(audio_segment, sample_rate)
         # -- Assert --
-        assert result == []
+        assert result == ""
 
     def test__detect_pitches_fft(self):
         """Test for LegacyDetector._detect_pitches_fft."""
@@ -47,4 +47,4 @@ class TestLegacyDetector:
         # -- Act --
         result = self.instance._detect_pitches_fft(audio_segment, sample_rate, max_pitches, min_freq, max_freq)
         # -- Assert --
-        assert result == []
+        assert result == 0.0

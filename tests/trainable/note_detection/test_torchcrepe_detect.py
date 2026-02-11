@@ -35,7 +35,7 @@ class TestTorchCrepeDetector:
         # -- Act --
         result = self.instance.detect(audio_segment, sample_rate)
         # -- Assert --
-        assert result == []
+        assert result == ""
 
     def test__add_note(self):
         """Test for TorchCrepeDetector._add_note."""
@@ -47,7 +47,7 @@ class TestTorchCrepeDetector:
         confs = None
         hop_s = None
         audio_segment = None
-        sample_rate = None
+        sample_rate = 44100
         # mock_median = MagicMock(return_value=None)
         # mock_mean = MagicMock(return_value=None)
         # mock_append = MagicMock(return_value=None)

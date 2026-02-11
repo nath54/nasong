@@ -12,7 +12,7 @@ def test_import_module_from_filepath():
     """Test for import_module_from_filepath."""
     # -- Setup --
     filepath = ""
-    replace = []
+    replace = ""
     # mock_spec_from_file_location = MagicMock(return_value=None)
     # mock_module_from_spec = MagicMock(return_value=None)
     # mock_exec_module = MagicMock(return_value=None)

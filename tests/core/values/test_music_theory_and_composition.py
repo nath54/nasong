@@ -25,14 +25,14 @@ def test_get_chord_frequencies():
     # -- Act --
     result = core.values.music_theory_and_composition.get_chord_frequencies(root_freq, quality)
     # -- Assert --
-    assert result == []
+    assert result == 0.0
 
 def test_SimpleMelody():
     """Test for SimpleMelody."""
     # -- Setup --
     time = None
     instrument_factory = None
-    notes = []
+    notes = 0.0
     start_time = 0.0
     gap = 0.0
     # mock_Sequencer = MagicMock(return_value=None)

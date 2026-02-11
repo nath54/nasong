@@ -20,8 +20,8 @@ class TestNumpyEngine:
     def test_spectral_loss(self):
         """Test for NumpyEngine.spectral_loss."""
         # -- Setup --
-        synthesized = None
-        target = None
+        synthesized = 0.0
+        target = 0.0
         sample_rate = 0
         n_fft = 0
         hop_length = 0
@@ -38,7 +38,7 @@ class TestNumpyEngine:
     def test_compute_loss(self):
         """Test for NumpyEngine.compute_loss."""
         # -- Setup --
-        target_audio = None
+        target_audio = 0.0
         blueprint = None
         sample_rate = 0
         # mock_astype = MagicMock(return_value=None)
@@ -61,7 +61,7 @@ class TestNumpyEngine:
         # -- Act --
         result = self.instance.step()
         # -- Assert --
-        assert result == {}
+        assert result == 0.0
 
     def test_get_parameter_values(self):
         """Test for NumpyEngine.get_parameter_values."""
@@ -69,12 +69,12 @@ class TestNumpyEngine:
         # -- Act --
         result = self.instance.get_parameter_values()
         # -- Assert --
-        assert result == {}
+        assert result == 0.0
 
     def test_set_parameter_values(self):
         """Test for NumpyEngine.set_parameter_values."""
         # -- Setup --
-        parameters = {}
+        parameters = 0.0
         # -- Act --
         result = self.instance.set_parameter_values(parameters)
         # -- Assert --

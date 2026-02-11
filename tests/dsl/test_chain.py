@@ -38,5 +38,5 @@ class TestGain:
     def setup_method(self):
         """Create a fresh instance for each test."""
         # -- Setup Constructor Arguments --
-        amount = None
+        amount = 0.0
         self.instance = dsl.chain.Gain(amount)

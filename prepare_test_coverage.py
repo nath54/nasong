@@ -100,26 +100,43 @@ def default_value_for_type(type_str: Optional[str]) -> str:
     if not type_str:
         return "None"
     t = type_str.strip().lower()
-    if t == "int":
+    if "int" in t:
         return "0"
-    if t == "float":
+    if "float" in t:
         return "0.0"
-    if t in ("str",):
+    if "str" in t:
         return '""'
-    if t == "bool":
+    if "bool" in t:
         return "False"
-    if t.startswith("list") or t.startswith("typing.list"):
+    if "list" in t or "sequence" in t:
         return "[]"
-    if t.startswith("dict") or t.startswith("typing.dict"):
+    if "dict" in t or "mapping" in t:
         return "{}"
-    if t.startswith("set") or t.startswith("typing.set"):
+    if "set" in t:
         return "set()"
-    if t.startswith("tuple") or t.startswith("typing.tuple"):
+    if "tuple" in t:
         return "()"
-    if t.startswith("optional"):
+    return "None"
+
+
+def get_smart_default(arg_name: str, type_str: Optional[str]) -> str:
+    """Return a more likely default based on argument name if type is missing."""
+    if type_str:
+        return default_value_for_type(type_str)
+
+    low = arg_name.lower()
+    if "volume" in low:
+        return "0.8"
+    if "sample_rate" in low or "rate" in low:
+        return "44100"
+    if "bpm" in low:
+        return "120.0"
+    if "device" in low:
         return "None"
-    if t == "none":
-        return "None"
+    if "file" in low or "path" in low:
+        return '""'
+    if "size" in low or "count" in low or "index" in low:
+        return "0"
     return "None"
 
 
@@ -300,7 +317,7 @@ def _arg_setup_lines(
     lines: List[str] = []
     for arg in fi.args:
         ann = fi.arg_types.get(arg)
-        val = default_value_for_type(ann)
+        val = get_smart_default(arg, ann)
         lines.append(f"{indent}{arg} = {val}")
     return lines
 
@@ -332,6 +349,11 @@ def generate_function_stub(
     lines.append(f"{indent}# -- Assert --")
     lines.append(f"{indent}assert result == {expected}")
 
+    # Special handling for main() and loops: comment them out by default
+    loop_names = {"main", "run", "listen", "start"}
+    if fi.name in loop_names or fi.name.endswith("_loop"):
+        return "\n".join([f"# {ll}" for ll in lines])
+
     return "\n".join(lines)
 
 
@@ -344,6 +366,7 @@ def generate_class_stub(
     indent = "    "
     indent2 = "        "
     indent3 = "            "
+    indent4 = "                "
     lines: List[str] = []
     class_test_name = f"Test{ci.name}"
 
@@ -367,13 +390,24 @@ def generate_class_stub(
             lines.extend(_arg_setup_lines(init_info, indent2))
             init_args_str = ", ".join(init_info.args)
 
-        lines.append(
-            f"{indent2}application = {module_import}.{ci.name}({init_args_str})"
-        )
-        lines.append(f"{indent2}# -- Act & Assert --")
-        lines.append(f"{indent2}async with application.run_test() as pilot:")
-        lines.append(f"{indent3}# Simulate exit")
-        lines.append(f'{indent3}await pilot.press("q")')
+        # Mock LiveSession if it's AlgoRaveApp to avoid audio thread blocking
+        if ci.name == "AlgoRaveApp":
+            lines.append(f'{indent2}with patch("{module_import}.LiveSession"):')
+            lines.append(
+                f"{indent3}application = {module_import}.{ci.name}({init_args_str})"
+            )
+            lines.append(f"{indent3}# -- Act & Assert --")
+            lines.append(f"{indent3}async with application.run_test() as pilot:")
+            lines.append(f"{indent4}# Simulate exit")
+            lines.append(f'{indent4}await pilot.press("q")')
+        else:
+            lines.append(
+                f"{indent2}application = {module_import}.{ci.name}({init_args_str})"
+            )
+            lines.append(f"{indent2}# -- Act & Assert --")
+            lines.append(f"{indent2}async with application.run_test() as pilot:")
+            lines.append(f"{indent3}# Simulate exit")
+            lines.append(f'{indent3}await pilot.press("q")')
         return "\n".join(lines)
 
     # Standard setup_method
@@ -390,29 +424,23 @@ def generate_class_stub(
 
     lines.append(f"{indent2}self.instance = {module_import}.{ci.name}({init_args_str})")
 
+    # Add teardown_method if class has a 'stop' or 'close' method
+    has_cleanup = any(m.name in ("stop", "close") for m in ci.methods)
+    if has_cleanup:
+        cleanup_name = next(m.name for m in ci.methods if m.name in ("stop", "close"))
+        lines.append("")
+        lines.append(f"{indent}def teardown_method(self):")
+        lines.append(f'{indent2}"""Clean up after each test."""')
+        lines.append(f"{indent2}if hasattr(self, 'instance'):")
+        lines.append(f"{indent3}self.instance.{cleanup_name}()")
+
     for mi in ci.methods:
         if mi.name.startswith("__") and mi.name.endswith("__"):
             # Skip dunder methods (e.g. __init__, __repr__) by default
             continue
         lines.append("")
-        test_method_name = f"test_{mi.name}"
-        lines.append(f"{indent}def {test_method_name}(self):")
-        lines.append(f'{indent2}"""Test for {ci.name}.{mi.name}."""')
-
-        # Setup
-        lines.append(f"{indent2}# -- Setup --")
-        lines.extend(_arg_setup_lines(mi, indent2))
-        lines.extend(_mock_lines(mi.calls, lookup, indent2))
-
-        # Call
-        args_str = ", ".join(mi.args)
-        lines.append(f"{indent2}# -- Act --")
-        lines.append(f"{indent2}result = self.instance.{mi.name}({args_str})")
-
-        # Assert
-        expected = default_value_for_type(mi.return_type)
-        lines.append(f"{indent2}# -- Assert --")
-        lines.append(f"{indent2}assert result == {expected}")
+        method_lines = _generate_method_lines(mi, ci.name, indent, indent2, lookup)
+        lines.extend(method_lines)
 
     return "\n".join(lines)
 
@@ -483,27 +511,49 @@ def _build_import_header(module_import: str) -> str:
     """)
 
 
+def _generate_method_lines(
+    mi: FuncInfo,
+    ci_name: str,
+    indent: str,
+    indent2: str,
+    lookup: Dict[str, Optional[str]],
+) -> List[str]:
+    """Generate the lines for a single method test."""
+    lines: List[str] = []
+    test_method_name = f"test_{mi.name}"
+    lines.append(f"{indent}def {test_method_name}(self):")
+    lines.append(f'{indent2}"""Test for {ci_name}.{mi.name}."""')
+
+    # Setup
+    lines.append(f"{indent2}# -- Setup --")
+    lines.extend(_arg_setup_lines(mi, indent2))
+    lines.extend(_mock_lines(mi.calls, lookup, indent2))
+
+    # Call
+    args_str = ", ".join(mi.args)
+    lines.append(f"{indent2}# -- Act --")
+    lines.append(f"{indent2}result = self.instance.{mi.name}({args_str})")
+
+    # Assert
+    expected = default_value_for_type(mi.return_type)
+    lines.append(f"{indent2}# -- Assert --")
+    lines.append(f"{indent2}assert result == {expected}")
+
+    # Comment out loops
+    loop_names = {"main", "run", "listen", "start"}
+    if mi.name in loop_names or mi.name.endswith("_loop"):
+        lines = [f"# {line}" if line.strip() else line for line in lines]
+
+    return lines
+
+
 def _generate_method_stub_for_existing_class(
     mi: FuncInfo,
     ci_name: str,
     lookup: Dict[str, Optional[str]],
 ) -> str:
     """Generate a standalone method stub to append inside an existing test class."""
-    indent = "    "
-    indent2 = "        "
-    lines: List[str] = []
-    test_method_name = f"test_{mi.name}"
-    lines.append(f"{indent}def {test_method_name}(self):")
-    lines.append(f'{indent2}"""Test for {ci_name}.{mi.name}."""')
-    lines.append(f"{indent2}# -- Setup --")
-    lines.extend(_arg_setup_lines(mi, indent2))
-    lines.extend(_mock_lines(mi.calls, lookup, indent2))
-    args_str = ", ".join(mi.args)
-    lines.append(f"{indent2}# -- Act --")
-    lines.append(f"{indent2}result = self.instance.{mi.name}({args_str})")
-    expected = default_value_for_type(mi.return_type)
-    lines.append(f"{indent2}# -- Assert --")
-    lines.append(f"{indent2}assert result == {expected}")
+    lines = _generate_method_lines(mi, ci_name, "    ", "        ", lookup)
     return "\n".join(lines)
 
 
@@ -674,11 +724,20 @@ def main() -> None:
         {conftest_marker}
         import sys
         from pathlib import Path
+        from unittest.mock import MagicMock
 
-        # Add source root to sys.path so imports like 'import sub.hello' work.
+        # 1. Add source root to sys.path so imports like 'import sub.hello' work.
         _src_root = Path(r"{src_root}")
         if str(_src_root) not in sys.path:
             sys.path.insert(0, str(_src_root))
+
+        # 2. Globally mock sounddevice to prevent CFFI errors and hardware access
+        if "sounddevice" not in sys.modules:
+            mock_sd = MagicMock()
+            # Mock common classes/methods used in the project
+            mock_sd.OutputStream.return_value = MagicMock()
+            mock_sd.query_devices.return_value = []
+            sys.modules["sounddevice"] = mock_sd
     """)
     if not conftest_path.exists():
         conftest_path.write_text(conftest_content, encoding="utf-8")

@@ -34,4 +34,4 @@ class TestAudioFluxDetector:
         # -- Act --
         result = self.instance.detect(audio_segment, sample_rate)
         # -- Assert --
-        assert result == []
+        assert result == ""

@@ -37,9 +37,9 @@ class TestADSR_Piano:
     def test_getitem_np(self):
         """Test for ADSR_Piano.getitem_np."""
         # -- Setup --
-        indexes_buffer = None
+        indexes_buffer = 0.0
         sample_rate = 0
-        # mock_getitem_np = MagicMock(return_value=None)
+        # mock_getitem_np = MagicMock(return_value=0.0)
         # mock_mod = MagicMock(return_value=None)
         # mock_astype = MagicMock(return_value=None)
         # mock_full_like = MagicMock(return_value=None)
@@ -47,7 +47,7 @@ class TestADSR_Piano:
         # -- Act --
         result = self.instance.getitem_np(indexes_buffer, sample_rate)
         # -- Assert --
-        assert result == None
+        assert result == 0.0
 
 class TestVibrato:
     """Tests for Vibrato."""
@@ -76,12 +76,12 @@ class TestVibrato:
     def test_getitem_np(self):
         """Test for Vibrato.getitem_np."""
         # -- Setup --
-        indexes_buffer = None
+        indexes_buffer = 0.0
         sample_rate = 0
-        # mock_getitem_np = MagicMock(return_value=None)
+        # mock_getitem_np = MagicMock(return_value=0.0)
         # mock_sin = MagicMock(return_value=None)
         # mock_astype = MagicMock(return_value=None)
         # -- Act --
         result = self.instance.getitem_np(indexes_buffer, sample_rate)
         # -- Assert --
-        assert result == None
+        assert result == 0.0

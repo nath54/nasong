@@ -14,7 +14,7 @@ class TestNoteDetector:
     def setup_method(self):
         """Create a fresh instance for each test."""
         # -- Setup Constructor Arguments --
-        config = {}
+        config = ""
         self.instance = trainable.note_detection.base.NoteDetector(config)
 
     def test_detect(self):
@@ -25,4 +25,4 @@ class TestNoteDetector:
         # -- Act --
         result = self.instance.detect(audio_data, sample_rate)
         # -- Assert --
-        assert result == []
+        assert result == ""

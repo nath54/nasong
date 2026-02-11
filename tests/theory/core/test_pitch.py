@@ -28,7 +28,7 @@ class TestTuning:
         """Test for Tuning.freq_from_ratio."""
         # -- Setup --
         ratio = 0.0
-        base_freq = None
+        base_freq = 0.0
         # -- Act --
         result = self.instance.freq_from_ratio(ratio, base_freq)
         # -- Assert --

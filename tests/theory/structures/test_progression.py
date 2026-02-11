@@ -28,7 +28,7 @@ class TestProgression:
         """Test for Progression.from_roman_numerals."""
         # -- Setup --
         scale = None
-        numerals = []
+        numerals = ""
         duration = None
         # mock_cls = MagicMock(return_value=None)
         # mock__parse_roman = MagicMock(return_value=None)

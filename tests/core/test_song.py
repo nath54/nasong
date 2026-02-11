@@ -24,7 +24,7 @@ def test_get_device():
     # -- Act --
     result = core.song.get_device()
     # -- Assert --
-    assert result == None
+    assert result == ""
 
 class TestTensor:
     """Tests for Tensor."""
@@ -85,13 +85,13 @@ class TestSong:
         # -- Act --
         result = self.instance.render()
         # -- Assert --
-        assert result == None
+        assert result == 0.0
 
     def test_render_torch(self):
         """Test for Song.render_torch."""
         # -- Setup --
-        device = None
-        # mock_get_device = MagicMock(return_value=None)
+        device = ""
+        # mock_get_device = MagicMock(return_value="")
         # mock_BasicScaling = MagicMock(return_value=None)
         # mock_value_of_time = MagicMock(return_value=None)
         # mock_arange = MagicMock(return_value=None)
@@ -107,12 +107,12 @@ class TestSong:
         """Test for Song.export_to_wav."""
         # -- Setup --
         use_torch = False
-        device = None
-        # mock_get_device = MagicMock(return_value=None)
+        device = ""
+        # mock_get_device = MagicMock(return_value="")
         # mock_prepare_signal = MagicMock(return_value=None)
         # mock_save_wav_file = MagicMock(return_value=None)
         # mock_numpy = MagicMock(return_value=None)
-        # mock_render = MagicMock(return_value=None)
+        # mock_render = MagicMock(return_value=0.0)
         # mock_cpu = MagicMock(return_value=None)
         # mock_render_torch = MagicMock(return_value=None)
         # -- Act --

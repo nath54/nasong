@@ -16,13 +16,13 @@ def test_get_module_docs():
     # mock_import_module = MagicMock(return_value=None)
     # mock_iter_modules = MagicMock(return_value=None)
     # mock_isclass = MagicMock(return_value=None)
-    # mock_get_module_docs = MagicMock(return_value={})
+    # mock_get_module_docs = MagicMock(return_value="")
     # mock_getdoc = MagicMock(return_value=None)
     # mock_isfunction = MagicMock(return_value=None)
     # -- Act --
     result = app.docs_utils.get_module_docs(package_name)
     # -- Assert --
-    assert result == {}
+    assert result == ""
 
 def test_flatten_docs():
     """Test for flatten_docs."""

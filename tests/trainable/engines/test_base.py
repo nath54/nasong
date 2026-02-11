@@ -20,7 +20,7 @@ class TestBaseTrainingEngine:
     def test_compute_loss(self):
         """Test for BaseTrainingEngine.compute_loss."""
         # -- Setup --
-        target_audio = None
+        target_audio = 0.0
         blueprint = None
         sample_rate = 0
         # -- Act --
@@ -34,7 +34,7 @@ class TestBaseTrainingEngine:
         # -- Act --
         result = self.instance.step()
         # -- Assert --
-        assert result == {}
+        assert result == 0.0
 
     def test_get_parameter_values(self):
         """Test for BaseTrainingEngine.get_parameter_values."""
@@ -42,12 +42,12 @@ class TestBaseTrainingEngine:
         # -- Act --
         result = self.instance.get_parameter_values()
         # -- Assert --
-        assert result == {}
+        assert result == 0.0
 
     def test_set_parameter_values(self):
         """Test for BaseTrainingEngine.set_parameter_values."""
         # -- Setup --
-        parameters = {}
+        parameters = 0.0
         # -- Act --
         result = self.instance.set_parameter_values(parameters)
         # -- Assert --

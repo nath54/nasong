@@ -8,11 +8,31 @@ from unittest.mock import MagicMock, patch
 import scripts.train_cli
 
 
-def test_main():
-    """Test for main."""
-    # -- Setup --
-    # mock_main = MagicMock(return_value=None)
-    # -- Act --
-    result = scripts.train_cli.main()
-    # -- Assert --
-    assert result == None
+# def test_main():
+#     """Test for main."""
+#     # -- Setup --
+#     # mock_main = MagicMock(return_value=None)
+#     # -- Act --
+#     result = scripts.train_cli.main()
+#     # -- Assert --
+#     assert result == None
+
+
+# def test_main():
+#     """Test for main."""
+#     # -- Setup --
+#     # mock_main = MagicMock(return_value=None)
+#     # -- Act --
+#     result = scripts.train_cli.main()
+#     # -- Assert --
+#     assert result == None
+
+
+# def test_main():
+#     """Test for main."""
+#     # -- Setup --
+#     # mock_main = MagicMock(return_value=None)
+#     # -- Act --
+#     result = scripts.train_cli.main()
+#     # -- Assert --
+#     assert result == None

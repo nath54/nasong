@@ -47,7 +47,7 @@ class TestOnnxCrepeDetector:
         # -- Act --
         result = self.instance.detect(audio_data, sample_rate)
         # -- Assert --
-        assert result == []
+        assert result == ""
 
     def test__finish_note(self):
         """Test for OnnxCrepeDetector._finish_note."""
@@ -55,7 +55,7 @@ class TestOnnxCrepeDetector:
         notes_list = None
         note_data = None
         audio_data = None
-        sample_rate = None
+        sample_rate = 44100
         # mock_median = MagicMock(return_value=None)
         # mock_mean = MagicMock(return_value=None)
         # mock_append = MagicMock(return_value=None)

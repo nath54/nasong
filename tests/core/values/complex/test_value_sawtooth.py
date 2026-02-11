@@ -36,9 +36,9 @@ class TestSawtooth:
     def test_getitem_np(self):
         """Test for Sawtooth.getitem_np."""
         # -- Setup --
-        indexes_buffer = None
+        indexes_buffer = 0.0
         sample_rate = 0
-        # mock_getitem_np = MagicMock(return_value=None)
+        # mock_getitem_np = MagicMock(return_value=0.0)
         # mock_astype = MagicMock(return_value=None)
         # mock_where = MagicMock(return_value=None)
         # mock_multiply = MagicMock(return_value=None)
@@ -46,14 +46,14 @@ class TestSawtooth:
         # -- Act --
         result = self.instance.getitem_np(indexes_buffer, sample_rate)
         # -- Assert --
-        assert result == None
+        assert result == 0.0
 
     def test_getitem_torch(self):
         """Test for Sawtooth.getitem_torch."""
         # -- Setup --
         indexes_buffer = None
         sample_rate = 0
-        device = None
+        device = ""
         # mock_getitem_torch = MagicMock(return_value=None)
         # mock_to = MagicMock(return_value=None)
         # mock_where = MagicMock(return_value=None)
@@ -66,10 +66,10 @@ class TestSawtooth:
     def test_backward(self):
         """Test for Sawtooth.backward."""
         # -- Setup --
-        grad_output = None
-        context = {}
+        grad_output = 0.0
+        context = ""
         sample_rate = 0
-        # mock_getitem_np = MagicMock(return_value=None)
+        # mock_getitem_np = MagicMock(return_value=0.0)
         # mock_where = MagicMock(return_value=None)
         # mock_backward = MagicMock(return_value=None)
         # mock_zeros_like = MagicMock(return_value=None)

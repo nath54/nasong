@@ -17,8 +17,8 @@ class TestExperiment:
         experiment_id = ""
         name = ""
         timestamp = 0.0
-        metrics = {}
-        params = {}
+        metrics = ""
+        params = ""
         status = ""
         self.instance = scripts.experiment_manager.Experiment(experiment_id, name, timestamp, metrics, params, status)
 
@@ -47,7 +47,7 @@ class TestExperiment:
     def test_save_parameters_json(self):
         """Test for Experiment.save_parameters_json."""
         # -- Setup --
-        parameters = {}
+        parameters = 0.0
         # mock_dump = MagicMock(return_value=None)
         # mock_join = MagicMock(return_value=None)
         # -- Act --
@@ -83,7 +83,7 @@ class TestExperimentManager:
         """Test for ExperimentManager.create_experiment."""
         # -- Setup --
         name = ""
-        params = {}
+        params = ""
         # mock_time = MagicMock(return_value=None)
         # mock_Experiment = MagicMock(return_value=None)
         # mock_save_meta = MagicMock(return_value=None)

@@ -50,7 +50,7 @@ class TestTorchEngine:
         synthesized = None
         target = None
         sample_rate = 0
-        fft_sizes = None
+        fft_sizes = 0
         high_freq_emphasis = 0.0
         # mock_tensor = MagicMock(return_value=None)
         # mock_spectral_loss = MagicMock(return_value=None)
@@ -63,7 +63,7 @@ class TestTorchEngine:
         """Test for TorchEngine.collect_trainable_parameters."""
         # -- Setup --
         value = None
-        params = None
+        params = set()
         # mock_startswith = MagicMock(return_value=None)
         # mock_add = MagicMock(return_value=None)
         # mock_collect_trainable_parameters = MagicMock(return_value=[])
@@ -86,7 +86,7 @@ class TestTorchEngine:
     def test_compute_loss(self):
         """Test for TorchEngine.compute_loss."""
         # -- Setup --
-        target_audio = None
+        target_audio = 0.0
         blueprint = None
         sample_rate = 0
         # mock_getitem_torch = MagicMock(return_value=None)
@@ -103,12 +103,12 @@ class TestTorchEngine:
     def test_step(self):
         """Test for TorchEngine.step."""
         # -- Setup --
-        # mock_step = MagicMock(return_value={})
+        # mock_step = MagicMock(return_value=0.0)
         # mock_zero_grad = MagicMock(return_value=None)
         # -- Act --
         result = self.instance.step()
         # -- Assert --
-        assert result == {}
+        assert result == 0.0
 
     def test_get_parameter_values(self):
         """Test for TorchEngine.get_parameter_values."""
@@ -119,12 +119,12 @@ class TestTorchEngine:
         # -- Act --
         result = self.instance.get_parameter_values()
         # -- Assert --
-        assert result == {}
+        assert result == 0.0
 
     def test_set_parameter_values(self):
         """Test for TorchEngine.set_parameter_values."""
         # -- Setup --
-        parameters = {}
+        parameters = 0.0
         # -- Act --
         result = self.instance.set_parameter_values(parameters)
         # -- Assert --

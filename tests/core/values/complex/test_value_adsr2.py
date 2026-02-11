@@ -15,12 +15,12 @@ class TestADSR2:
         """Create a fresh instance for each test."""
         # -- Setup Constructor Arguments --
         time = None
-        note_start = None
-        note_duration = None
-        attack_time = None
-        decay_time = None
-        sustain_level = None
-        release_time = None
+        note_start = 0.0
+        note_duration = 0.0
+        attack_time = 0.0
+        decay_time = 0.0
+        sustain_level = 0.0
+        release_time = 0.0
         self.instance = core.values.complex.value_adsr2.ADSR2(time, note_start, note_duration, attack_time, decay_time, sustain_level, release_time)
 
     def test_get_item(self):
@@ -37,9 +37,9 @@ class TestADSR2:
     def test_getitem_np(self):
         """Test for ADSR2.getitem_np."""
         # -- Setup --
-        indexes_buffer = None
+        indexes_buffer = 0.0
         sample_rate = 0
-        # mock_getitem_np = MagicMock(return_value=None)
+        # mock_getitem_np = MagicMock(return_value=0.0)
         # mock_clip = MagicMock(return_value=None)
         # mock_astype = MagicMock(return_value=None)
         # mock_zeros_like = MagicMock(return_value=None)
@@ -47,14 +47,14 @@ class TestADSR2:
         # -- Act --
         result = self.instance.getitem_np(indexes_buffer, sample_rate)
         # -- Assert --
-        assert result == None
+        assert result == 0.0
 
     def test_getitem_torch(self):
         """Test for ADSR2.getitem_torch."""
         # -- Setup --
         indexes_buffer = None
         sample_rate = 0
-        device = None
+        device = ""
         # mock_getitem_torch = MagicMock(return_value=None)
         # mock_to = MagicMock(return_value=None)
         # mock_full_like = MagicMock(return_value=None)
@@ -68,10 +68,10 @@ class TestADSR2:
     def test_backward(self):
         """Test for ADSR2.backward."""
         # -- Setup --
-        grad_output = None
-        context = {}
+        grad_output = 0.0
+        context = ""
         sample_rate = 0
-        # mock_getitem_np = MagicMock(return_value=None)
+        # mock_getitem_np = MagicMock(return_value=0.0)
         # mock_zeros_like = MagicMock(return_value=None)
         # mock_backward = MagicMock(return_value=None)
         # mock_zeros = MagicMock(return_value=None)

@@ -36,21 +36,21 @@ class TestValue:
     def test_getitem_np(self):
         """Test for Value.getitem_np."""
         # -- Setup --
-        indexes_buffer = None
+        indexes_buffer = 0.0
         sample_rate = 0
         # mock_zeros_like = MagicMock(return_value=None)
         # mock_get_item = MagicMock(return_value=0.0)
         # -- Act --
         result = self.instance.getitem_np(indexes_buffer, sample_rate)
         # -- Assert --
-        assert result == None
+        assert result == 0.0
 
     def test_getitem_torch(self):
         """Test for Value.getitem_torch."""
         # -- Setup --
         indexes_buffer = None
         sample_rate = 0
-        device = None
+        device = ""
         # mock_zeros_like = MagicMock(return_value=None)
         # -- Act --
         result = self.instance.getitem_torch(indexes_buffer, sample_rate, device)
@@ -60,8 +60,8 @@ class TestValue:
     def test_backward(self):
         """Test for Value.backward."""
         # -- Setup --
-        grad_output = None
-        context = {}
+        grad_output = 0.0
+        context = ""
         sample_rate = 0
         # -- Act --
         result = self.instance.backward(grad_output, context, sample_rate)
@@ -74,7 +74,7 @@ class TestParameterContext:
     def setup_method(self):
         """Create a fresh instance for each test."""
         # -- Setup Constructor Arguments --
-        parameters = {}
+        parameters = 0.0
         capture = False
         ignore_unknown = False
         self.instance = core.value.ParameterContext(parameters, capture, ignore_unknown)
@@ -93,8 +93,8 @@ class TestValueTrainableParameter:
     def setup_method(self):
         """Create a fresh instance for each test."""
         # -- Setup Constructor Arguments --
-        initial_value = None
-        name = None
+        initial_value = 0
+        name = ""
         self.instance = core.value.ValueTrainableParameter(initial_value, name)
 
     def test_value(self):
@@ -130,7 +130,7 @@ class TestValueTrainableParameter:
     def test_getitem_np(self):
         """Test for ValueTrainableParameter.getitem_np."""
         # -- Setup --
-        indexes_buffer = None
+        indexes_buffer = 0.0
         sample_rate = 0
         # mock_get_current = MagicMock(return_value=None)
         # mock_item = MagicMock(return_value=None)
@@ -139,14 +139,14 @@ class TestValueTrainableParameter:
         # -- Act --
         result = self.instance.getitem_np(indexes_buffer, sample_rate)
         # -- Assert --
-        assert result == None
+        assert result == 0.0
 
     def test_getitem_torch(self):
         """Test for ValueTrainableParameter.getitem_torch."""
         # -- Setup --
         indexes_buffer = None
         sample_rate = 0
-        device = None
+        device = ""
         # mock_get_current = MagicMock(return_value=None)
         # mock_expand_as = MagicMock(return_value=None)
         # mock_tensor = MagicMock(return_value=None)
@@ -160,8 +160,8 @@ class TestValueTrainableParameter:
     def test_backward(self):
         """Test for ValueTrainableParameter.backward."""
         # -- Setup --
-        grad_output = None
-        context = {}
+        grad_output = 0.0
+        context = ""
         sample_rate = 0
         # mock_get = MagicMock(return_value=None)
         # mock_array = MagicMock(return_value=None)

@@ -18,19 +18,19 @@ class TestWavUtils:
     def test_prepare_signal(self):
         """Test for WavUtils.prepare_signal."""
         # -- Setup --
-        audio_data = None
+        audio_data = 0.0
         # mock_astype = MagicMock(return_value=None)
         # -- Act --
         result = self.instance.prepare_signal(audio_data)
         # -- Assert --
-        assert result == None
+        assert result == 0
 
     def test_save_wav_file(self):
         """Test for WavUtils.save_wav_file."""
         # -- Setup --
         filename = ""
         sample_rate = 0
-        audio_data = None
+        audio_data = 0
         # mock_write = MagicMock(return_value=None)
         # -- Act --
         result = self.instance.save_wav_file(filename, sample_rate, audio_data)

@@ -72,7 +72,7 @@ def test_Fingerpicking():
     # -- Setup --
     time = None
     bass_note = 0.0
-    chord_notes = []
+    chord_notes = 0.0
     start_time = 0.0
     pattern_duration = 0.0
     # mock_append = MagicMock(return_value=None)
@@ -87,7 +87,7 @@ def test_Strum():
     """Test for Strum."""
     # -- Setup --
     time = None
-    frequencies = []
+    frequencies = 0.0
     start_time = 0.0
     duration = 0.0
     # mock_Sequencer = MagicMock(return_value=None)

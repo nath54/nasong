@@ -14,7 +14,7 @@ class TestInterval:
     def setup_method(self):
         """Create a fresh instance for each test."""
         # -- Setup Constructor Arguments --
-        value = None
+        value = 0
         self.instance = theory.core.interval.Interval(value)
 
     def test__parse_name(self):

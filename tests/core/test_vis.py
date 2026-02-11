@@ -11,10 +11,10 @@ import core.vis
 def test_plot_waveform():
     """Test for plot_waveform."""
     # -- Setup --
-    audio_data = None
+    audio_data = 0.0
     sample_rate = 0
     title = ""
-    filename = None
+    filename = ""
     show = False
     # mock_linspace = MagicMock(return_value=None)
     # mock_figure = MagicMock(return_value=None)
@@ -35,10 +35,10 @@ def test_plot_waveform():
 def test_plot_spectrogram():
     """Test for plot_spectrogram."""
     # -- Setup --
-    audio_data = None
+    audio_data = 0.0
     sample_rate = 0
     title = ""
-    filename = None
+    filename = ""
     show = False
     # mock_spectrogram = MagicMock(return_value=None)
     # mock_figure = MagicMock(return_value=None)
@@ -60,10 +60,10 @@ def test_plot_spectrogram():
 def test_plot_spectrum():
     """Test for plot_spectrum."""
     # -- Setup --
-    audio_data = None
+    audio_data = 0.0
     sample_rate = 0
     title = ""
-    filename = None
+    filename = ""
     show = False
     # mock_fft = MagicMock(return_value=None)
     # mock_fftfreq = MagicMock(return_value=None)
@@ -88,7 +88,7 @@ class TestAudioAnalyzer:
     def setup_method(self):
         """Create a fresh instance for each test."""
         # -- Setup Constructor Arguments --
-        audio_data = None
+        audio_data = 0.0
         sample_rate = 0
         self.instance = core.vis.AudioAnalyzer(audio_data, sample_rate)
 
@@ -130,12 +130,12 @@ class TestAudioAnalyzer:
         # -- Act --
         result = self.instance.get_envelope(window_size_ms)
         # -- Assert --
-        assert result == None
+        assert result == 0.0
 
     def test_compare_similarity(self):
         """Test for AudioAnalyzer.compare_similarity."""
         # -- Setup --
-        other_audio_data = None
+        other_audio_data = 0.0
         # mock_norm = MagicMock(return_value=None)
         # mock_dot = MagicMock(return_value=None)
         # -- Act --
@@ -152,7 +152,7 @@ class TestAudioAnalyzer:
         # -- Act --
         result = self.instance.get_dynamic_range()
         # -- Assert --
-        assert result == ()
+        assert result == 0.0
 
     def test_get_temporal_centroid(self):
         """Test for AudioAnalyzer.get_temporal_centroid."""
@@ -228,14 +228,14 @@ class TestAudioAnalyzer:
     def test_get_adsr_estimates(self):
         """Test for AudioAnalyzer.get_adsr_estimates."""
         # -- Setup --
-        # mock_get_envelope = MagicMock(return_value=None)
+        # mock_get_envelope = MagicMock(return_value=0.0)
         # mock_argmax = MagicMock(return_value=None)
         # mock_where = MagicMock(return_value=None)
         # mock_median = MagicMock(return_value=None)
         # -- Act --
         result = self.instance.get_adsr_estimates()
         # -- Assert --
-        assert result == {}
+        assert result == 0.0
 
     def test_get_effective_duration(self):
         """Test for AudioAnalyzer.get_effective_duration."""
@@ -250,7 +250,7 @@ class TestAudioAnalyzer:
     def test_get_temporal_skewness(self):
         """Test for AudioAnalyzer.get_temporal_skewness."""
         # -- Setup --
-        # mock_get_envelope = MagicMock(return_value=None)
+        # mock_get_envelope = MagicMock(return_value=0.0)
         # mock_get_temporal_centroid = MagicMock(return_value=0.0)
         # mock_arange = MagicMock(return_value=None)
         # -- Act --
@@ -261,7 +261,7 @@ class TestAudioAnalyzer:
     def test_get_temporal_kurtosis(self):
         """Test for AudioAnalyzer.get_temporal_kurtosis."""
         # -- Setup --
-        # mock_get_envelope = MagicMock(return_value=None)
+        # mock_get_envelope = MagicMock(return_value=0.0)
         # mock_get_temporal_centroid = MagicMock(return_value=0.0)
         # mock_arange = MagicMock(return_value=None)
         # -- Act --
@@ -374,7 +374,7 @@ class TestAudioAnalyzer:
         # -- Act --
         result = self.instance.get_tristimulus()
         # -- Assert --
-        assert result == ()
+        assert result == 0.0
 
     def test_get_pitch_clarity(self):
         """Test for AudioAnalyzer.get_pitch_clarity."""

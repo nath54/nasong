@@ -30,9 +30,9 @@ class TestAfrican:
     def test_polyrhythm(self):
         """Test for African.polyrhythm."""
         # -- Setup --
-        ratio = ()
+        ratio = 0
         length = 0
         # -- Act --
         result = self.instance.polyrhythm(ratio, length)
         # -- Assert --
-        assert result == ()
+        assert result == 0
