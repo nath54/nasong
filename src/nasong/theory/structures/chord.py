@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Musical chord representations.
+
+This module defines the `Chord` class, which represents multiple pitches
+sounding simultaneously. It supports quality-based generation, inversions,
+and conversion to individual note events.
 """
 
 #
@@ -32,8 +35,15 @@ from nasong.theory.core.pitch import Pitch, Note as CoreNote, Hz
 
 @dataclass
 class Chord:
-    """
-    Represents a simultaneous sounding of multiple pitches.
+    """Represents a simultaneous sounding of multiple pitches.
+
+    Attributes:
+        root (Pitch): The fundamental or lowest note of the chord.
+        intervals (list[Interval]): The pattern of intervals above the root.
+        duration (Duration): The time length of the chord. Defaults to QUARTER.
+        velocity (float): The strike strength (0.0 to 1.0). Defaults to 1.0.
+        name (str): Label for the chord (e.g., "major", "Cmaj7").
+        inversion (int): The chord inversion rank (0 = root position).
     """
 
     root: Pitch
@@ -49,8 +59,13 @@ class Chord:
 
     @property
     def pitches(self) -> list[Pitch]:
-        """
-        Returns the pitches in the chord, accounting for inversion.
+        """Calculates the individual pitches in the chord.
+
+        Accounts for the specified inversion by shifting the appropriate number
+        of lowest notes up by one octave.
+
+        Returns:
+            list[Pitch]: The final list of pitches (Hz or Note).
         """
         raw_pitches = [self.root]
         for iv in self.intervals:
@@ -75,8 +90,10 @@ class Chord:
 
     @property
     def notes(self) -> list[Note]:
-        """
-        Returns a list of Note events for this chord.
+        """Converts the chord into a list of individual Note events.
+
+        Returns:
+            list[Note]: Individual note events with shared duration and velocity.
         """
         return [Note(p, self.duration, self.velocity) for p in self.pitches]
 
@@ -84,8 +101,18 @@ class Chord:
     def from_name(
         cls, root: str, quality: str, duration: Duration = QUARTER
     ) -> "Chord":
-        """
-        Factory for common chord qualities.
+        """Factory method for creating chords based on common quality names.
+
+        Args:
+            root (str): The root note name (e.g., "G2").
+            quality (str): The chord quality (e.g., "minor", "maj7", "dim7").
+            duration (Duration, optional): The chord's duration. Defaults to QUARTER.
+
+        Returns:
+            Chord: The resulting chord object.
+
+        Raises:
+            ValueError: If the chord quality is not recognized.
         """
         root_note = CoreNote(root)
         intervals = _CHORD_QUALITY_INTERVALS.get(quality.lower())

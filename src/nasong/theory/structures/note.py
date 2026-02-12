@@ -14,8 +14,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Note event representation.
+
+This module defines the `Note` event class, which combines a pitch with timing
+and dynamics for use in rhythmic patterns and sequences.
 """
 
 #
@@ -30,8 +32,12 @@ from nasong.theory.core.pitch import Pitch, Note as CoreNote, Hz
 
 @dataclass
 class Note:
-    """
-    Represents a musical event: a pitch played for a duration with a certain velocity.
+    """Represents a musical event: a pitch played for a specific duration.
+
+    Attributes:
+        pitch (Pitch): The frequency or symbolic note.
+        duration (Duration): How long the note lasts. Defaults to QUARTER.
+        velocity (float): The strike strength (0.0 to 1.0). Defaults to 1.0.
     """
 
     pitch: Pitch
@@ -45,11 +51,20 @@ class Note:
 
     @property
     def name(self) -> str:
+        """Returns the string representation of the note's pitch."""
         if isinstance(self.pitch, CoreNote):
             return self.pitch.name
         return str(self.pitch)
 
     def transpose(self, semitones: int) -> "Note":
+        """Creates a new note transposed by the given interval.
+
+        Args:
+            semitones (int): The transposition distance.
+
+        Returns:
+            Note: A new Note event with the transposed pitch.
+        """
         if isinstance(self.pitch, CoreNote):
             return Note(self.pitch.transpose(semitones), self.duration, self.velocity)
         # If Hz, we could transpose frequencies?
@@ -67,4 +82,5 @@ class Note:
         return Note(self.pitch, self.duration, self.velocity)
 
     def with_duration(self, duration: Duration) -> "Note":
+        """Returns a copy of the note with a different duration."""
         return Note(self.pitch, duration, self.velocity)

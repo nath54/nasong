@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Hardware audio device discovery utility.
+
+This module provides functions to query and list available audio input and
+output devices on the system using the `sounddevice` library. It helps
+identify the correct device index for audio rendering.
 """
 
 #
@@ -24,7 +27,12 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 import sounddevice as sd
 
 
-def list_audio_devices():
+def list_audio_devices() -> None:
+    """Queries and logs all available audio devices to a file.
+
+    The output is written to 'audio_info_v2.txt' and includes device names,
+    channel counts, and marks the system's default output device.
+    """
     devices = sd.query_devices()
     default_out = sd.default.device[1]
 

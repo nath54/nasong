@@ -14,8 +14,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Experiment monitoring CLI tool.
+
+This script provides a command-line interface for listing, inspecting, and
+deleting NaSong training experiments using the `ExperimentManager`.
 """
 
 #
@@ -28,7 +30,8 @@ from datetime import datetime
 from nasong.scripts.experiment_manager import ExperimentManager
 
 
-def main():
+def main() -> None:
+    """Main entry point for the experiment monitoring CLI."""
     parser = argparse.ArgumentParser(description="Monitor Nasong experiments")
     subparsers = parser.add_subparsers(dest="command", help="Command")
 

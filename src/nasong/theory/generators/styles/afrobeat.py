@@ -14,8 +14,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Afrobeat style generators.
+
+This module provides algorithmic generators for Afrobeat-style patterns,
+leveraging West African pentatonic scales and polyrhythmic structures.
 """
 
 #
@@ -27,14 +29,17 @@ from nasong.theory.structures.progression import Progression
 
 
 class Afrobeat:
-    """
-    Generates Afrobeat style patterns.
-    """
+    """Generates Afrobeat style patterns and grooves."""
 
     @staticmethod
-    def polyrhythmic_groove(root: str = "C4"):
-        """
-        Generates a basic 3:2 polyrhythm structure.
+    def polyrhythmic_groove(root: str = "C4") -> Progression:
+        """Generates a basic Afrobeat groove with a 3:2 polyrhythm structure.
+
+        Args:
+            root (str): The root note for the scale. Defaults to "C4".
+
+        Returns:
+            Progression: A rhythmic progression representing the groove.
         """
         scale = African.pentatonic(root)
         # 3 against 2

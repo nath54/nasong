@@ -14,8 +14,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Lofi Hip Hop style generators.
+
+This module provides generators for relaxed, atmospheric Lofi progressions,
+characterized by extended jazz chords and slow, laid-back harmonic movement.
 """
 
 #
@@ -26,15 +28,17 @@ from nasong.theory.structures.progression import Progression
 
 
 class Lofi:
-    """
-    Generates Lofi Hip Hop progressions.
-    """
+    """Generates chill, atmospheric Lofi Hip Hop chord progressions."""
 
     @staticmethod
     def chill_progression(root: str = "Db4") -> Progression:
-        """
-        Often uses extended chords (7ths, 9ths) and slow tempos.
-        Progression: ii9 - V13 - Imaj9
+        """Generates a relaxed ii-V-I (or similar) lofi progression.
+
+        Args:
+            root (str): The root key. Defaults to "Db4".
+
+        Returns:
+            Progression: The resulting atmospheric sequence.
         """
         # Simplified for now
         scale = Western.major(root)

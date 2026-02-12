@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Musical scale representations.
+
+This module defines the `Scale` class, which allows creating scales from a root
+note and a pattern of intervals. It includes factory methods for standard
+diatonic and non-western scales.
 """
 
 #
@@ -30,8 +33,12 @@ from .interval import Interval
 
 @dataclass
 class Scale:
-    """
-    Represents a musical scale built from a root note and a pattern of intervals.
+    """Represents a musical scale built from a root note and pattern of intervals.
+
+    Attributes:
+        root (Note): The key center or starting note of the scale.
+        intervals (list[Interval]): The sequence of intervals defining the scale.
+        name (str): Label for the scale (e.g., "major", "minor").
     """
 
     root: Note
@@ -43,8 +50,10 @@ class Scale:
         self._notes = self._generate_notes()
 
     def _generate_notes(self) -> list[Note]:
-        """
-        Generate the notes of the scale relative to the root.
+        """Generates the absolute pitches of the scale relative to the root.
+
+        Returns:
+            list[Note]: A list of Pitch objects (Notes or Hz) belonging to the scale.
         """
 
         # Major: [0, 2, 4, 5, 7, 9, 11]
@@ -59,12 +68,21 @@ class Scale:
 
     @property
     def notes(self) -> list[Pitch]:
+        """Returns the calculated notes of the scale."""
         return self._notes
 
     def degree(self, index: int) -> Pitch:
-        """
-        Get the note at the given scale degree (1-based index).
-        Handles wrapping (octaves).
+        """Retrieves a note at a specific scale degree.
+
+        Uses 1-based indexing. Automatically handles octave wrapping for
+        indices outside the primary scale range (e.g., degree 9 of a C Major
+        scale returns D5).
+
+        Args:
+            index (int): The scale degree (1 = root).
+
+        Returns:
+            Pitch: The pitch at that degree.
         """
         # 1-based index to 0-based
         idx = index - 1
@@ -85,8 +103,17 @@ class Scale:
 
     @classmethod
     def from_name(cls, root_name: str, scale_name: str) -> "Scale":
-        """
-        Factory to create a scale from a root name and a scale name (e.g. "C", "major").
+        """Factory method to create a scale by name.
+
+        Args:
+            root_name (str): The root note name (e.g., "C").
+            scale_name (str): The scale pattern name (e.g., "dorian", "blues").
+
+        Returns:
+            Scale: The resulting scale object.
+
+        Raises:
+            ValueError: If the scale name is not found in predefined patterns.
         """
         root = Note(root_name)
         intervals = _SCALE_PATTERNS.get(scale_name.lower())

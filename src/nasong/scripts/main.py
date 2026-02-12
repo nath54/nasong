@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Stand-alone audio generation utility.
+
+This script serves as the primary entry point for rendering audio from NaSong
+composition files (.py). It handles command-line arguments for sample rate,
+output path, and hardware acceleration settings.
 """
 
 #
@@ -54,6 +57,7 @@ except (ImportError, OSError):
                 pass
 
         #
+        @staticmethod
         def is_available():
             return False
 
@@ -66,8 +70,19 @@ def run_generation(
     use_torch: bool = False,
     device: str | torch.device = "cpu",
 ) -> None:
-    """
-    Orchestrate the sound generation and saving process.
+    """Orchestrates the sound generation and saving process.
+
+    Loads a song module, initializes the rendering engine (NumPy or Torch),
+    and exports the result to a WAV file.
+
+    Args:
+        sound_file (str): Path to the Python song description file.
+        output_filename (str, optional): Target WAV file path. Defaults to "output.wav".
+        sample_rate (int, optional): Audio sampling rate. Defaults to 44100.
+        use_torch (bool, optional): Whether to use PyTorch for rendering.
+            Defaults to False.
+        device (str | torch.device, optional): Device for Torch rendering.
+            Defaults to "cpu".
     """
 
     #
@@ -100,7 +115,8 @@ def run_generation(
     song.export_to_wav(use_torch=use_torch, device=device)
 
 
-def main():
+def main() -> None:
+    """Main entry point for the audio generation CLI."""
     #
     ### Initialize cli arguments parser ###
     #

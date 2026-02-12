@@ -14,8 +14,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Synthesizer instrument definitions.
+
+This module provides various subtractive and additive synthesizers, including
+thick unison leads, punchy sub-basses, and atmospheric pads.
 """
 
 #
@@ -31,10 +33,20 @@ import nasong.core.all_values as lv
 def SynthLead(
     time: lv.Value, frequency: float, start_time: float, duration: float = 1.0
 ) -> lv.Value:
-    """
-    Refactored SynthLead.
-    Builds graph from lib_value components.
-    Updated to produce a "Smooth Lead" using detuned oscillators (Unison).
+    """Creates a smooth, powerful "Unison" lead synthesizer.
+
+    Uses three detuned band-limited sawtooth oscillators to create a thick
+    stereo-ready sound, modulated by a subtle vibrato and a standard ADSR
+    envelope.
+
+    Args:
+        time (lv.Value): The global time provider.
+        frequency (float): The base fundamental frequency (Hz).
+        start_time (float): Activation time in seconds.
+        duration (float, optional): Length of the note in seconds. Defaults to 1.0.
+
+    Returns:
+        lv.Value: The audio value graph for the synth lead.
     """
 
     #
@@ -103,10 +115,19 @@ def SynthLead(
 def SynthBass(
     time: lv.Value, frequency: float, start_time: float, duration: float = 0.5
 ) -> lv.Value:
-    """
-    Refactored SynthBass.
-    Builds graph from lib_value components.
-    Fixes "VERY POOR" aliasing using `BandLimitedSquare`.
+    """Creates a punchy, anti-aliased synthesizer bass.
+
+    Combines a band-limited square wave with a sine sub-oscillator one octave
+    below, shaped by a quick-attack exponential decay envelope.
+
+    Args:
+        time (lv.Value): The global time provider.
+        frequency (float): Fundamental frequency (Hz).
+        start_time (float): activation time in seconds.
+        duration (float, optional): Length of the note in seconds. Defaults to 0.5.
+
+    Returns:
+        lv.Value: The audio value graph for the synth bass.
     """
 
     #
@@ -157,10 +178,19 @@ def SynthBass(
 def SynthPad(
     time: lv.Value, frequency: float, start_time: float, duration: float = 4.0
 ) -> lv.Value:
-    """
-    Refactored SynthPad.
-    This class was already "EXCELLENT".
-    This is just a 1:1 compositional refactor.
+    """Creates an atmospheric synthesizer pad.
+
+    Features a very slow attack and release, utilizing three delicately
+    detuned sine oscillators to create a wide, shimmering texture.
+
+    Args:
+        time (lv.Value): The global time provider.
+        frequency (float): Fundamental frequency (Hz).
+        start_time (float): Activation time in seconds.
+        duration (float, optional): Gated duration of the pad. Defaults to 4.0.
+
+    Returns:
+        lv.Value: The audio value graph for the synth pad.
     """
 
     #

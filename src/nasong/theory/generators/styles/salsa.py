@@ -14,32 +14,32 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Salsa and Latin style generators.
+
+This module provides generators for Salsa-style harmonic montunos and standard
+Latin rhythmic patterns like the Son Clave.
 """
 
 #
 ### Import Modules. ###
 #
 from nasong.theory.systems.western import Western
+from nasong.theory.structures.rhythm import Rhythm
 from nasong.theory.structures.progression import Progression
 
 
 class Salsa:
-    """
-    Generates Salsa patterns and montunos.
-    """
+    """Generates Salsa harmonic vamps (montunos) and rhythmic clave patterns."""
 
     @staticmethod
     def montuno_progression(root: str = "G4", minor: bool = True) -> Progression:
-        """
-        Typical simple montuno: i - V
-        """
+        """Generates a basic i-V salsa montuno progression."""
         scale = Western.minor(root) if minor else Western.major(root)
         return Progression.from_roman_numerals(scale, ["i", "V"])
 
     @staticmethod
-    def clave_rhythm(direction: str = "2-3"):
+    def clave_rhythm(direction: str = "2-3") -> Rhythm:
+        """Returns a pulse pattern for Son Clave (2-3 or 3-2)."""
         """
         Returns a Clave rhythm pattern.
         """

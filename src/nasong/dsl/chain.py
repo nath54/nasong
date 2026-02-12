@@ -1,9 +1,15 @@
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Signal Chaining Domain Specific Language (DSL).
 
+This module provides a fluent interface for constructing audio processing graphs
+using the `>>` operator. It allows for a concise "functional" style of defining
+synthesizers and effect chains.
 
-Signal Chaining DSL.
-Allows syntax like: Osc(freq) >> Filter(cutoff) >> Reverb()
+Example:
+    >>> from nasong.dsl.chain import Chainable, Gain
+    >>> from nasong.core.all_values import Sin, Constant
+    >>> # Create a sine wave and feed it into a gain stage
+    >>> result = Chainable(Sin(Constant(440))) >> Gain(0.5)
+    >>> audio_value = result.val()
 """
 
 #
@@ -15,42 +21,36 @@ from nasong.core.values.basic.value_constant import Constant
 
 
 class Chainable:
-    """
-    Mixin or Wrapper to allow >> operator.
+    """Wrapper that enables signal chaining via the `>>` operator.
+
+    A `Chainable` object encapsulates a `Value` and provides an implementation
+    of `__rshift__` to feed that value into `Processor` objects or apply
+    scalar gain.
     """
 
     def __init__(self, value: Value):
+        """Initializes the Chainable wrapper.
+
+        Args:
+            value (Value): The audio value to be wrapped.
+        """
         self.value = value
 
     def __rshift__(self, other):
-        """
-        self >> other
-        If other is a function/class taking a source, apply it.
-        If other is a Value, maybe mix?
-        Usually in audio DSLs, >> means "feed into".
+        """Implements the `>>` operator for "feeding" signals.
 
-        Case 1: Osc >> Filter
-        Filter must be instantiated? Or Filter class?
-        If Filter is a class, we instantiate it with self as input.
-        If Filter is an instance, can we re-route input? (Hard in static graph)
+        If `other` is a `Processor`, it is called with the current value as
+        the source. If `other` is a numeric value, it is treated as a gain
+        scaling factor.
 
-        Better approach:
-        Osc(freq) is a Value.
-        Filter(source, cutoff) is a Value.
+        Args:
+            other (Processor | int | float): The target processor or gain value.
 
-        We want: Osc(freq) >> Filter(cutoff)
-        Here Filter(cutoff) must return a "Partial" or "Processor" that waits for source.
+        Returns:
+            Chainable: A new Chainable wrapper containing the resulting value.
 
-        So:
-        class Filter(Processor):
-            def __init__(self, cutoff):
-                self.cutoff = cutoff
-            def __call__(self, source):
-                return LowPass(source, self.cutoff)
-
-        Then: Osc >> Filter
-        Osc must be Chainable.
-        Osc >> Processor -> Processor(Osc)
+        Raises:
+            TypeError: If `other` is not a Processor or a numeric type.
         """
         if isinstance(other, Processor):
             result_value = other(self.value)
@@ -65,19 +65,36 @@ class Chainable:
         raise TypeError(f"Cannot chain {type(self)} into {type(other)}")
 
     def val(self) -> Value:
+        """Unwraps and returns the underlying `Value` object.
+
+        Returns:
+            Value: The accumulated audio value tree.
+        """
         return self.value
 
 
 class Processor:
-    """
-    Base class for effects waiting for an input source.
+    """Base class for signal processors in the DSL.
+
+    Processors are "partial" functions that wait for a source `Value` to be
+    passed via the `__call__` method (typically triggered by `>>`).
     """
 
     def __call__(self, source: Value) -> Value:
+        """Processes the input source and returns a new Value.
+
+        Args:
+            source (Value): The input audio signal.
+
+        Returns:
+            Value: The processed audio signal.
+        """
         raise NotImplementedError
 
 
 class Gain(Processor):
+    """A simple processor that scales the amplitude of a signal."""
+
     def __init__(self, amount: float | Value):
         self.amount = amount if isinstance(amount, Value) else Constant(amount)
 

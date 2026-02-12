@@ -30,9 +30,20 @@ def calculate_note_score(
     predicted_notes: list[dict[str, Any]],
     tolerance: float = 0.05,
 ) -> dict[str, float]:
-    """
-    Calculate Precision, Recall, and F1-score for detected notes.
-    Matching is based on frequency overlap within tolerance.
+    """Calculates Precision, Recall, and F1-score for detected notes.
+
+    Matching is performed based on frequency overlap within a specified
+    tolerance percentage.
+
+    Args:
+        target_notes (list[dict[str, Any]]): Ground truth notes.
+        predicted_notes (list[dict[str, Any]]): Model-detected notes.
+        tolerance (float, optional): Percentage frequency deviation allowed
+            for a match. Defaults to 0.05 (5%).
+
+    Returns:
+        dict[str, float]: Metrics dictionary containing "precision", "recall",
+            and "f1".
     """
     if not target_notes and not predicted_notes:
         return {"precision": 1.0, "recall": 1.0, "f1": 1.0}
@@ -82,7 +93,15 @@ def calculate_note_score(
 
 
 def load_experiment_data(exp_dir: str) -> dict[str, Any]:
-    """Load all relevant data for an experiment."""
+    """Loads all relevant metrics and configuration for an experiment.
+
+    Args:
+        exp_dir (str): Path to the experiment directory.
+
+    Returns:
+        dict[str, Any]: Aggregated experiment data including parameters,
+            losses, and note detection scores.
+    """
     data = {"name": os.path.basename(exp_dir)}
 
     # 1. Config
@@ -171,8 +190,13 @@ def load_experiment_data(exp_dir: str) -> dict[str, Any]:
     return data
 
 
-def generate_markdown(experiments: list[dict[str, Any]], output_path: str):
-    """Generate markdown table."""
+def generate_markdown(experiments: list[dict[str, Any]], output_path: str) -> None:
+    """Generates a formatted markdown leaderboard.
+
+    Args:
+        experiments (list[dict[str, Any]]): List of experiment data dictionaries.
+        output_path (str): File system path where the leaderboard will be saved.
+    """
 
     df = pd.DataFrame(experiments)
 
@@ -232,7 +256,8 @@ def generate_markdown(experiments: list[dict[str, Any]], output_path: str):
     print(f"Generated leaderboard at {output_path}")
 
 
-def main():
+def main() -> None:
+    """Main entry point for the leaderboard generation CLI."""
     parser = argparse.ArgumentParser(description="Generate Nasong Leaderboard")
     parser.add_argument(
         "--models-dir", default="trained_models", help="Models directory"
@@ -249,7 +274,7 @@ def main():
     if os.path.exists(args.models_dir):
         # Walk through the directory to find experiments
         # An experiment is identified by the presence of config.yaml or history.json
-        for root, dirs, files in os.walk(args.models_dir):
+        for root, _dirs, files in os.walk(args.models_dir):
             if "config.yaml" in files or "history.json" in files:
                 data = load_experiment_data(root)
                 experiments.append(data)

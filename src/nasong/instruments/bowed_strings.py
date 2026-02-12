@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Bowed string instrument definitions.
+
+This module provides high-quality synthesizers for bowed instruments like the
+Violin and Cello. These instruments utilize Formant-Shaped Additive Synthesis
+to simulate the complex body resonances and non-linearities of physical strings.
 """
 
 #
@@ -39,14 +42,30 @@ def Violin(
     frequency: float,
     start_time: float,
     duration: float,
-    amplitude: float = 0.18,  # Slightly increased to compensate for attenuation
+    amplitude: float = 0.18,
     vibrato_rate: float = 30.0,
     vibrato_depth: float = 0.15,
     sample_rate: int = 44100,
 ) -> lv.Value:
-    """
-    Violin instrument using Formant-Shaped Additive Synthesis.
-    Simulates the rich body resonance of a violin.
+    """Simulates a violin using formant-shaped additive synthesis.
+
+    Features include vibrato, tremolo, bow noise emulation, and multiple
+    formant filters designed to replicate a traditional violin's resonance.
+
+    Args:
+        time (lv.Value): The global time value.
+        frequency (float): The fundamental frequency (Hz).
+        start_time (float): The note start time in seconds.
+        duration (float): The note duration in seconds.
+        amplitude (float, optional): Overall amplitude scaling. Defaults to 0.18.
+        vibrato_rate (float, optional): Vibrato speed in Hz. Defaults to 30.0.
+        vibrato_depth (float, optional): Vibrato intensity relative to frequency.
+            Defaults to 0.15.
+        sample_rate (int, optional): Audio sample rate for Nyquist guarding.
+            Defaults to 44100.
+
+    Returns:
+        lv.Value: The audio value graph for the violin.
     """
 
     #
@@ -159,14 +178,28 @@ def Cello(
     frequency: float,
     start_time: float,
     duration: float,
-    amplitude: float = 0.22,  # Increased to compensate for attenuation
+    amplitude: float = 0.22,
     vibrato_rate: float = 0.1,
     vibrato_depth: float = 0.032,
     sample_rate: int = 44100,
 ) -> lv.Value:
-    """
-    Cello instrument using Formant-Shaped Additive Synthesis.
-    Deeper, warmer resonances.
+    """Simulates a cello using formant-shaped additive synthesis.
+
+    Provides deeper and warmer resonances than the violin by shifting
+    formants lower and using a larger number of harmonics.
+
+    Args:
+        time (lv.Value): The global time value.
+        frequency (float): The fundamental frequency (Hz).
+        start_time (float): The note start time in seconds.
+        duration (float): The note duration in seconds.
+        amplitude (float, optional): Overall amplitude scaling. Defaults to 0.22.
+        vibrato_rate (float, optional): Vibrato speed in Hz. Defaults to 0.1.
+        vibrato_depth (float, optional): Vibrato intensity. Defaults to 0.032.
+        sample_rate (int, optional): Audio sample rate. Defaults to 44100.
+
+    Returns:
+        lv.Value: The audio value graph for the cello.
     """
 
     #

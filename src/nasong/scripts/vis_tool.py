@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Audio analysis and visualization tool.
+
+This script provides features for loading audio (from WAV or .py songs),
+performing detailed acoustic analysis (RMS, spectral centroid, pitch clarity),
+and generating waveform or spectrogram plots.
 """
 
 #
@@ -33,9 +36,16 @@ import nasong.core.song as ls
 
 
 def load_audio(input_path: str, sample_rate: int = 44100) -> tuple[np.ndarray, int]:
-    """
-    Loads audio from a WAV file or generates it from a Python song description.
-    Returns (audio_data, sample_rate).
+    """Loads audio from a WAV file or generates it from a Python song description.
+
+    Args:
+        input_path (str): Path to a .wav or .py file.
+        sample_rate (int, optional): Sample rate for synthesis if input is .py.
+            Defaults to 44100.
+
+    Returns:
+        tuple[np.ndarray, int]: A tuple containing the audio data buffer and
+            the sample rate.
     """
     if input_path.endswith(".wav"):
         try:
@@ -89,7 +99,8 @@ def load_audio(input_path: str, sample_rate: int = 44100) -> tuple[np.ndarray, i
         sys.exit(1)
 
 
-def main():
+def main() -> None:
+    """Main entry point for the audio visualization and analysis CLI."""
     parser = argparse.ArgumentParser(
         description="Sound Visualization and Analysis Tool"
     )

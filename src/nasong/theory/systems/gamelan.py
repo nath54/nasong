@@ -14,8 +14,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Indonesian Gamelan tuning approximations.
+
+This module provides approximations of common Gamelan tuning systems, including
+Slendro (equidistant 5-tone) and Pelog (non-equidistant 7-tone variations).
 """
 
 #
@@ -27,10 +29,7 @@ from nasong.theory.core.interval import Interval
 
 
 class Gamelan:
-    """
-    Approximation of Indonesian Gamelan tuning systems.
-    Slendro (5-tone) and Pelog (7-tone).
-    """
+    """Approximation of Indonesian Gamelan tuning systems."""
 
     # Slendro: Roughly equidistant 5 tones per octave.
     # 12 / 5 = 2.4 semitones per step.
@@ -45,6 +44,19 @@ class Gamelan:
 
     @staticmethod
     def create(root: str, type_name: str) -> Scale:
+        """Creates a Gamelan scale based on a specific tuning type.
+
+        Args:
+            root (str): The root note name (e.g., "C4").
+            type_name (str): The tuning system ("slendro", "pelog_bem",
+                "pelog_barang").
+
+        Returns:
+            Scale: The resulting Scale object with microtonal or custom intervals.
+
+        Raises:
+            ValueError: If the Gamelan type is unknown.
+        """
         if type_name.lower() in Gamelan.PATTERNS:
             intervals = [Interval(s) for s in Gamelan.PATTERNS[type_name.lower()]]
             return Scale(Note(root), intervals, name=f"Gamelan {type_name}")

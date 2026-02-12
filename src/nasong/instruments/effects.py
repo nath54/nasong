@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Instrument-specific effects and utility values.
+
+This module provides specialized envelope generators and value modulators used
+by various instruments. Note that some components here are "Value Generators"
+rather than traditional audio-input effects.
 """
 
 #
@@ -33,32 +36,45 @@ import nasong.core.all_values as lv
 
 #
 class ADSR_Piano(lv.Value):
-    """
-    Envelope generator: Attack, Decay, Sustain, Release.
+    """Looping Attack-Decay-Sustain-Release envelope generator.
 
-    "Truthness" / "Good Listening" Analysis:
-        - "Truthness": **POOR**. This is not a "true" ADSR envelope.
-        - **Reason:** It uses the `modulo (%)` operator on time. This creates a
-            *looping* envelope (an LFO), not a one-shot envelope that
-            triggers once per note. It will sound "bad" for most instruments
-            as it will constantly re-trigger the attack.
-        - **Improvement:** This class should not be used. Use `ADSR2`,
-            which is a "truthful" one-shot envelope. I have implemented
-            the `getitem_np` to match the user's "bad" looping logic.
-        - Note: The `note_freq` parameter is unused.
+    Warning:
+        This class uses modulo arithmetic on time, causing the envelope to loop.
+        For one-shot note envelopes, use `ADSR2` instead.
+
+    Attributes:
+        time (lv.Value): The global time value.
+        note_freq (float): Unused, kept for compatibility.
+        attack (float): Attack time in seconds.
+        decay (float): Decay time in seconds.
+        sustain_level (float): Sustain volume (0.0 to 1.0).
+        release (float): Release time in seconds.
+        note_duration (float): Duration before release phase begins.
+        total_cycle_time (float): Total loop duration (duration + release).
     """
 
     #
     def __init__(
         self,
         time: lv.Value,
-        note_freq: float,  # This parameter is unused in the original code
+        note_freq: float,
         attack: float = 0.05,
         decay: float = 0.1,
         sustain_level: float = 0.7,
         release: float = 0.3,
         note_duration: float = 1.0,
     ) -> None:
+        """Initializes the looping ADSR envelope.
+
+        Args:
+            time (lv.Value): Time provider.
+            note_freq (float): Target frequency (unused).
+            attack (float, optional): Attack duration. Defaults to 0.05.
+            decay (float, optional): Decay duration. Defaults to 0.1.
+            sustain_level (float, optional): Sustain level. Defaults to 0.7.
+            release (float, optional): Release duration. Defaults to 0.3.
+            note_duration (float, optional): Gated duration. Defaults to 1.0.
+        """
 
         #
         super().__init__()
@@ -75,6 +91,15 @@ class ADSR_Piano(lv.Value):
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
+        """Calculates a single sample of the looping envelope.
+
+        Args:
+            index (int): Sample index.
+            sample_rate (int): Audio sample rate.
+
+        Returns:
+            float: The envelope value at the given index.
+        """
 
         #
         t: float = self.time.get_item(index=index, sample_rate=sample_rate)
@@ -118,6 +143,15 @@ class ADSR_Piano(lv.Value):
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
+        """Calculates a buffer of envelope samples using NumPy.
+
+        Args:
+            indexes_buffer (NDArray[np.float32]): Array of sample indices.
+            sample_rate (int): Audio sample rate.
+
+        Returns:
+            NDArray[np.float32]: Buffer of envelope values.
+        """
 
         #
         ### Get the time buffer and apply the looping modulo operator. ###
@@ -176,19 +210,17 @@ class ADSR_Piano(lv.Value):
 
 #
 class Vibrato(lv.Value):
-    """
-    Generates a *frequency value* modulated by an LFO (vibrato).
+    """Generates a frequency modulation signal for vibrato.
 
-        "Truthness" / "Good Listening" Analysis:
-        - "Truthness": **EXCELLENT**. This is a "truthful" model of
-            Frequency Modulation (FM), which is how vibrato is modeled
-            in synthesis.
-        - **Critical Note:** This is **NOT an audio effect**. It does not
-            take an audio signal as input. It is a **Value Generator**,
-            like `lv.Sin` or `lv.Constant`. It is intended to be used
-            as the `frequency` input for an oscillator (like `lv.Sin`).
-        - "Good Listening": N/A, as it doesn't produce sound directly.
-            It is "good" for its intended purpose.
+    This class provides a "truthful" model of Frequency Modulation (FM). It is
+    not an audio effect that takes signal input; rather, it is a Value generator
+    intended to modulate the `frequency` parameter of an oscillator.
+
+    Attributes:
+        time (lv.Value): Global time provider.
+        base_frequency (float): The center frequency (Hz).
+        vibrato_rate (float): LFO frequency speed (Hz).
+        vibrato_depth (float): Modulation width as a percentage of base frequency.
     """
 
     #
@@ -221,6 +253,15 @@ class Vibrato(lv.Value):
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
+        """Calculates a single sample of the vibrato frequency.
+
+        Args:
+            index (int): Sample index.
+            sample_rate (int): Audio sample rate.
+
+        Returns:
+            float: The modulated frequency value.
+        """
 
         #
         t: float = self.time.get_item(index=index, sample_rate=sample_rate)
@@ -239,6 +280,15 @@ class Vibrato(lv.Value):
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
+        """Calculates a buffer of vibrato frequencies using NumPy.
+
+        Args:
+            indexes_buffer (NDArray[np.float32]): Array of sample indices.
+            sample_rate (int): Audio sample rate.
+
+        Returns:
+            NDArray[np.float32]: Buffer of modulated frequency values.
+        """
 
         #
         ### Get the time buffer. ###

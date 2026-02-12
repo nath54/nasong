@@ -14,8 +14,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Utilities for the NaSong DSL.
+
+This module provides helper functions for higher-level musical operations
+within the DSL, such as converting chords into arpeggiated note sequences.
 """
 
 #
@@ -30,9 +32,17 @@ from nasong.theory.core.pitch import Note as CoreNote
 def arpeggiate(
     chord: Chord, pattern: list[int] = [0, 1, 2], duration: Duration = Duration(0.25)
 ) -> list[Note]:
-    """
-    Arpeggiate a chord using a pattern of indices.
-    [0, 1, 2] -> Root, 3rd, 5th (if triad).
+    """Arpeggiates a chord using a specified index pattern.
+
+    Args:
+        chord (Chord): The source chord to arpeggiate.
+        pattern (list[int], optional): A list of indices representing the note
+            order (e.g., [0, 1, 2] for root, third, fifth). Defaults to [0, 1, 2].
+        duration (Duration, optional): The duration of each note in the
+            arpeggio. Defaults to a quarter note (0.25).
+
+    Returns:
+        list[Note]: A list of `Note` objects forming the arpeggio.
     """
     notes = []
     pitches = chord.pitches

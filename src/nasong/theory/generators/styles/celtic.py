@@ -14,8 +14,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Celtic and Folk style generators.
+
+This module provides generators for Celtic-style jigs and modal tunes,
+primarily focusing on compound meters and Dorian-based melodies.
 """
 
 #
@@ -27,24 +29,23 @@ from nasong.theory.structures.progression import Progression
 
 
 class Celtic:
-    """
-    Generates Celtic/Folk patterns.
-    """
+    """Generates Celtic/Folk melodic patterns and rhythmic jigs."""
 
     @staticmethod
     def jig_rhythm() -> Rhythm:
-        """
-        Compound time (6/8).
-        ONE-two-three TWO-two-three
-        """
+        """Generates a standard compound time (6/8) jig rhythm."""
         # Placeholder for specific rhythm generator
         pass
 
     @staticmethod
     def dorian_tune(root: str = "D4") -> Progression:
-        """
-        Dorian mode is very common in Celtic music.
-        i - VII - i - IV
+        """Generates a Dorian-mode folk progression (e.g., i-VII-i-IV).
+
+        Args:
+            root (str): The fundamental note of the tune. Defaults to "D4".
+
+        Returns:
+            Progression: The resulting melodic progression.
         """
         scale = Western.mode(root, "dorian")
         return Progression.from_roman_numerals(scale, ["i", "VII", "i", "IV"])

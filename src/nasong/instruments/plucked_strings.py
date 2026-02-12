@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Plucked string instrument definitions.
+
+This module provides factory functions for guitar and other plucked string
+emulations. It includes both individual string synthesis and higher-level
+"strumming" and "fingerpicking" sequencers.
 """
 
 #
@@ -39,11 +42,20 @@ def GuitarString(
     duration: float = 3.0,
     brightness: float = 1.0,
 ) -> lv.Value:
-    """
-    Refactored GuitarString.
-    Builds graph from lib_value components.
-    "POOR" aliasing  remains, as it's built-in to the design
-    (and `sample_rate` is not available at construction).
+    """Simulates a single plucked guitar string.
+
+    Built using additive synthesis with six harmonics and a dynamic brightness
+    decay that simulates the natural loss of high-frequency energy over time.
+
+    Args:
+        time (lv.Value): The global time provider.
+        frequency (float): The fundamental frequency of the string.
+        start_time (float): Activation time in seconds.
+        duration (float, optional): Length of the string vibration. Defaults to 3.0.
+        brightness (float, optional): Initial harmonic richness. Defaults to 1.0.
+
+    Returns:
+        lv.Value: The audio value graph for the guitar string.
     """
 
     #
@@ -112,10 +124,17 @@ def GuitarString2(
     duration: float,
     amplitude: float = 0.4,
 ) -> lv.Value:
-    """
-    Refactored GuitarString2.
-    Builds graph from lib_value components.
-    Fixes "bad noise".
+    """Creates an alternate guitar string sound with subtle noise.
+
+    Args:
+        time (lv.Value): Global time value.
+        frequency (float): Fundamental frequency (Hz).
+        start_time (float): Strike time in seconds.
+        duration (float): Length of the note in seconds.
+        amplitude (float, optional): Overall volume scaling. Defaults to 0.4.
+
+    Returns:
+        lv.Value: The audio value graph for the alternate guitar string.
     """
 
     #
@@ -164,10 +183,17 @@ def AcousticString(
     amplitude: float = 0.3,
     decay_rate: float = 2.0,
 ) -> lv.Value:
-    """
-    Refactored AcousticString.
-    Builds graph from lib_value components.
-    Fixes "bad noise" .
+    """Simulates a bright acoustic string pluck.
+
+    Args:
+        time (lv.Value): Global time provider.
+        frequency (float): Fundamental frequency (Hz).
+        pluck_time (float): Pluck event time in seconds.
+        amplitude (float, optional): Overall volume. Defaults to 0.3.
+        decay_rate (float, optional): Speed of volume decay. Defaults to 2.0.
+
+    Returns:
+        lv.Value: The audio value graph for the acoustic string.
     """
 
     #
@@ -217,9 +243,20 @@ def Fingerpicking(
     start_time: float,
     pattern_duration: float = 2.0,
 ) -> lv.Value:
-    """
-    Refactored Fingerpicking.
-    This "container"  is now a `lv.Sequencer`.
+    """Sequences an acoustic fingerpicking pattern.
+
+    Creates a composite sound of alternating bass and treble notes over a fixed
+    duration pattern.
+
+    Args:
+        time (lv.Value): Global time provider.
+        bass_note (float): Frequency of the bass (root) note.
+        chord_notes (list[float]): List of treble note frequencies.
+        start_time (float): Start time of the entire pattern.
+        pattern_duration (float, optional): Length of one full loop. Defaults to 2.0.
+
+    Returns:
+        lv.Value: A `Sequencer` object containing the fingerpicked pattern.
     """
 
     #
@@ -264,9 +301,19 @@ def Fingerpicking(
 def Strum(
     time: lv.Value, frequencies: list[float], start_time: float, duration: float = 2.5
 ) -> lv.Value:
-    """
-    Refactored Strum.
-    This "container"  is now a `lv.Sequencer`.
+    """Sequences a strummed chord across multiple frequencies.
+
+    Each frequency is triggered with a slight time offset to simulate the
+    physical movement of a pick or finger across strings.
+
+    Args:
+        time (lv.Value): Global time provider.
+        frequencies (list[float]): List of string frequencies to strum.
+        start_time (float): The start time of the strum.
+        duration (float, optional): Gated duration for each string. Defaults to 2.5.
+
+    Returns:
+        lv.Value: A `Sequencer` object containing the strummed chord.
     """
 
     #

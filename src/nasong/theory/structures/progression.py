@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Chord progression representations.
+
+This module defines the `Progression` class, which handles sequences of chords.
+It includes a Roman Numeral parser for generating progressions from scales
+and standard modal theory.
 """
 
 #
@@ -33,14 +36,15 @@ from nasong.theory.core.time import Duration, QUARTER
 
 @dataclass
 class Progression:
-    """
-    A sequence of chords.
+    """A sequence of musical chords played in order.
+
+    Attributes:
+        chords (list[Chord | Pitch]): The ordered collection of chord events or
+            simple pitches.
+        scale (Scale, optional): The scale context for the progression.
     """
 
     chords: list[Chord | "Pitch"]
-    #
-    ### Content for analysis/generation ###
-    #
     scale: Optional[Scale] = None
 
     def __post_init__(self):
@@ -73,9 +77,15 @@ class Progression:
     def from_roman_numerals(
         cls, scale: Scale, numerals: list[str], duration: Duration = QUARTER
     ) -> "Progression":
-        """
-        Generate a progression from a scale and roman numerals.
-        e.g. scale=C Major, numerals=["I", "IV", "V", "I"]
+        """Generates a progression from a scale and Roman Numeral notation.
+
+        Args:
+            scale (Scale): The scale to use for degree mapping.
+            numerals (list[str]): List of Roman Numerals (e.g., ["I", "IV", "V7"]).
+            duration (Duration, optional): Duration for each chord. Defaults to QUARTER.
+
+        Returns:
+            Progression: The resulting chord progression.
         """
         chords = []
         for roam in numerals:
@@ -113,10 +123,15 @@ class Progression:
 
     @staticmethod
     def _parse_roman(token: str):
-        """
-        Parse "IV", "vii", "V7", etc.
-        Returns (degree_index, quality_hint).
-        Degree index is 1-based (1..7).
+        """Parses a single Roman Numeral token into a degree and quality.
+
+        Supports standard notation like "IV", "vii", "v7", "maj7".
+
+        Args:
+            token (str): The string token to parse.
+
+        Returns:
+            tuple[int, str]: A tuple of (1-based degree, quality_hint).
         """
         #
         ### Very basic parser ###

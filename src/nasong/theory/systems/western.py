@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Western music theory systems.
+
+This module provides a namespace for Western classical music concepts, including
+standard diatonic scales (Major, Minor, Dorian, etc.) and a metaclass for
+dynamic Note constant access.
 """
 
 #
@@ -26,8 +29,9 @@ from nasong.theory.core.scale import Scale
 
 
 class WesternMeta(type):
-    """
-    Metaclass to support dynamic note access (e.g., Western.C4).
+    """Metaclass to support dynamic note access.
+
+    Enables syntax like `Western.C4` to return a `Note("C4")` object.
     """
 
     def __getattr__(cls, name):
@@ -40,13 +44,12 @@ class WesternMeta(type):
 
 
 class Western(metaclass=WesternMeta):
-    """
-    Namespace for Western music theory constants and factories.
-    """
+    """Namespace for Western music theory constants and scale factories."""
 
     # Common Scales factories
     @staticmethod
     def major(root: str) -> Scale:
+        """Returns a major scale from the given root."""
         return Scale.from_name(root, "major")
 
     @staticmethod

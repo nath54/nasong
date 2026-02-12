@@ -14,8 +14,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Wind instrument definitions.
+
+This module provides synthesizers for wind and reed instruments, such as the
+Saxophone, using additive synthesis and noise injection.
 """
 
 #
@@ -39,10 +41,20 @@ def SaxophoneNote(
     duration: float,
     amplitude: float = 0.3,
 ) -> lv.Value:
-    """
-    Refactored SaxophoneNote.
-    Builds graph from lib_value components.
-    Fixes "bad noise".
+    """Simulates a saxophone note.
+
+    Uses an odd-harmonic heavy additive synthesis model to replicate the
+    characteristic "reed" buzz, with added vibrato and breath noise.
+
+    Args:
+        time (lv.Value): The global time provider.
+        frequency (float): The fundamental frequency (Hz).
+        start_time (float): activation time in seconds.
+        duration (float): Length of the note in seconds.
+        amplitude (float, optional): Overall volume scaling. Defaults to 0.3.
+
+    Returns:
+        lv.Value: The audio value graph for the saxophone.
     """
 
     #

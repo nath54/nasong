@@ -14,8 +14,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Training execution CLI wrapper.
+
+This script acts as a convenience entry point for launching NaSong instrument
+training sessions.
 """
 
 #
@@ -24,7 +26,8 @@ TODO: add full docstring, explaining what the goal of this script is, and explai
 import nasong.trainable.train as train_module
 
 
-def main():
+def main() -> None:
+    """Main entry point for the training CLI."""
     train_module.main()
 
 

@@ -14,8 +14,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""East Asian music theory approximations.
+
+This module provides approximations of traditional East Asian scales, including
+the Japanese 'Yo' (bright) and 'In' (dark/Sakura) pentatonic systems.
 """
 
 #
@@ -27,9 +29,7 @@ from nasong.theory.core.interval import Interval
 
 
 class EastAsian:
-    """
-    Approximations of East Asian scales (Japanese, Chinese).
-    """
+    """Namespace for East Asian musical scale factories (Japanese, Chinese)."""
 
     # Pentatonic scales are fundamental.
     # Chinese Major Pentatonic: 1, 2, 3, 5, 6 (Same as African/Western Major Pentatonic)
@@ -41,18 +41,12 @@ class EastAsian:
 
     @staticmethod
     def yo_scale(root: str) -> Scale:
-        """
-        'Bright' pentatonic scale (e.g. Folk music).
-        Intervals: 2, 3, 2, 2, 3
-        """
+        """Generates a Japanese 'Yo' (bright) pentatonic scale."""
         intervals = [Interval(i) for i in [2, 3, 2, 2, 3]]
         return Scale(Note(root), intervals, name="Yo Scale")
 
     @staticmethod
     def in_scale(root: str) -> Scale:
-        """
-        'Dark' or 'Sakura' pentatonic scale.
-        Intervals: 1, 4, 2, 1, 4
-        """
+        """Generates a Japanese 'In' (dark/Sakura) pentatonic scale."""
         intervals = [Interval(i) for i in [1, 4, 2, 1, 4]]
         return Scale(Note(root), intervals, name="In Scale")

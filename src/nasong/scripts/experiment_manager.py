@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Experiment lifecycle management.
+
+This module provides the `Experiment` and `ExperimentManager` classes for
+tracking, saving, and loading training experiments. It handles metadata
+storage and parameter persistence.
 """
 
 #
@@ -36,6 +39,20 @@ EXPERIMENTS_DIR = os.path.expanduser("~/.nasong/experiments")
 
 
 class Experiment:
+    """Represents a single NaSong training experiment.
+
+    An experiment encapsulates the history, configuration, and artifacts of a
+    specific training run.
+
+    Attributes:
+        id (str): Unique identifier for the experiment.
+        name (str): Human-readable name (often the instrument name).
+        timestamp (float): Creation time in Unix epoch.
+        metrics (dict[str, Any]): Dictionary of performance results (e.g., loss).
+        params (dict[str, Any]): Configuration parameters used for training.
+        status (str): Current state (e.g., 'created', 'running', 'completed').
+    """
+
     def __init__(
         self,
         experiment_id: str,
@@ -44,7 +61,17 @@ class Experiment:
         metrics: dict[str, Any],
         params: dict[str, Any],
         status: str = "created",
-    ):
+    ) -> None:
+        """Initializes an Experiment object.
+
+        Args:
+            experiment_id (str): Unique hash or string ID.
+            name (str): Label for the experiment.
+            timestamp (float): Start time.
+            metrics (dict[str, Any]): Initial metrics.
+            params (dict[str, Any]): Hyperparameters.
+            status (str, optional): Run status. Defaults to "created".
+        """
         self.id = experiment_id
         self.name = name
         self.timestamp = timestamp
@@ -53,13 +80,19 @@ class Experiment:
         self.status = status
 
     @property
-    def path(self):
+    def path(self) -> str:
+        """Calculates the absolute file system path to the experiment folder.
+
+        Returns:
+            str: The full path to the experiment directory.
+        """
         # Folder name convention: timestamp_name_id
         # We need to find the actual folder since timestamp might have slight precision diffs if we reconstruct
         # But simpler: we assume manager handles paths
         return os.path.join(EXPERIMENTS_DIR, f"{self.timestamp}_{self.name}_{self.id}")
 
-    def save_meta(self):
+    def save_meta(self) -> None:
+        """Saves experiment metadata to 'meta.json' in the experiment path."""
         os.makedirs(self.path, exist_ok=True)
         meta = {
             "id": self.id,
@@ -73,13 +106,28 @@ class Experiment:
         with open(os.path.join(self.path, "meta.json"), "w", encoding="utf-8") as f:
             json.dump(meta, f, indent=2)
 
-    def save_parameters_json(self, parameters: dict[str, float]):
-        """Save the trained instrument parameters for inference."""
+    def save_parameters_json(self, parameters: dict[str, float]) -> None:
+        """Saves the trained instrument parameters for inference.
+
+        Args:
+            parameters (dict[str, float]): Dictionary of named parameter values.
+        """
         with open(os.path.join(self.path, "params.json"), "w", encoding="utf-8") as f:
             json.dump(parameters, f, indent=2)
 
     @classmethod
-    def load(cls, path: str):
+    def load(cls, path: str) -> "Experiment":
+        """Loads an existing experiment from its directory.
+
+        Args:
+            path (str): The folder path containing 'meta.json'.
+
+        Returns:
+            Experiment: The loaded experiment object.
+
+        Raises:
+            FileNotFoundError: If 'meta.json' is missing.
+        """
         meta_path = os.path.join(path, "meta.json")
         if not os.path.exists(meta_path):
             raise FileNotFoundError(f"No experiment found at {path}")
@@ -98,11 +146,27 @@ class Experiment:
 
 
 class ExperimentManager:
+    """Entry point for managing and discovering multiple experiments.
+
+    Attributes:
+        base_dir (str): Root directory where all experiments are stored.
+    """
+
     def __init__(self, base_dir: str = EXPERIMENTS_DIR):
         self.base_dir = base_dir
         os.makedirs(self.base_dir, exist_ok=True)
 
     def create_experiment(self, name: str, params: dict[str, Any] = None) -> Experiment:
+        """Creates and persists a new experiment.
+
+        Args:
+            name (str): Name for the experiment.
+            params (dict[str, Any], optional): Configuration parameters.
+                Defaults to None.
+
+        Returns:
+            Experiment: The newly created experiment.
+        """
         experiment_id = str(uuid.uuid4())[:8]
         timestamp = time.time()
         exp = Experiment(
@@ -117,6 +181,11 @@ class ExperimentManager:
         return exp
 
     def list_experiments(self) -> list[Experiment]:
+        """Lists all experiments found in the base directory.
+
+        Returns:
+            list[Experiment]: List of experiments, sorted by newest first.
+        """
         experiments = []
         if not os.path.exists(self.base_dir):
             return []
@@ -134,6 +203,14 @@ class ExperimentManager:
         return experiments
 
     def get_experiment(self, experiment_id: str) -> Optional[Experiment]:
+        """Retrieves a specific experiment by its ID or directory name.
+
+        Args:
+            experiment_id (str): The unique ID or folder name.
+
+        Returns:
+            Optional[Experiment]: The experiment if found, else None.
+        """
         # Search by ID (since directory has timestamp)
         for dirname in os.listdir(self.base_dir):
             if (
@@ -151,6 +228,14 @@ class ExperimentManager:
         return None
 
     def delete_experiment(self, experiment_id: str) -> bool:
+        """Deletes an experiment and its associated files.
+
+        Args:
+            experiment_id (str): The identifier for the experiment to remove.
+
+        Returns:
+            bool: True if deleted successfully, False if not found.
+        """
         exp = self.get_experiment(experiment_id)
         if exp:
             shutil.rmtree(exp.path)

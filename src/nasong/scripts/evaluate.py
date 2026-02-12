@@ -59,8 +59,16 @@ ALL_METHODS = ["legacy", "basic_pitch", "librosa", "torchcrepe", "audioflux"]
 
 
 def evaluate_audio(audio_path: str, methods: list[str] = None) -> dict[str, Any]:
-    """
-    Run specified note detectors on the given audio.
+    """Runs specified note detectors on an audio file.
+
+    Args:
+        audio_path (str): Path to the source WAV file.
+        methods (list[str], optional): List of detection method names to run.
+            Defaults to all supported methods.
+
+    Returns:
+        dict[str, Any]: A dictionary mapping method names to their results,
+            including detected notes and success status.
     """
     if methods is None:
         methods = ALL_METHODS
@@ -131,10 +139,24 @@ def evaluate_audio(audio_path: str, methods: list[str] = None) -> dict[str, Any]
 
 
 def visualize_spectrograms(
-    target_path, trained_path, output_dir, instrument_name, split_name: str = "train"
-):
-    """
-    Generate and save a side-by-side spectrogram comparison.
+    target_path: str,
+    trained_path: str,
+    output_dir: str,
+    instrument_name: str,
+    split_name: str = "train",
+) -> None:
+    """Generates and saves a side-by-side spectrogram comparison.
+
+    Creates a vertical plot showing the target audio spectrogram above the
+    synthesized audio spectrogram for visual quality assessment.
+
+    Args:
+        target_path (str): Path to the original target WAV.
+        trained_path (str): Path to the rendered MIDI-to-audio WAV.
+        output_dir (str): Directory where the PNG plot will be saved.
+        instrument_name (str): The name of the instrument for the plot title.
+        split_name (str, optional): Dataset split identifier (e.g., 'val').
+            Defaults to "train".
     """
     if not os.path.exists(target_path) or not os.path.exists(trained_path):
         return
@@ -170,9 +192,19 @@ def visualize_spectrograms(
 
 def process_experiment(
     exp_dir: str, output_dir: Optional[str] = None, methods: list[str] = None
-):
-    """
-    Evaluate a single experiment directory across all available splits (train, val, test).
+) -> None:
+    """Evaluates an experiment directory across all dataset splits.
+
+    Searches the experiment folder for train, val, and test audio pairs,
+    runs note detection on each pair, and generates a unified JSON report
+    and comparison plots.
+
+    Args:
+        exp_dir (str): Path to the experiment folder.
+        output_dir (str, optional): Directory for evaluation output.
+            Defaults to the experiment directory.
+        methods (list[str], optional): Detection methods to test.
+            Defaults to all methods.
     """
     print(f"\n📂 Processing {os.path.basename(exp_dir)}...")
 
@@ -298,7 +330,8 @@ def process_experiment(
         print(f"   ✅ Saved full evaluation to {json_path}")
 
 
-def main():
+def main() -> None:
+    """Main entry point for the evaluation CLI."""
     parser = argparse.ArgumentParser(
         description="Evaluate and visualize Nasong training results."
     )

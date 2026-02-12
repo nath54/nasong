@@ -14,31 +14,37 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""EDM (Electronic Dance Music) style generators.
+
+This module provides generators for high-energy EDM components, including
+'Epic' chord vamps and standard dance floor beats.
 """
 
 #
 ### Import Modules. ###
 #
 from nasong.theory.systems.western import Western
-from nasong.theory.structures.rhythm import four_on_the_floor
+from nasong.theory.structures.rhythm import Rhythm, four_on_the_floor
 from nasong.theory.structures.progression import Progression
 
 
 class EDM:
-    """
-    Generates EDM components.
-    """
+    """Generates common EDM chord progressions and rhythmic foundations."""
 
     @staticmethod
     def epic_chords(root: str = "F4") -> Progression:
-        """
-        Generates an 'Epic' progression (e.g. vi - IV - I - V).
+        """Generates an 'Epic' dance progression (e.g., vi-IV-I-V).
+
+        Args:
+            root (str): The root key. Defaults to "F4".
+
+        Returns:
+            Progression: A sequence of powerful chords.
         """
         scale = Western.major(root)
         return Progression.from_roman_numerals(scale, ["vi", "IV", "I", "V"])
 
     @staticmethod
-    def basic_beat():
+    def basic_beat() -> Rhythm:
+        """Returns a generic 'four on the floor' kick rhythm."""
         return four_on_the_floor()

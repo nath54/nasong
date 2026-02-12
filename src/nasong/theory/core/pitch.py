@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Pitch and tuning system representations.
+
+This module provides the core abstractions for musical pitch, including raw
+frequencies (Hz), symbolic notes (Pitch Class + Octave), and customizable
+tuning systems (defaults to 12-TET A4=440Hz).
 """
 
 #
@@ -25,7 +28,8 @@ from typing import Optional
 from dataclasses import dataclass
 
 #
-from nasong.core.all_values import Value, Constant
+from nasong.core.value import Value
+from nasong.core.values.basic.value_constant import Constant
 
 
 # ==========================================
@@ -35,9 +39,13 @@ from nasong.core.all_values import Value, Constant
 
 @dataclass(frozen=True)
 class Tuning:
-    """
-    Defines a tuning system.
-    Default is 12-Tone Equal Temperament (12-TET) at A4=440Hz.
+    """Defines a musical tuning system.
+
+    Attributes:
+        name (str): Identifier for the tuning (e.g., "12-TET").
+        base_freq (float): Frequency of the reference note.
+        base_note_index (int): MIDI index of the reference note.
+        divisions (int): Number of steps per octave.
     """
 
     name: str = "12-TET"
@@ -46,13 +54,29 @@ class Tuning:
     divisions: int = 12
 
     def freq_from_midi(self, midi_index: float) -> float:
-        """Calculate frequency from a MIDI index."""
+        """Calculates the absolute frequency for a given MIDI index.
+
+        Args:
+            midi_index (float): The potentially fractional MIDI note number.
+
+        Returns:
+            float: The frequency in Hz.
+        """
         return self.base_freq * (
             2 ** ((midi_index - self.base_note_index) / self.divisions)
         )
 
     def freq_from_ratio(self, ratio: float, base_freq: Optional[float] = None) -> float:
-        """Calculate frequency from a ratio relative to a base."""
+        """Calculates a frequency from a ratio relative to a reference.
+
+        Args:
+            ratio (float): The frequency multiplier.
+            base_freq (float, optional): The reference frequency. Defaults to
+                the system's base_freq.
+
+        Returns:
+            float: The resulting frequency in Hz.
+        """
         ref = base_freq if base_freq else self.base_freq
         return ref * ratio
 
@@ -67,14 +91,22 @@ DEFAULT_TUNING = Tuning()
 
 
 class Pitch:
-    """
-    Abstract base class for anything that has a frequency.
-    """
+    """Abstract base class for all frequency-carrying objects."""
 
     def to_hz(self) -> float:
+        """Converts the pitch representation to raw Hz.
+
+        Returns:
+            float: Frequency in Hz.
+        """
         raise NotImplementedError
 
     def to_value(self) -> Value:
+        """Wraps the frequency into a NaSong Constant value.
+
+        Returns:
+            Value: A constant audio graph node.
+        """
         return Constant(self.to_hz())
 
     def __float__(self):
@@ -89,13 +121,16 @@ class Pitch:
 
 @dataclass
 class Hz(Pitch):
-    """
-    Explicit raw frequency.
+    """Represents an explicit frequency value in Hertz.
+
+    Attributes:
+        freq (float): The raw frequency value.
     """
 
     freq: float
 
     def to_hz(self) -> float:
+        """Returns the stored frequency."""
         return self.freq
 
     def __repr__(self):
@@ -104,8 +139,14 @@ class Hz(Pitch):
 
 @dataclass
 class Note(Pitch):
-    """
-    A symbolic Note (e.g., 'A4', 'C#5').
+    """Represents a symbolic musical note (e.g., 'C4', 'A#5').
+
+    Supports scientific pitch notation and automatic conversion to MIDI or Hz
+    using a provided Tuning system.
+
+    Attributes:
+        name (str): The note name (e.g., 'Db3').
+        tuning (Tuning): The tuning system to use. Defaults to 12-TET.
     """
 
     name: str
@@ -129,9 +170,16 @@ class Note(Pitch):
         self._midi_index = self._parse_note(self.name)
 
     def _parse_note(self, note_str: str) -> int:
-        """
-        Parse scientific pitch notation (e.g. 'C4', 'F#5', 'Bb3').
-        Returns MIDI index.
+        """Parses scientific pitch notation into a MIDI index.
+
+        Args:
+            note_str (str): The note identifier (e.g., 'F#2').
+
+        Returns:
+            int: Corresponding MIDI note number.
+
+        Raises:
+            ValueError: If the string format is invalid or unknown.
         """
         # 1. Normalize name (handle basic flats)
         # Separate letter/accidental from octave
@@ -177,7 +225,14 @@ class Note(Pitch):
         return self.freq
 
     def transpose(self, semitones: int) -> "Note":
-        """Return a new Note transposed by semitones."""
+        """Transposes the note by a fixed number of semitones.
+
+        Args:
+            semitones (int): Steps to move (positive or negative).
+
+        Returns:
+            Note: A new Note object representing the transposed pitch.
+        """
         new_midi = self._midi_index + semitones
         # We need to reverse map midi to string if we want to keep it as Note
         # But this is lossy (C# vs Db).

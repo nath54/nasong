@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Arabic Maqam system approximations.
+
+This module provides approximations of the Arabic Maqam system using 24-Tone
+Equal Temperament (quarter tones). It includes standard patterns for common
+Maqamat like Rast and Bayati.
 """
 
 #
@@ -27,9 +30,7 @@ from nasong.theory.core.interval import Interval
 
 
 class Maqam:
-    """
-    Approximation of Arabic Maqam system using microtones (quarter tones).
-    """
+    """Approximation of Arabic Maqam system using microtones (quarter tones)."""
 
     # Assuming 24-TET for approximations.
     # Half sharp = 0.5 (50 cents)
@@ -46,6 +47,18 @@ class Maqam:
 
     @staticmethod
     def create(root: str, maqam_name: str) -> Scale:
+        """Creates a Maqam scale object based on a pattern name.
+
+        Args:
+            root (str): The root note name (e.g., "C4").
+            maqam_name (str): The name of the Maqam (e.g., "rast", "bayati").
+
+        Returns:
+            Scale: The resulting Scale object with microtonal intervals.
+
+        Raises:
+            ValueError: If the Maqam name is unknown.
+        """
         if maqam_name.lower() in Maqam.PATTERNS:
             intervals = [Interval(s) for s in Maqam.PATTERNS[maqam_name.lower()]]
             return Scale(Note(root), intervals, name=f"Maqam {maqam_name}")

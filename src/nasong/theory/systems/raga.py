@@ -14,8 +14,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Indian Classical Raga (Thaat) system.
+
+This module provides approximations of the ten standard Thaats (parent scales)
+of Hindustani classical music using 12-Tone Equal Temperament.
 """
 
 #
@@ -27,9 +29,7 @@ from nasong.theory.core.interval import Interval
 
 
 class Raga:
-    """
-    Approximation of Indian Classical Ragas.
-    """
+    """Namespace for Indian Classical Raga (Thaat) definitions."""
 
     # Definitions of Thaats (Parent Scales) as offsets from root
     # Bilawal (Major): 0 2 4 5 7 9 11
@@ -58,6 +58,18 @@ class Raga:
 
     @staticmethod
     def create(root: str, thaat_name: str) -> Scale:
+        """Creates a Raga scale based on a Thaat pattern name.
+
+        Args:
+            root (str): The root note name (Sa) (e.g., "C4").
+            thaat_name (str): The name of the Thaat (e.g., "bilawal", "bhairav").
+
+        Returns:
+            Scale: The resulting scale object.
+
+        Raises:
+            ValueError: If the Thaat name is unknown.
+        """
         if thaat_name.lower() in Raga.PATTERNS:
             intervals = [Interval(s) for s in Raga.PATTERNS[thaat_name.lower()]]
             return Scale(Note(root), intervals, name=f"Raga {thaat_name}")

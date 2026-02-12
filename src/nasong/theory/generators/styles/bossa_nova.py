@@ -14,8 +14,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Bossa Nova style generators.
+
+This module provides algorithmic generators for Bossa Nova progressions,
+typically utilizing jazz-influenced extended chords and syncopated rhythms.
 """
 
 #
@@ -26,15 +28,17 @@ from nasong.theory.structures.progression import Progression
 
 
 class BossaNova:
-    """
-    Generates Bossa Nova progressions and rhythms.
-    """
+    """Generates Bossa Nova progressions and syncopated rhythmic patterns."""
 
     @staticmethod
     def standard_progression(root: str = "C4") -> Progression:
-        """
-        Classic Bossa progression: Imaj7 - II7 - ii7 - V7
-        (Or similar turnarounds)
+        """Generates a classic Bossa Nova turnaround (e.g., Imaj7-II7-ii7-V7).
+
+        Args:
+            root (str): The root key of the progression. Defaults to "C4".
+
+        Returns:
+            Progression: A progression containing the chord sequence.
         """
         scale = Western.major(root)
         #

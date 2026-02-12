@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Percussion and drum instrument definitions.
+
+This module provides factory functions for synthesized drum kit components,
+including kick drums, snares, hi-hats, and cymbals. These use a combination
+of frequency-modulated oscillators and filtered noise.
 """
 
 #
@@ -33,9 +36,18 @@ import nasong.core.all_values as lv
 
 #
 def KickDrum(time: lv.Value, trigger_time: float, amplitude: float = 0.6) -> lv.Value:
-    """
-    Refactored KickDrum.
-    Builds the sound graph from lib_value components.
+    """Creates a basic synthesized kick drum sound.
+
+    Synthesized using a pitch-modulated sine wave (dropping from 150Hz) and
+    a short impulse "click" for impact.
+
+    Args:
+        time (lv.Value): The global time value.
+        trigger_time (float): The time the drum is struck.
+        amplitude (float, optional): Overall volume scaling. Defaults to 0.6.
+
+    Returns:
+        lv.Value: The audio value graph for the kick drum.
     """
 
     #
@@ -84,9 +96,17 @@ def KickDrum(time: lv.Value, trigger_time: float, amplitude: float = 0.6) -> lv.
 
 #
 def KickDrum2(time: lv.Value, start_time: float) -> lv.Value:
-    """
-    Refactored KickDrum2.
-    Builds the sound graph from lib_value components.
+    """Creates an alternate, punchier synthesized kick drum.
+
+    Features a steeper pitch drop and a noise-based "click" at the start for
+    added transient definition.
+
+    Args:
+        time (lv.Value): The global time value.
+        start_time (float): The strike time in seconds.
+
+    Returns:
+        lv.Value: The audio value graph for the alternate kick drum.
     """
 
     #
@@ -141,10 +161,18 @@ def KickDrum2(time: lv.Value, start_time: float) -> lv.Value:
 
 #
 def Snare(time: lv.Value, trigger_time: float, amplitude: float = 0.4) -> lv.Value:
-    """
-    Refactored Snare.
-    Builds the sound graph from lib_value components.
-    Fixes "bad noise".
+    """Creates a basic synthesized snare drum sound.
+
+    Combines a fixed 200Hz sine "body" tone with a broad-spectrum white noise
+    "snap" or "wire" component.
+
+    Args:
+        time (lv.Value): The global time value.
+        trigger_time (float): The time the snare is struck.
+        amplitude (float, optional): Overall volume scaling. Defaults to 0.4.
+
+    Returns:
+        lv.Value: The audio value graph for the snare.
     """
 
     #
@@ -187,10 +215,14 @@ def Snare(time: lv.Value, trigger_time: float, amplitude: float = 0.4) -> lv.Val
 
 #
 def SnareDrum(time: lv.Value, start_time: float) -> lv.Value:
-    """
-    Refactored SnareDrum.
-    Builds the sound graph from lib_value components.
-    Fixes "bad noise".
+    """Creates a tighter, shorter synthesized snare drum.
+
+    Args:
+        time (lv.Value): The global time value.
+        start_time (float): The strike time in seconds.
+
+    Returns:
+        lv.Value: The audio value graph for the snare drum.
     """
 
     #
@@ -233,10 +265,19 @@ def SnareDrum(time: lv.Value, start_time: float) -> lv.Value:
 
 #
 def HiHat(time: lv.Value, start_time: float, open: bool = False) -> lv.Value:
-    """
-    Refactored HiHat.
-    Builds the sound graph from lib_value components.
-    Fixes "bad noise".
+    """Creates a synthesized hi-hat sound (closed or open).
+
+    Synthesized using multiple high-frequency sine oscillators and a small
+    amount of white noise, with decay rates dictated by the `open` state.
+
+    Args:
+        time (lv.Value): The global time value.
+        start_time (float): The strike time in seconds.
+        open (bool, optional): Whether to play an open hi-hat (longer decay).
+            Defaults to False.
+
+    Returns:
+        lv.Value: The audio value graph for the hi-hat.
     """
 
     #
@@ -287,10 +328,17 @@ def HiHat(time: lv.Value, start_time: float, open: bool = False) -> lv.Value:
 
 #
 def CrashCymbal(time: lv.Value, start_time: float) -> lv.Value:
-    """
-    Refactored CrashCymbal.
-    Builds the sound graph from lib_value components.
-    Fixes "bad noise" by using static random phase.
+    """Creates a synthesized crash cymbal sound.
+
+    Uses high-frequency additive synthesis with random phases to simulate
+    the complex, non-harmonic ring of a large-diameter cymbal.
+
+    Args:
+        time (lv.Value): The global time value.
+        start_time (float): The strike time in seconds.
+
+    Returns:
+        lv.Value: The audio value graph for the crash cymbal.
     """
 
     #

@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""DSL decorators for instrument and effect registration.
+
+This module provides decorators that mark functions as specialized components
+within the NaSong DSL. These markers are used for discovery, validation,
+and potential integration with UI components.
 """
 
 #
@@ -25,9 +28,16 @@ from typing import Callable
 
 
 def instrument(func: Callable) -> Callable:
-    """
-    Decorator to register a function as an Instrument in the DSL.
-    Instruments should return a Value graph.
+    """Decorator to register a function as an Instrument.
+
+    Instruments are expected to return a `Value` graph when called. This
+    decorator marks the function for discovery by the NaSong ecosystem.
+
+    Args:
+        func (Callable): The function to be registered.
+
+    Returns:
+        Callable: The decorated function with an `_is_nasong_instrument` flag.
     """
     # Just a marker for now, maybe validation later
     # or registering to a global registry for the TUI to discover.
@@ -36,9 +46,16 @@ def instrument(func: Callable) -> Callable:
 
 
 def effect(func: Callable) -> Callable:
-    """
-    Decorator for Effects.
-    Effects take a source Value as first argument.
+    """Decorator to register a function as an Effect.
+
+    Effects are expected to take a source `Value` as their first argument and
+    return a processed `Value`.
+
+    Args:
+        func (Callable): The function to be registered.
+
+    Returns:
+        Callable: The decorated function with an `_is_nasong_effect` flag.
     """
     func._is_nasong_effect = True
     return func

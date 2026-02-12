@@ -14,8 +14,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Japanese Koto-style generators.
+
+This module provides generators for traditional Japanese melodic patterns,
+specifically targeting the 'In' pentatonic scale and Koto-like motifs.
 """
 
 #
@@ -27,15 +29,11 @@ from nasong.theory.structures.progression import Progression
 
 
 class Koto:
-    """
-    Generates Koto-style melodic patterns.
-    """
+    """Generates traditional Japanese Koto-style melodic patterns."""
 
     @staticmethod
-    def traditional_motif(root: str = "D4"):
-        """
-        Generates a motif using the In scale.
-        """
+    def traditional_motif(root: str = "D4") -> Progression:
+        """Generates a simple ascending/descending motif using the 'In' scale."""
         scale = EastAsian.in_scale(root)
 
         # Example pattern: Root -> 5th -> 4th -> Root

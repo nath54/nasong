@@ -14,8 +14,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Keyboard and piano instrument definitions.
+
+This module provides factory functions for piano-like instruments, simulating
+hammer-strike harmonics and typical acoustic piano envelopes.
 """
 
 #
@@ -39,10 +41,20 @@ def PianoNote(
     duration: float,
     amplitude: float = 0.3,
 ) -> lv.Value:
-    """
-    Refactored PianoNote.
-    This class was already "GOOD"  and is just
-    converted to a compositional factory function.
+    """Creates a basic acoustic piano note sound.
+
+    Synthesized using four additive sine harmonics (fundamental, 2nd, 3rd, and
+    4th) shaped by an ADSR2 envelope with a quick attack and moderate release.
+
+    Args:
+        time (lv.Value): The global time value.
+        frequency (float): Fundamental frequency (Hz).
+        start_time (float): Activation time in seconds.
+        duration (float): Length of the note in seconds.
+        amplitude (float, optional): Overall volume scaling. Defaults to 0.3.
+
+    Returns:
+        lv.Value: The audio value graph for the piano note.
     """
 
     #
@@ -100,11 +112,19 @@ def PianoNote(
 def PianoNote2(
     time: lv.Value, frequency: float, start_time: float, duration: float = 2.0
 ) -> lv.Value:
-    """
-    Refactored PianoNote2.
-    Builds graph from lib_value components.
-    The "POOR"  is
-    approximated with ExponentialADSR.
+    """Creates an alternate piano note with exponential decay.
+
+    Uses five harmonics and an ExponentialADSR envelope to simulate a more
+    dynamic and natural decaying piano sound.
+
+    Args:
+        time (lv.Value): The global time value.
+        frequency (float): Fundamental frequency (Hz).
+        start_time (float): Activation time in seconds.
+        duration (float, optional): Length of the note in seconds. Defaults to 2.0.
+
+    Returns:
+        lv.Value: The audio value graph for the alternate piano note.
     """
 
     #

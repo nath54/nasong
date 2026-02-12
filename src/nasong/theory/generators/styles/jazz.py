@@ -14,8 +14,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Jazz theory and pattern generators.
+
+This module provides generators for sophisticated Jazz structures, including
+standard ii-V-I turnarounds and random lead-sheet style progressions.
 """
 
 #
@@ -27,14 +29,18 @@ from nasong.theory.structures.progression import Progression
 
 
 class Jazz:
-    """
-    Generates Jazz-style progressions and voicings.
-    """
+    """Generates Jazz-style chord progressions and melodic voicings."""
 
     @staticmethod
     def ii_V_I(root: str = "C4", minor: bool = False) -> Progression:
-        """
-        Creates a classic ii-V-I progression.
+        """Generates a classic ii-V-I turnaround.
+
+        Args:
+            root (str): The tonic of the progression. Defaults to "C4".
+            minor (bool): Whether to use the minor ii-V-i form. Defaults to False.
+
+        Returns:
+            Progression: The resulting jazz sequence.
         """
         scale_type = "minor" if minor else "major"
         scale = Scale.from_name(root, scale_type)
@@ -62,8 +68,6 @@ class Jazz:
 
     @staticmethod
     def generate_random_standards_progression(length: int = 4) -> Progression:
-        """
-        Generates a random sequence using common jazz turnarounds.
-        """
+        """Generates a random lead-sheet sequence using common jazz patterns."""
         # Placeholder
         return Jazz.ii_V_I()

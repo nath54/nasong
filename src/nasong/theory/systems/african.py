@@ -14,8 +14,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""African musical theory concepts.
+
+This module provides tools for working with common African musical structures,
+including pentatonic scales and rhythmic polyrhythms.
 """
 
 #
@@ -27,9 +29,7 @@ from nasong.theory.core.interval import Interval
 
 
 class African:
-    """
-    Utilities for African musical concepts.
-    """
+    """Namespace for African musical concept factories and utilities."""
 
     # 5-tone scales are common (Pentatonic)
     # E.g., Major Pentatonic: 1, 2, 3, 5, 6
@@ -37,9 +37,7 @@ class African:
 
     @staticmethod
     def pentatonic(root: str) -> Scale:
-        """
-        Standard major pentatonic often found in West African music.
-        """
+        """Generates a Major Pentatonic scale commonly found in West African music."""
         intervals = [Interval(i) for i in [2, 2, 3, 2, 3]]
         return Scale(Note(root), intervals, name="African Pentatonic")
 
@@ -47,9 +45,15 @@ class African:
     def polyrhythm(
         ratio: tuple[int, int], length: int = 12
     ) -> tuple[list[int], list[int]]:
-        """
-        Generates two rhythmic patterns representing a polyrhythm (e.g., 3:2).
-        Returns two lists of onset indices.
+        """Generates pulse markers for a cross-rhythm (e.g., 3:2).
+
+        Args:
+            ratio (tuple[int, int]): The beat ratio (e.g., (3, 2)).
+            length (int, optional): The total number of sub-division steps.
+                Defaults to 12.
+
+        Returns:
+            tuple[list[int], list[int]]: Two lists of onset step indices.
         """
         # Simple Euclidean-like distribution or just pulse markers
         pulse_a = ratio[0]

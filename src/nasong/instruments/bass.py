@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Bass instrument definitions.
+
+This module provides factory functions for various bass synthesizers, including
+electronic wobble bass and deep atmospheric bass sounds. These are built
+compositionally using core `Value` components.
 """
 
 #
@@ -40,10 +43,22 @@ def WobbleBass(
     wobble_rate: float = 4.0,
     amplitude: float = 0.4,
 ) -> lv.Value:
-    """
-    Refactored WobbleBass.
-    This class was "EXCELLENT"  and is now built
-    compositionally from its core components.
+    """Creates a classic electronic "wobble" bass.
+
+    This instrument uses a band-limited sawtooth oscillator fed through a
+    modulating gain stage (simulating a filter wobble) controlled by an LFO,
+    followed by a tanh distortion for extra grit.
+
+    Args:
+        time (lv.Value): The global time value.
+        base_frequency (float): The fundamental frequency of the bass note.
+        start_time (float): The activation time in seconds.
+        duration (float): The length of the note in seconds.
+        wobble_rate (float, optional): The LFO speed in Hz. Defaults to 4.0.
+        amplitude (float, optional): Overall volume scaling. Defaults to 0.4.
+
+    Returns:
+        lv.Value: The composite audio value graph for the wobble bass.
     """
 
     #
@@ -73,7 +88,7 @@ def WobbleBass(
     #
     ### Distortion: tanh(filtered * 2.0)  ###
     #
-    distorted: lv.Value = lv.Distortion(filtered, drive=2.0)
+    distorted: lv.Value = lv.Distortion(filtered, gain=2.0)
 
     #
     ### Final = Amplitude * Gate * DistortedSignal ###
@@ -85,10 +100,19 @@ def WobbleBass(
 def DeepBass(
     time: lv.Value, frequency: float, start_time: float, duration: float = 0.5
 ) -> lv.Value:
-    """
-    Refactored DeepBass.
-    This class was "EXCELLENT"  and is just
-    converted to a compositional factory function.
+    """Creates a deep, atmospheric subtractive-style bass note.
+
+    Built using a pure sine wave with an exponential decay envelope, gated
+    to a specific duration for clear note boundaries.
+
+    Args:
+        time (lv.Value): The global time value.
+        frequency (float): The frequency of the bass note.
+        start_time (float): The activation time in seconds.
+        duration (float, optional): The note duration in seconds. Defaults to 0.5.
+
+    Returns:
+        lv.Value: The audio value graph for the deep bass.
     """
 
     #

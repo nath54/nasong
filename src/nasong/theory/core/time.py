@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Time signature and duration representations.
+
+This module provides tools for defining musical meter and note lengths. It
+includes classes for `TimeSignature` and `Duration`, along with common
+musical constants like `QUARTER` and `EIGHTH`.
 """
 
 #
@@ -26,8 +29,11 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class TimeSignature:
-    """
-    Represents a time signature (e.g. 4/4, 6/8).
+    """Represents a musical time signature.
+
+    Attributes:
+        numerator (int): Number of beats in a bar.
+        denominator (int): The note value that represents one beat.
     """
 
     numerator: int
@@ -45,22 +51,22 @@ class TimeSignature:
         return f"{self.numerator}/{self.denominator}"
 
     def bar_length_in_quarters(self) -> float:
-        """
-        Returns the length of a bar in quarter notes.
-        e.g. 4/4 -> 4.0
-             3/4 -> 3.0
-             6/8 -> 6 * (4/8) = 3.0
+        """Calculates total bar length in quarter notes.
+
+        Returns:
+            float: Number of quarters (e.g., 4.0 for 4/4, 3.0 for 6/8).
         """
         return self.numerator * (4 / self.denominator)
 
 
 @dataclass(frozen=True)
 class Duration:
-    """
-    Represents a musical duration in terms of quarter notes.
-    1.0 = Quarter Note
-    0.5 = Eighth Note
-    4.0 = Whole Note
+    """Represents a symbolic musical duration.
+
+    Value is expressed in quarter notes (e.g., 1.0 = Quarter, 0.5 = Eighth).
+
+    Attributes:
+        value (float): Duration in quarters.
     """
 
     value: float  # in quarter notes
@@ -84,10 +90,24 @@ THIRTYSECOND = Duration(0.125)
 
 
 def dotted(duration: Duration) -> Duration:
-    """Return a dotted version of the duration (1.5x)"""
+    """Applies a dot to a duration (x1.5).
+
+    Args:
+        duration (Duration): The base duration.
+
+    Returns:
+        Duration: The dotted duration.
+    """
     return Duration(duration.value * 1.5)
 
 
 def triplet(duration: Duration) -> Duration:
-    """Return a triplet version of the duration (2/3x)"""
+    """Applies a triplet modifier to a duration (x2/3).
+
+    Args:
+        duration (Duration): The base duration.
+
+    Returns:
+        Duration: The triplet duration.
+    """
     return Duration(duration.value * (2.0 / 3.0))

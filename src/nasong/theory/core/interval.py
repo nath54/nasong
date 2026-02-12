@@ -14,8 +14,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Musical interval representations.
+
+This module defines the `Interval` class, which handles musical distance using
+either semitones (12-Tone Equal Temperament) or frequency ratios (Just
+Intonation). It provides utilities for transposing pitches and parsing
+interval names.
 """
 
 #
@@ -29,20 +33,26 @@ from .pitch import Pitch, Hz, Note
 
 @dataclass
 class Interval:
-    """
-    Represents a musical interval.
-    Can be defined by semitones (Equal Temperament) or frequency ratio (Just Intonation).
+    """Represents a musical interval.
+
+    An interval can be defined by semitones (logarithmic scale) or a frequency
+    ratio (linear scale).
+
+    Attributes:
+        semitones (float): The distance in semitones.
+        ratio (float): The corresponding frequency ratio (e.g., 2.0 for octave).
     """
 
     semitones: float = 0.0
     ratio: float = 1.0
 
-    def __init__(self, value: int | float | str):
-        """
+    def __init__(self, value: int | float | str) -> None:
+        """Initializes the Interval.
+
         Args:
-            value:
-                - int/float: semitones (e.g. 7 for Perfect 5th)
-                - str: name (e.g. "P5", "m3", "maj7") - TODO
+            value (int | float | str):
+                - If int/float: The number of semitones (e.g., 7.0 for a P5).
+                - If str: The abbreviated name of the interval (e.g., "P5", "m3").
         """
         # Simple implementation for now: everything is semitones
         if isinstance(value, (int, float)):
@@ -55,6 +65,17 @@ class Interval:
             self.ratio = 2 ** (self.semitones / 12.0)
 
     def _parse_name(self, name: str) -> int:
+        """Parses a symbolic interval name into a semitone count.
+
+        Args:
+            name (str): The name (e.g., "M3", "tritone").
+
+        Returns:
+            int: Number of semitones.
+
+        Raises:
+            ValueError: If the name is unknown.
+        """
         # Basic lookup for common names
         lookup = {
             "P1": 0,
@@ -94,8 +115,16 @@ class Interval:
         raise ValueError(f"Unknown interval name: {name}")
 
     def add_to(self, pitch: Pitch) -> Pitch:
-        """
-        Apply this interval to a Pitch.
+        """Applies this interval to a Pitch object (transposition).
+
+        Args:
+            pitch (Pitch): The starting pitch (Hz or Note).
+
+        Returns:
+            Pitch: The resulting transposed pitch.
+
+        Raises:
+            TypeError: If the input is not a recognized Pitch type.
         """
         if isinstance(pitch, Note):
             # Transpose by semitones
@@ -117,7 +146,8 @@ class Interval:
             return Interval(self.semitones + other.semitones)
         return NotImplemented
 
-    def __neg__(self):
+    def __neg__(self) -> "Interval":
+        """Returns the inverse interval (e.g., -P5)."""
         return Interval(-self.semitones)
 
     def __repr__(self):

@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Rhythmic pattern representations.
+
+This module defines classes for `RhythmEvent` and `Rhythm`, allowing for the
+creation and manipulation of rhythmic sequences. It supports string-based
+parsing for quick pattern drafting.
 """
 
 #
@@ -30,6 +33,14 @@ from nasong.theory.core.time import Duration, QUARTER, SIXTEENTH
 
 @dataclass
 class RhythmEvent:
+    """A single point in a rhythmic sequence.
+
+    Attributes:
+        duration (Duration): The time length of the event.
+        is_rest (bool): Whether the event is a rest or an active note.
+        velocity_scale (float): Multiplier for the note's velocity.
+    """
+
     duration: Duration
     is_rest: bool = False
     velocity_scale: float = 1.0
@@ -37,8 +48,11 @@ class RhythmEvent:
 
 @dataclass
 class Rhythm:
-    """
-    A sequence of RhythmEvents.
+    """A collection of rhythmic events that can be looped or played once.
+
+    Attributes:
+        events (list[RhythmEvent]): The ordered sequence of events.
+        loop (bool): Whether the pattern should repeat indefinitely.
     """
 
     events: list[RhythmEvent]
@@ -57,11 +71,22 @@ class Rhythm:
 
     @classmethod
     def from_string(cls, pattern: str, unit: Duration = SIXTEENTH) -> "Rhythm":
-        """
-        Parses a string pattern.
-        'x' or 'X' = Note
-        '.' or '-' = Rest
-        Example: "x..x" -> Note, Rest, Rest, Note (all 16th notes)
+        """Parses a string pattern into a Rhythm object.
+
+        Notation:
+            'x' or 'X': Active note pulse.
+            '.' or '-': Rest pulse.
+
+        Example:
+            "x..x" -> [Note, Rest, Rest, Note] each of `unit` duration.
+
+        Args:
+            pattern (str): The string pattern to parse.
+            unit (Duration, optional): The duration of each character pulse.
+                Defaults to SIXTEENTH.
+
+        Returns:
+            Rhythm: The resulting rhythmic sequence.
         """
         events = []
         for char in pattern:
@@ -77,6 +102,7 @@ class Rhythm:
 
 # Common Factories
 def four_on_the_floor() -> Rhythm:
+    """Generates a standard 4/4 'four on the floor' kick pattern."""
     return Rhythm(
         [
             RhythmEvent(QUARTER, is_rest=False),
@@ -88,6 +114,7 @@ def four_on_the_floor() -> Rhythm:
 
 
 def swing_eighths() -> Rhythm:
+    """Generates a triplet-based swing eighth note pattern."""
     #
     long_d = Duration(1.0 * (2 / 3))
     short_d = Duration(1.0 * (1 / 3))
