@@ -1,7 +1,0 @@
-numpy
-scipy
-matplotlib
-pandas
-PyYAML
-tabulate
-textual[syntax]
