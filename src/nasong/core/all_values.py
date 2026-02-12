@@ -15,7 +15,15 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Consolidated Value operations registry.
+
+This module imports and exports all `Value` subclasses and utility functions
+from the `nasong.core.values` package. It provides a convenient single point of
+access for defining complex value-based sounds and modulations.
+
+Example:
+    >>> from nasong.core import all_values as v
+    >>> song_value = v.Sin(v.Identity(), frequency=v.Constant(440.0))
 """
 
 #

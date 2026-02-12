@@ -15,7 +15,19 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Naive triangle wave implementation.
+
+This module provides the `Triangle` class, which generates a naive triangle
+wave. Note that this waveform contains aliasing; for audio synthesis,
+a band-limited approach is usually preferred.
+
+Example:
+    >>> from nasong.core.values.basic.value_identity import Identity
+    >>> from nasong.core.values.complex.value_triangle import Triangle
+    >>> time = Identity()
+    >>> tri = Triangle(value=time, frequency=440.0)
+    >>> tri.get_item(0, 44100)
+    -1.0
 """
 
 #
@@ -34,8 +46,15 @@ from nasong.core.values.basic.value_constant import Constant
 
 #
 class Triangle(Value):
-    """
-    A Value that generates a "naive" triangle wave.
+    """A Value that generates a "naive" triangle wave.
+
+    Calculates a linear ramp up and down between -1 and 1.
+
+    Attributes:
+        value (Value): The base phase source.
+        frequency (Value): The frequency multiplier.
+        amplitude (Value): The peak amplitude.
+        delta (Value): The phase offset.
     """
 
     #
@@ -46,14 +65,13 @@ class Triangle(Value):
         amplitude: Value = Constant(1),
         delta: Value = Constant(0),
     ) -> None:
-        """
-        Initializes the Triangle oscillator.
+        """Initializes the Triangle oscillator.
 
         Args:
-            value: The input phase Value (e.g., time).
-            frequency: The frequency multiplier.
-            amplitude: The amplitude (gain).
-            delta: The phase offset.
+            value (Value): The input phase source (e.g., time).
+            frequency (Value): The frequency multiplier (default 1).
+            amplitude (Value): The peak amplitude (default 1).
+            delta (Value): The phase offset (default 0).
         """
 
         #
@@ -71,6 +89,15 @@ class Triangle(Value):
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
+        """Returns the triangle wave value for a specific index.
+
+        Args:
+            index (int): The sample index.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            float: The triangle wave amplitude at the given index.
+        """
 
         #
         val_v: float = self.value.get_item(index=index, sample_rate=sample_rate)
@@ -97,6 +124,15 @@ class Triangle(Value):
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
+        """Returns a vectorized NumPy array of the triangle wave.
+
+        Args:
+            indexes_buffer (NDArray[np.float32]): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            NDArray[np.float32]: Vectorized triangle wave samples.
+        """
 
         #
         val_v: NDArray[np.float32] = self.value.getitem_np(
@@ -136,6 +172,16 @@ class Triangle(Value):
         sample_rate: int,
         device: str | torch.device = "cpu",
     ) -> Tensor:
+        """Generates the triangle wave for training using PyTorch.
+
+        Args:
+            indexes_buffer (Tensor): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+            device (str | torch.device): The device to use for the tensor.
+
+        Returns:
+            Tensor: A tensor of triangle wave samples.
+        """
 
         #
         val_v: Tensor = self.value.getitem_torch(
@@ -175,11 +221,15 @@ class Triangle(Value):
         context: dict[str, Any],
         sample_rate: int,
     ) -> None:
-        """
-        Propagate gradients through triangle wave.
-        y = a * (4 * |p - 0.5| - 1) where p = phase % 1
-        But the current formula is 2 * |2 * (phase - floor(phase + 0.5))| - 1.
-        Basically, the slope is 4*a or -4*a.
+        """Propagates gradients through the triangle wave.
+
+        Computes gradients for amplitude, base value, frequency, and phase offset.
+        The slope is handled based on the current phase.
+
+        Args:
+            grad_output (NDArray[np.float32]): The gradient of the output.
+            context (dict[str, Any]): The backward context.
+            sample_rate (int): The audio sample rate.
         """
         val_v = self.value.getitem_np(context["indices"], sample_rate)
         f_v = self.frequency.getitem_np(context["indices"], sample_rate)

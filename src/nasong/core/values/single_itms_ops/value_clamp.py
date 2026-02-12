@@ -15,7 +15,18 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Clamping (clipping) operation implementation.
+
+This module provides the `Clamp` class, which constrains the values of an
+input `Value` object between a specified minimum and maximum.
+
+Example:
+    >>> from nasong.core.values.basic.value_constant import Constant
+    >>> from nasong.core.values.single_itms_ops.value_clamp import Clamp
+    >>> v, mi, ma = Constant(1.5), Constant(0.0), Constant(1.0)
+    >>> cl = Clamp(v, mi, ma)
+    >>> cl.get_item(0, 44100)
+    1.0
 """
 
 #
@@ -33,9 +44,14 @@ from nasong.core.values.basic.value_constant import Constant
 
 #
 class Clamp(Value):
-    """
-    A Value that constrains another Value between a min and max Value.
-    Also known as Clip.
+    """A Value that constrains another Value between a min and max Value.
+
+    Also known as Clip. Constrains all samples to the range [min_value, max_value].
+
+    Attributes:
+        value (Value): The source value to clamp.
+        min_value (Value): The lower bound.
+        max_value (Value): The upper bound.
     """
 
     #
@@ -45,6 +61,13 @@ class Clamp(Value):
         min_value: Value = Constant(0),
         max_value: Value = Constant(1),
     ) -> None:
+        """Initializes the Clamp operation.
+
+        Args:
+            value (Value): The input Value object.
+            min_value (Value, optional): The minimum allowed value. Defaults to 0.
+            max_value (Value, optional): The maximum allowed value. Defaults to 1.
+        """
 
         #
         super().__init__()
@@ -60,6 +83,15 @@ class Clamp(Value):
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
+        """Returns the clamped value for a specific index.
+
+        Args:
+            index (int): The sample index.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            float: The clamped amplitude at the given index.
+        """
 
         #
         return max(
@@ -74,6 +106,15 @@ class Clamp(Value):
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
+        """Returns a vectorized NumPy array of the clamped values.
+
+        Args:
+            indexes_buffer (NDArray[np.float32]): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            NDArray[np.float32]: Vectorized clamped samples.
+        """
 
         #
         return np.clip(
@@ -95,6 +136,16 @@ class Clamp(Value):
         sample_rate: int,
         device: str | torch.device = "cpu",
     ) -> Tensor:
+        """Generates the clamped values for training using PyTorch.
+
+        Args:
+            indexes_buffer (Tensor): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+            device (str | torch.device): The device to use for the tensor.
+
+        Returns:
+            Tensor: A tensor of clamped samples.
+        """
 
         #
         return torch.clamp(
@@ -116,12 +167,15 @@ class Clamp(Value):
         context: dict[str, Any],
         sample_rate: int,
     ) -> None:
-        """
-        Propagate gradients through clamp.
-        y = clip(x, low, high)
-        dy/dx = 1 if low < x < high, 0 otherwise.
-        dy/dlow = 1 if x < low, 0 otherwise.
-        dy/dhigh = 1 if x > high, 0 otherwise.
+        """Propagates gradients through the clamp operation.
+
+        Gradients are passed back to the input, min_value, or max_value depending
+        on which branch was active at each sample.
+
+        Args:
+            grad_output (NDArray[np.float32]): The gradient of the output.
+            context (dict[str, Any]): The backward context.
+            sample_rate (int): The audio sample rate.
         """
         x_val = self.value.getitem_np(context["indices"], sample_rate)
         low_val = self.min_value.getitem_np(context["indices"], sample_rate)

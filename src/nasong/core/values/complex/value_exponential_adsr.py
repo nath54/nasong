@@ -15,7 +15,19 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Exponential ADSR envelope implementation.
+
+This module provides the `ExponentialADSR` class, which implements an ADSR
+envelope with non-linear (exponential) curves for the attack, decay, and
+release stages.
+
+Example:
+    >>> from nasong.core.values.basic.value_identity import Identity
+    >>> from nasong.core.values.complex.value_exponential_adsr import ExponentialADSR
+    >>> time = Identity()
+    >>> env = ExponentialADSR(time=time, note_start=0.0, note_duration=1.0)
+    >>> env.get_item(0, 44100)
+    0.0
 """
 
 #
@@ -35,16 +47,22 @@ from nasong.core.value import torch, Tensor
 
 #
 class ExponentialADSR(Value):
-    """
-    A "truthful" one-shot Attack-Decay-Sustain-Release envelope
-    with *exponential* curves.
+    """A one-shot Attack-Decay-Sustain-Release envelope with exponential curves.
 
-    This is an improvement on ADSR2, allowing for non-linear (concave or
-    convex) curves for the Attack, Decay, and Release stages.
+    This class generates an ADSR envelope where the shapes of the attack,
+    decay, and release stages can be adjusted using curve parameters.
 
-    - A curve value of 1.0 is linear (identical to ADSR2).
-    - A curve value > 1.0 is "convex" (starts slow, ends fast).
-    - A curve value < 1.0 is "concave" (starts fast, ends slow).
+    Attributes:
+        time (Value): The time source.
+        note_start (float): Start time of the envelope.
+        note_duration (float): Duration of the sustain phase.
+        attack_time (float): Duration of the attack phase.
+        decay_time (float): Duration of the decay phase.
+        sustain_level (float): Amplitude level during sustain.
+        release_time (float): Duration of the release phase.
+        attack_curve (float): Curvature of the attack (1.0 = linear).
+        decay_curve (float): Curvature of the decay (1.0 = linear).
+        release_curve (float): Curvature of the release (1.0 = linear).
     """
 
     #
@@ -61,6 +79,20 @@ class ExponentialADSR(Value):
         decay_curve: float = 2.0,  # Convex (natural) decay
         release_curve: float = 2.0,  # Convex (natural) release
     ) -> None:
+        """Initializes the ExponentialADSR envelope.
+
+        Args:
+            time (Value): The time source.
+            note_start (float): Start time of the envelope.
+            note_duration (float): Duration of the sustain phase.
+            attack_time (float): Duration of the attack phase.
+            decay_time (float): Duration of the decay phase.
+            sustain_level (float): Amplitude level during sustain.
+            release_time (float): Duration of the release phase.
+            attack_curve (float): Curvature of the attack (default 0.5).
+            decay_curve (float): Curvature of the decay (default 2.0).
+            release_curve (float): Curvature of the release (default 2.0).
+        """
 
         #
         super().__init__()
@@ -89,6 +121,15 @@ class ExponentialADSR(Value):
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
+        """Returns the envelope value for a specific index.
+
+        Args:
+            index (int): The sample index.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            float: The envelope amplitude at the given index.
+        """
 
         #
         t: float = self.time.get_item(index=index, sample_rate=sample_rate)
@@ -141,6 +182,15 @@ class ExponentialADSR(Value):
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
+        """Returns a vectorized NumPy array of the envelope.
+
+        Args:
+            indexes_buffer (NDArray[np.float32]): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            NDArray[np.float32]: Vectorized envelope samples.
+        """
 
         #
         t: NDArray[np.float32] = self.time.getitem_np(
@@ -245,13 +295,15 @@ class ExponentialADSR(Value):
         context: dict[str, Any],
         sample_rate: int,
     ) -> None:
-        """
-        Propagate gradient to self.time.
-        dy/dt = dy/dprogress * dprogress/dt
-        - Attack: curve * progress^(curve-1) * (1/attack_time)
-        - Decay: (1-sustain) * curve * (1-progress)^(curve-1) * (-1/decay_time)
-        - Sustain: 0
-        - Release: sustain * curve * (1-progress)^(curve-1) * (-1/release_time)
+        """Propagates gradients through the exponential ADSR envelope.
+
+        Computes gradients for the base time source by differentiating the
+        exponential functions used in each stage.
+
+        Args:
+            grad_output (NDArray[np.float32]): The gradient of the output.
+            context (dict[str, Any]): The backward context.
+            sample_rate (int): The audio sample rate.
         """
         t = self.time.getitem_np(np.zeros_like(grad_output), sample_rate)
         relative_time = t - self.note_start
@@ -306,6 +358,16 @@ class ExponentialADSR(Value):
         sample_rate: int,
         device: str | torch.device = "cpu",
     ) -> Tensor:
+        """Generates the envelope for training using PyTorch.
+
+        Args:
+            indexes_buffer (Tensor): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+            device (str | torch.device): The device to use for the tensor.
+
+        Returns:
+            Tensor: A tensor of envelope samples.
+        """
 
         #
         t: Tensor = self.time.getitem_torch(

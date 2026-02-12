@@ -15,7 +15,19 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Naive square wave implementation.
+
+This module provides the `Square` class, which generates a naive square
+wave with a variable duty cycle. Note that this waveform contains aliasing;
+for audio synthesis, `BandLimitedSquare` is usually preferred.
+
+Example:
+    >>> from nasong.core.values.basic.value_identity import Identity
+    >>> from nasong.core.values.complex.value_square import Square
+    >>> time = Identity()
+    >>> sq = Square(value=time, frequency=440.0, duty_cycle=0.5)
+    >>> sq.get_item(0, 44100)
+    1.0
 """
 
 #
@@ -34,8 +46,17 @@ from nasong.core.values.basic.value_constant import Constant
 
 #
 class Square(Value):
-    """
-    A Value that generates a "naive" square wave with a variable duty cycle.
+    """A Value that generates a "naive" square wave with a variable duty cycle.
+
+    Calculates a signal that is high for a `duty_cycle` portion of the period
+    and low for the rest.
+
+    Attributes:
+        value (Value): The base phase source.
+        frequency (Value): The frequency multiplier.
+        amplitude (Value): The peak amplitude.
+        delta (Value): The phase offset.
+        duty_cycle (Value): The fraction of the period for which the signal is high.
     """
 
     #
@@ -47,16 +68,14 @@ class Square(Value):
         delta: Value = Constant(0),
         duty_cycle: Value = Constant(0.5),
     ) -> None:
-        """
-        Initializes the Square oscillator.
+        """Initializes the Square oscillator.
 
         Args:
-            value: The input phase Value (e.g., time).
-            frequency: The frequency multiplier.
-            amplitude: The amplitude (gain).
-            delta: The phase offset.
-            duty_cycle: The fraction of the period (0.0 to 1.0) for
-                        which the signal is high.
+            value (Value): The input phase source (e.g., time).
+            frequency (Value): The frequency multiplier (default 1).
+            amplitude (Value): The peak amplitude (default 1).
+            delta (Value): The phase offset (default 0).
+            duty_cycle (Value): The high-state duration fraction (default 0.5).
         """
 
         #
@@ -77,6 +96,15 @@ class Square(Value):
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
+        """Returns the square wave value for a specific index.
+
+        Args:
+            index (int): The sample index.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            float: The square wave amplitude at the given index.
+        """
 
         #
         val_v: float = self.value.get_item(index=index, sample_rate=sample_rate)
@@ -106,6 +134,15 @@ class Square(Value):
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
+        """Returns a vectorized NumPy array of the square wave.
+
+        Args:
+            indexes_buffer (NDArray[np.float32]): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            NDArray[np.float32]: Vectorized square wave samples.
+        """
 
         #
         val_v: NDArray[np.float32] = self.value.getitem_np(
@@ -142,6 +179,16 @@ class Square(Value):
         sample_rate: int,
         device: str | torch.device = "cpu",
     ) -> Tensor:
+        """Generates the square wave for training using PyTorch.
+
+        Args:
+            indexes_buffer (Tensor): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+            device (str | torch.device): The device to use for the tensor.
+
+        Returns:
+            Tensor: A tensor of square wave samples.
+        """
 
         #
         val_v: Tensor = self.value.getitem_torch(
@@ -178,13 +225,16 @@ class Square(Value):
         context: dict[str, Any],
         sample_rate: int,
     ) -> None:
-        """
-        Propagate gradients through square wave.
-        y = a * sign(duty - (v*f + d)%1) (roughly)
-        dy/da = sign(...)
-        dy/dduty = 2 * a * delta(duty - p)
-        For simplicity, we use straight-through: dy/dduty = 0 almost everywhere,
-        or we can use a narrow pulse. Here we'll just handle dy/da.
+        """Propagates gradients through the square wave.
+
+        Computes gradients for amplitude. For duty cycle and phase-related inputs,
+        it use a straight-through proxy since the naive square wave is not
+        differentiable at transitions.
+
+        Args:
+            grad_output (NDArray[np.float32]): The gradient of the output.
+            context (dict[str, Any]): The backward context.
+            sample_rate (int): The audio sample rate.
         """
         val_v = self.value.getitem_np(context["indices"], sample_rate)
         f_v = self.frequency.getitem_np(context["indices"], sample_rate)

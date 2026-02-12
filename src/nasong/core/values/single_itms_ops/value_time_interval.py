@@ -15,7 +15,21 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Time interval operation implementation.
+
+This module provides the `TimeInterval` class, which selects between two
+`Value` objects based on whether the current sample index falls within a
+specified range.
+
+Example:
+    >>> from nasong.core.values.basic.value_constant import Constant
+    >>> from nasong.core.values.single_itms_ops.value_time_interval import TimeInterval
+    >>> inside, outside = Constant(1.0), Constant(0.0)
+    >>> ti = TimeInterval(inside, outside, Constant(100), Constant(200))
+    >>> ti.get_item(150, 44100)
+    1.0
+    >>> ti.get_item(50, 44100)
+    0.0
 """
 
 #
@@ -33,10 +47,16 @@ from nasong.core.values.basic.value_constant import Constant
 
 #
 class TimeInterval(Value):
-    """
-    A Value that selects between two other Values based on the index (time).
+    """A Value that selects between two other Values based on the index (time).
+
     Returns `value_inside` if `min_sample_idx <= index <= max_sample_idx`.
     Otherwise, returns `value_outside`.
+
+    Attributes:
+        value_inside (Value): The value to return when in-range.
+        value_outside (Value): The value to return when out-of-range.
+        min_sample_idx (Value): The start of the interval.
+        max_sample_idx (Value): The end of the interval.
     """
 
     #
@@ -47,6 +67,14 @@ class TimeInterval(Value):
         min_sample_idx: Value = Constant(0),
         max_sample_idx: Value = Constant(1),
     ) -> None:
+        """Initializes the TimeInterval operation.
+
+        Args:
+            value_inside (Value): The Value to return inside the interval.
+            value_outside (Value, optional): The Value to return outside. Defaults to 0.
+            min_sample_idx (Value, optional): The start index. Defaults to 0.
+            max_sample_idx (Value, optional): The end index. Defaults to 1.
+        """
 
         #
         super().__init__()
@@ -59,6 +87,15 @@ class TimeInterval(Value):
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
+        """Returns the interval-selected value for a specific index.
+
+        Args:
+            index (int): The sample index.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            float: Either the inside value or the outside value.
+        """
 
         #
         if index < self.min_sample_idx.get_item(index=index, sample_rate=sample_rate):
@@ -77,6 +114,15 @@ class TimeInterval(Value):
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
+        """Returns a vectorized NumPy array of the interval-selected values.
+
+        Args:
+            indexes_buffer (NDArray[np.float32]): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            NDArray[np.float32]: Vectorized interval selection samples.
+        """
 
         #
         inside_values: NDArray[np.float32] = self.value_inside.getitem_np(
@@ -109,6 +155,16 @@ class TimeInterval(Value):
         sample_rate: int,
         device: str | torch.device = "cpu",
     ) -> Tensor:
+        """Generates the interval-selected values for training using PyTorch.
+
+        Args:
+            indexes_buffer (Tensor): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+            device (str | torch.device): The device to use for the tensor.
+
+        Returns:
+            Tensor: A tensor of interval selection samples.
+        """
 
         #
         inside_values: Tensor = self.value_inside.getitem_torch(
@@ -141,11 +197,15 @@ class TimeInterval(Value):
         context: dict[str, Any],
         sample_rate: int,
     ) -> None:
-        """
-        Propagate gradients through time interval.
-        y = inside if min <= time <= max else outside
-        dy/dinside = 1 if inside, 0 otherwise
-        dy/doutside = 1 if outside, 0 otherwise
+        """Propagates gradients through the time interval operation.
+
+        Gradients are passed back to the `value_inside` or `value_outside` branch
+        based on the sample indices.
+
+        Args:
+            grad_output (NDArray[np.float32]): The gradient of the output.
+            context (dict[str, Any]): The backward context.
+            sample_rate (int): The audio sample rate.
         """
         # We need the indexes to know which branch was taken
         # grad_output is likely coming from a buffer that has the same shape as the sample indexes

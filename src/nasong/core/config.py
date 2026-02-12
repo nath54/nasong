@@ -15,12 +15,23 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Configuration management for audio generation.
+
+This module provides the `Config` class, which holds global settings for the
+audio engine, such as sample rate, duration, and output file naming.
 """
 
 
 #
 class Config:
+    """Holds configuration settings for an audio generation session.
+
+    Attributes:
+        sample_rate (int): The number of samples per second (e.g., 44100).
+        total_duration (float): The length of the generated audio in seconds.
+        output_filename (str): The path or name for the saved WAV file.
+    """
+
     #
     def __init__(
         #
@@ -39,6 +50,14 @@ class Config:
         output_filename: str = "generated_sine_wave.wav",
         #
     ) -> None:
+        """Initializes the Config object.
+
+        Args:
+            sample_rate (int, optional): Audio sample rate in Hz. Defaults to 44100.
+            total_duration (float, optional): Duration in seconds. Defaults to 40.0.
+            output_filename (str, optional): Target WAV filename.
+                Defaults to "generated_sine_wave.wav".
+        """
 
         #
         ### The sample rate (samples per second) is a standard for CD quality audio. ###

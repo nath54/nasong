@@ -15,7 +15,19 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Low-pass (maximum clipper) operation implementation.
+
+This module provides the `LowPass` class, which limits the maximum amplitude
+of an input `Value` object. Note that this is a simple mathematical clipper,
+not a frequency-domain filter.
+
+Example:
+    >>> from nasong.core.values.basic.value_constant import Constant
+    >>> from nasong.core.values.single_itms_ops.value_low_pass import LowPass
+    >>> v, ma = Constant(1.5), Constant(1.0)
+    >>> lp = LowPass(v, ma)
+    >>> lp.get_item(0, 44100)
+    1.0
 """
 
 #
@@ -33,14 +45,24 @@ from nasong.core.values.basic.value_constant import Constant
 
 #
 class LowPass(Value):
-    """
-    A simple "clipper" Value that limits the maximum value.
+    """A simple "clipper" Value that limits the maximum value.
+
     This is NOT an audio filter (like a Butterworth or RC filter).
     It is equivalent to min(value, max_value).
+
+    Attributes:
+        value (Value): The source value to clip.
+        max_value (Value): The upper bound.
     """
 
     #
     def __init__(self, value: Value, max_value: Value = Constant(0)) -> None:
+        """Initializes the LowPass operation.
+
+        Args:
+            value (Value): The input Value object.
+            max_value (Value, optional): The maximum allowed value. Defaults to 0.
+        """
 
         #
         super().__init__()
@@ -53,6 +75,15 @@ class LowPass(Value):
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
+        """Returns the low-passed (clipped) value for a specific index.
+
+        Args:
+            index (int): The sample index.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            float: The amplitude constrained to the maximum value.
+        """
 
         #
         return min(
@@ -64,6 +95,15 @@ class LowPass(Value):
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
+        """Returns a vectorized NumPy array of the low-passed values.
+
+        Args:
+            indexes_buffer (NDArray[np.float32]): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            NDArray[np.float32]: Vectorized low-passed samples.
+        """
 
         #
         return np.minimum(
@@ -82,6 +122,16 @@ class LowPass(Value):
         sample_rate: int,
         device: str | torch.device = "cpu",
     ) -> Tensor:
+        """Generates the low-passed values for training using PyTorch.
+
+        Args:
+            indexes_buffer (Tensor): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+            device (str | torch.device): The device to use for the tensor.
+
+        Returns:
+            Tensor: A tensor of low-passed samples.
+        """
 
         #
         return torch.minimum(
@@ -100,11 +150,14 @@ class LowPass(Value):
         context: dict[str, Any],
         sample_rate: int,
     ) -> None:
-        """
-        Propagate gradients through low-pass (min clipper).
-        y = min(x, high)
-        dy/dx = 1 if x < high, 0 otherwise.
-        dy/dhigh = 1 if high <= x, 0 otherwise.
+        """Propagates gradients through the low-pass operation.
+
+        Uses a mask where x < high: dy/dx = 1, dy/dhigh = 0.
+
+        Args:
+            grad_output (NDArray[np.float32]): The gradient of the output.
+            context (dict[str, Any]): The backward context.
+            sample_rate (int): The audio sample rate.
         """
         v_val = self.value.getitem_np(context["indices"], sample_rate)
         high_val = self.max_value.getitem_np(context["indices"], sample_rate)

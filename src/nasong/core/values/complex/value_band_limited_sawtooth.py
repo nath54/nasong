@@ -15,7 +15,19 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Band-limited Sawtooth wave implementation.
+
+This module provides the `BandLimitedSawtooth` class, which generates a
+sawtooth wave by summing a finite number of sine wave harmonics. This
+approach avoids the aliasing issues of a "naive" sawtooth wave.
+
+Example:
+    >>> from nasong.core.values.basic.value_identity import Identity
+    >>> from nasong.core.values.complex.value_band_limited_sawtooth import BandLimitedSawtooth
+    >>> time = Identity()
+    >>> saw = BandLimitedSawtooth(time=time, frequency=440.0)
+    >>> saw.get_item(0, 44100)
+    0.0
 """
 
 #
@@ -36,22 +48,17 @@ from nasong.core.values.basic.value_constant import Constant
 
 #
 class BandLimitedSawtooth(Value):
-    """
-        A "good listening" sawtooth wave built from a fixed number of harmonics.
+    """A "good listening" sawtooth wave built from a fixed number of harmonics.
 
-        "Truthness" / "Good Listening" Analysis:
-            - "Truthness": This is a "truthful" model of additive synthesis
-                used to create a band-limited sawtooth wave.
-            - "Good Listening": **GOOD**.
-            - **Reason:** This class avoids the "naive" formula by summing
-                `Sin` waves, following the model of the `WobbleBass` class
-    .
-                This is a "fixed-harmonic-limit" oscillator.
-            - **Compromise:** This is not *perfectly* band-limited (which
-                would require checking `frequency * n` against `sample_rate`
-                for every sample). Instead, it uses a fixed `num_harmonics`,
-                which is a "good listening" compromise that is vectorizable
-                and supports dynamic frequency (e.g., vibrato).
+    This class avoids the "naive" sawtooth formula (which introduces high-frequency
+    aliasing) by summing `num_harmonics` sine waves. This is an additive synthesis
+    model for a band-limited oscillator.
+
+    Attributes:
+        time (Value): The time source.
+        frequency (Value): The fundamental frequency in Hz.
+        amplitude (Value): The peak amplitude.
+        num_harmonics (int): Number of harmonics to sum.
     """
 
     #
@@ -62,6 +69,14 @@ class BandLimitedSawtooth(Value):
         amplitude: Value = Constant(1.0),
         num_harmonics: int = 15,
     ) -> None:
+        """Initializes the BandLimitedSawtooth wave.
+
+        Args:
+            time (Value): The time source.
+            frequency (Value): The fundamental frequency in Hz.
+            amplitude (Value): The peak amplitude.
+            num_harmonics (int): Number of harmonics to sum (default 15).
+        """
 
         #
         super().__init__()
@@ -79,6 +94,15 @@ class BandLimitedSawtooth(Value):
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
+        """Returns the wave value for a specific index.
+
+        Args:
+            index (int): The sample index.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            float: The wave amplitude at the given index.
+        """
 
         #
         t_v: float = self.time.get_item(index=index, sample_rate=sample_rate)
@@ -103,6 +127,15 @@ class BandLimitedSawtooth(Value):
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
+        """Returns a vectorized NumPy array of the sawtooth wave.
+
+        Args:
+            indexes_buffer (NDArray[np.float32]): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            NDArray[np.float32]: Vectorized wave samples.
+        """
 
         #
         t_v: NDArray[np.float32] = self.time.getitem_np(
@@ -143,6 +176,16 @@ class BandLimitedSawtooth(Value):
         sample_rate: int,
         device: str | torch.device = "cpu",
     ) -> Tensor:
+        """Generates the sawtooth wave for training using PyTorch.
+
+        Args:
+            indexes_buffer (Tensor): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+            device (str | torch.device): The device to use for the tensor.
+
+        Returns:
+            Tensor: A tensor of wave samples.
+        """
 
         #
         t_v: Tensor = self.time.getitem_torch(
@@ -181,8 +224,15 @@ class BandLimitedSawtooth(Value):
         context: dict[str, Any],
         sample_rate: int,
     ) -> None:
-        """
-        Propagate gradients through additive synthesis.
+        """Propagates gradients through additive synthesis.
+
+        Gradients are computed for frequency, amplitude, and time by differentiating
+        the sum of sines.
+
+        Args:
+            grad_output (NDArray[np.float32]): The gradient of the output.
+            context (dict[str, Any]): The backward context.
+            sample_rate (int): The audio sample rate.
         """
         t_v = self.time.getitem_np(np.zeros_like(grad_output), sample_rate)
         f_v = self.frequency.getitem_np(np.zeros_like(grad_output), sample_rate)

@@ -15,7 +15,18 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Modulo (remainder) operation implementation.
+
+This module provides the `Modulo` class, which computes the remainder of a
+division between two `Value` objects.
+
+Example:
+    >>> from nasong.core.values.basic.value_constant import Constant
+    >>> from nasong.core.values.single_itms_ops.value_modulo import Modulo
+    >>> v, m = Constant(5.5), Constant(1.0)
+    >>> mo = Modulo(v, m)
+    >>> mo.get_item(0, 44100)
+    0.5
 """
 
 #
@@ -33,17 +44,23 @@ from nasong.core.values.basic.value_constant import Constant
 
 #
 class Modulo(Value):
-    """
-    A Value that computes the modulo (remainder) of another Value.
-    Result = value % modulo_value
+    """A Value that computes the modulo (remainder) of another Value.
 
-    This is ideal for creating looping LFOs (Low-Frequency Oscillators)
-    by using a looping time value as the input to other oscillators
-    like `Sawtooth` or `Triangle`.
+    Result = value % modulo_value. Ideal for creating looping LFOs.
+
+    Attributes:
+        value (Value): The dividend Value.
+        modulo_value (Value): The divisor Value.
     """
 
     #
     def __init__(self, value: Value, modulo_value: Value = Constant(1.0)) -> None:
+        """Initializes the Modulo operation.
+
+        Args:
+            value (Value): The input Value object.
+            modulo_value (Value, optional): The modulo divisor. Defaults to 1.0.
+        """
         super().__init__()
         self.value: Value = value
         self.modulo_value: Value = (
@@ -52,6 +69,16 @@ class Modulo(Value):
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
+        """Returns the modulo for a specific index.
+
+        Args:
+            index (int): The sample index.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            float: The remainder of the division. Returns the value itself if
+                the divisor is zero.
+        """
 
         #
         val_v: float = self.value.get_item(index=index, sample_rate=sample_rate)
@@ -73,6 +100,15 @@ class Modulo(Value):
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
+        """Returns a vectorized NumPy array of the modulo values.
+
+        Args:
+            indexes_buffer (NDArray[np.float32]): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            NDArray[np.float32]: Vectorized modulo samples.
+        """
 
         #
         val_v: NDArray[np.float32] = self.value.getitem_np(
@@ -95,6 +131,16 @@ class Modulo(Value):
         sample_rate: int,
         device: str | torch.device = "cpu",
     ) -> Tensor:
+        """Generates the modulo values for training using PyTorch.
+
+        Args:
+            indexes_buffer (Tensor): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+            device (str | torch.device): The device to use for the tensor.
+
+        Returns:
+            Tensor: A tensor of modulo samples.
+        """
 
         #
         val_v: Tensor = self.value.getitem_torch(
@@ -117,11 +163,15 @@ class Modulo(Value):
         context: dict[str, Any],
         sample_rate: int,
     ) -> None:
-        """
-        Propagate gradients through modulo.
-        y = x % m
-        dy/dx = 1 (ignoring the jumps)
-        dy/dm = 0 (mostly, though technically it's more complex)
+        """Propagates gradients through the modulo operation.
+
+        Uses the identity for the input (ignoring discontinuities) and zero for
+        the divisor.
+
+        Args:
+            grad_output (NDArray[np.float32]): The gradient of the output.
+            context (dict[str, Any]): The backward context.
+            sample_rate (int): The audio sample rate.
         """
         self.value.backward(grad_output, context, sample_rate)
         self.modulo_value.backward(np.zeros_like(grad_output), context, sample_rate)

@@ -15,7 +15,19 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Pondered sum (weighted sum) implementation.
+
+This module provides the `PonderedSum` class, which calculates a weighted sum
+of (weight, value) pairs.
+
+Example:
+    >>> from nasong.core.values.basic.value_constant import Constant
+    >>> from nasong.core.values.mult_itms_ops.value_pondered_sum import PonderedSum
+    >>> w1, v1 = Constant(0.5), Constant(10.0)
+    >>> w2, v2 = Constant(0.5), Constant(20.0)
+    >>> ps = PonderedSum([(w1, v1), (w2, v2)])
+    >>> ps.get_item(0, 44100)
+    15.0
 """
 
 #
@@ -32,13 +44,22 @@ from nasong.core.value import torch, Tensor
 
 #
 class PonderedSum(Value):
-    """
-    A Value that returns a weighted sum of (weight, value) pairs.
-    Result = (weight1 * value1) + (weight2 * value2) + ...
+    """A Value that returns a weighted sum of (weight, value) pairs.
+
+    The result is calculated as: (weight1 * value1) + (weight2 * value2) + ...
+
+    Attributes:
+        values_and_weights (list[tuple[Value, Value]]): A list of tuples, where
+            each tuple contains a weight Value and a target Value.
     """
 
     #
     def __init__(self, values: list[tuple[Value, Value]]) -> None:
+        """Initializes the PonderedSum operation.
+
+        Args:
+            values (list[tuple[Value, Value]]): A list of (weight, value) pairs.
+        """
 
         #
         super().__init__()
@@ -48,6 +69,15 @@ class PonderedSum(Value):
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
+        """Returns the weighted sum for a specific index.
+
+        Args:
+            index (int): The sample index.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            float: The calculated weighted sum at the given index.
+        """
 
         #
         result: float = 0
@@ -66,6 +96,15 @@ class PonderedSum(Value):
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
+        """Returns a vectorized NumPy array of the weighted sums.
+
+        Args:
+            indexes_buffer (NDArray[np.float32]): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            NDArray[np.float32]: Vectorized weighted sum samples.
+        """
 
         #
         result: NDArray[np.float32] = np.zeros_like(indexes_buffer, dtype=np.float32)
@@ -87,6 +126,16 @@ class PonderedSum(Value):
         sample_rate: int,
         device: str | torch.device = "cpu",
     ) -> Tensor:
+        """Generates the weighted sums for training using PyTorch.
+
+        Args:
+            indexes_buffer (Tensor): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+            device (str | torch.device): The device to use for the tensor.
+
+        Returns:
+            Tensor: A tensor of weighted sum samples.
+        """
 
         #
         if len(self.values_and_weights) == 0:
@@ -122,11 +171,16 @@ class PonderedSum(Value):
         context: dict[str, Any],
         sample_rate: int,
     ) -> None:
-        """
-        Propagate gradients through pondered sum.
-        y = sum(w_i * x_i)
+        """Propagates gradients through the weighted sum.
+
+        Computes gradients for each weight and each value using the product rule:
         dy/dw_i = x_i
         dy/dx_i = w_i
+
+        Args:
+            grad_output (NDArray[np.float32]): The gradient of the output.
+            context (dict[str, Any]): The backward context.
+            sample_rate (int): The audio sample rate.
         """
         for weight, value in self.values_and_weights:
             w_val = weight.getitem_np(context["indices"], sample_rate)

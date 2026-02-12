@@ -15,7 +15,10 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Utility functions for complex Value operations.
+
+This module provides high-level utilities for generating harmonic series and
+creating Low-Frequency Oscillators (LFOs).
 """
 
 #
@@ -47,24 +50,25 @@ def generate_harmonics(
     sample_rate: int,
     base_amplitude: Value = Constant(1.0),
 ) -> Value:
-    """
-    Utility to generate a band-limited sum of harmonic sine waves.
+    """Utility to generate a band-limited sum of harmonic sine waves.
 
-    This function is crucial for "good listening" as it prevents
-    aliasing by checking harmonics against the Nyquist frequency.
+    This function creates a series of sine waves starting at the base frequency
+    and adding harmonics (multiples of the base frequency). It prevents
+    aliasing by only adding harmonics that are below the Nyquist frequency.
 
     Args:
-        time: The base `Value` for time (e.g., from `song.render`).
-        base_frequency: The fundamental frequency in Hz (e.g., 440.0).
-        num_harmonics: The maximum number of harmonics to generate.
-        amplitude_falloff: A multiplier for each successive harmonic's
-            amplitude. (e.g., 0.5 means each harmonic is half the
-            amplitude of the previous one).
-        sample_rate: The audio sample rate (e.g., 44100).
-        base_amplitude: A `Value` for the fundamental's amplitude.
+        time (Value): The time input for the sine oscillators.
+        base_frequency (float): The fundamental frequency in Hz (e.g., 440.0).
+        num_harmonics (int): The maximum number of harmonics to generate.
+        amplitude_falloff (float): A multiplier for each successive harmonic's
+            amplitude (e.g., 0.5 means each harmonic is half the amplitude of
+            the previous one).
+        sample_rate (int): The audio sample rate in Hz (e.g., 44100).
+        base_amplitude (Value, optional): Overall amplitude scaling.
+            Defaults to 1.0.
 
     Returns:
-        A `Sum` Value object containing all valid, band-limited harmonics.
+        Value: A Sum object containing all valid, band-limited harmonics.
     """
 
     #
@@ -131,18 +135,23 @@ def LFO(
     amplitude: Value = Constant(1.0),
     delta: Value = Constant(0.0),
 ) -> Value:
-    """
-    Utility to create a Low-Frequency Oscillator (LFO).
+    """Utility to create a Low-Frequency Oscillator (LFO).
 
-    This helper function simplifies LFO creation by abstracting the
-    frequency unit inconsistency in the oscillator APIs.
-    - `Sin` and `Cos` expect frequency in radians per second.
+    This helper function simplifies LFO creation by abstracting unit
+    conversions for different oscillator types. It ensures that `rate_hz`
+    is always treated as Hertz, converting it to radians per second where
+    required (e.g., for `Sin` and `Cos`).
 
-    - `Triangle`, `Square`, `Sawtooth` expect frequency in Hz.
+    Args:
+        time (Value): The time input for the oscillator.
+        rate_hz (Value): The LFO frequency in Hz.
+        waveform_class (Callable[..., Value]): The Value class to instantiate
+            (e.g., Sin, Triangle, Square).
+        amplitude (Value, optional): The LFO amplitude. Defaults to 1.0.
+        delta (Value, optional): The initial phase/offset. Defaults to 0.0.
 
-
-    This function always takes `rate_hz` in Hz and automatically
-    converts it to the correct unit for the given `waveform_class`.
+    Returns:
+        Value: An instance of the requested waveform class configured as an LFO.
     """
 
     #

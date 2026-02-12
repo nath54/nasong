@@ -15,7 +15,10 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Input argument handling utilities for multi-input Value operations.
+
+This module provides the `input_args_to_values` function, which standardizes
+how flexible arguments (*args) are converted into a list of `Value` objects.
 """
 
 #
@@ -30,17 +33,25 @@ from nasong.core.values.basic.value_constant import Constant
 
 #
 def input_args_to_values(values: tuple[Any, ...]) -> list[Value]:
-    """
-    A utility function to handle flexible *args inputs for multi-input classes
-    (like Sum, Min, Max, Product).
+    """Standardizes flexible *args inputs into a list of Value objects.
 
-    This allows users to pass either `Sum(v1, v2, 0.5)` or `Sum([v1, v2, 0.5])`.
+    This utility allows multi-input classes (like Sum, Product, Min, Max) to
+    accept either multiple positional arguments or a single collection of items.
+    It also automatically wraps non-Value items (like floats or ints) into
+    `Constant` objects.
+
+    Example:
+        >>> from nasong.core.values.basic.value_constant import Constant
+        >>> v1, v2 = Constant(0.1), Constant(0.2)
+        >>> # Both calls below return the same list of Value objects:
+        >>> input_args_to_values((v1, v2, 0.5))
+        >>> input_args_to_values(([v1, v2, 0.5],))
 
     Args:
-        values: The arguments passed to the class constructor (usually *args).
+        values: The arguments passed to the class constructor (usually via *args).
 
     Returns:
-        A clean list of Value objects.
+        list[Value]: A list of clean Value objects.
     """
     if len(values) == 0:
         return [Constant(value=0)]

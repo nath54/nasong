@@ -15,7 +15,20 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+ADSR envelope implementation (v2).
+
+This module provides the `ADSR2` class, which implements a one-shot
+Attack-Decay-Sustain-Release (ADSR) envelope. It is designed to be "truthful"
+to the standard ADSR model while supporting vectorized operations and
+differentiability.
+
+Example:
+    >>> from nasong.core.values.basic.value_identity import Identity
+    >>> from nasong.core.values.complex.value_adsr2 import ADSR2
+    >>> time = Identity()
+    >>> adsr = ADSR2(time=time, note_start=0, note_duration=1.0)
+    >>> adsr.get_item(0, 44100)
+    0.0
 """
 
 #
@@ -33,8 +46,20 @@ from nasong.core.values.basic.value_constant import Constant
 
 #
 class ADSR2(Value):
-    """
-    A "truthful" one-shot Attack-Decay-Sustain-Release envelope.
+    """A "truthful" one-shot Attack-Decay-Sustain-Release envelope.
+
+    This class generates a standard ADSR volume envelope based on a trigger
+    time and duration. It is "one-shot" in the sense that it follows the full
+    ADSR sequence once triggered.
+
+    Attributes:
+        time (Value): The time source (usually an Identity or similar).
+        note_start (Value): The time when the note starts (Attack trigger).
+        note_duration (Value): The duration of the note (Sustain duration).
+        attack_time (Value): The time it takes to reach peak level.
+        decay_time (Value): The time it takes to settle to sustain level.
+        sustain_level (Value): The level maintained after decay until release.
+        release_time (Value): The time it takes to reach zero after note ends.
     """
 
     #
@@ -48,6 +73,17 @@ class ADSR2(Value):
         sustain_level: Value | float = 0.7,
         release_time: Value | float = 0.2,
     ) -> None:
+        """Initializes the ADSR2 envelope.
+
+        Args:
+            time (Value): The time source.
+            note_start (Value | float): Start time of the envelope.
+            note_duration (Value | float): Duration of the sustain phase.
+            attack_time (Value | float): Duration of the attack phase.
+            decay_time (Value | float): Duration of the decay phase.
+            sustain_level (Value | float): Amplitude level during sustain.
+            release_time (Value | float): Duration of the release phase.
+        """
 
         #
         super().__init__()
@@ -67,6 +103,15 @@ class ADSR2(Value):
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
+        """Returns the envelope value for a specific index.
+
+        Args:
+            index (int): The sample index.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            float: The envelope amplitude at the given index.
+        """
         t: float = self.time.get_item(index=index, sample_rate=sample_rate)
         start: float = self.note_start.get_item(index=index, sample_rate=sample_rate)
         dur: float = self.note_duration.get_item(index=index, sample_rate=sample_rate)
@@ -106,6 +151,15 @@ class ADSR2(Value):
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
+        """Returns a vectorized NumPy array of the envelope.
+
+        Args:
+            indexes_buffer (NDArray[np.float32]): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            NDArray[np.float32]: Vectorized envelope samples.
+        """
         t = self.time.getitem_np(indexes_buffer, sample_rate)
         start = self.note_start.getitem_np(indexes_buffer, sample_rate)
         dur = self.note_duration.getitem_np(indexes_buffer, sample_rate)
@@ -160,6 +214,16 @@ class ADSR2(Value):
         sample_rate: int,
         device: str | torch.device = "cpu",
     ) -> Tensor:
+        """Generates the envelope for training using PyTorch.
+
+        Args:
+            indexes_buffer (Tensor): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+            device (str | torch.device): The device to use for the tensor.
+
+        Returns:
+            Tensor: A tensor of envelope samples.
+        """
 
         #
         t: Tensor = self.time.getitem_torch(
@@ -257,13 +321,18 @@ class ADSR2(Value):
         context: dict[str, Any],
         sample_rate: int,
     ) -> None:
-        """
-        Propagate gradient to self.time.
-        dy/dt is piecewise:
+        """Propagates gradients through the ADSR envelope.
+
+        The gradient dy/dt is computed piecewise for each ADSR stage:
         - Attack: 1/attack_time
         - Decay: -(1-sustain_level)/decay_time
         - Sustain: 0
         - Release: -sustain_level/release_time
+
+        Args:
+            grad_output (NDArray[np.float32]): The gradient of the output.
+            context (dict[str, Any]): The backward context.
+            sample_rate (int): The audio sample rate.
         """
         # We need the relative time again.
         # For performance, we could save it in getitem_np,

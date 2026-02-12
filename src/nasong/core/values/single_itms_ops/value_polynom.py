@@ -15,7 +15,19 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Polynomial operation implementation.
+
+This module provides the `Polynom` class, which calculates a polynomial function
+of an input `Value` object using a list of coefficient `Value` objects.
+
+Example:
+    >>> from nasong.core.values.basic.value_constant import Constant
+    >>> from nasong.core.values.single_itms_ops.value_polynom import Polynom
+    >>> x = Constant(2.0)
+    >>> terms = [Constant(1.0), Constant(2.0), Constant(3.0)] # 1 + 2x + 3x^2
+    >>> p = Polynom(x, terms)
+    >>> p.get_item(0, 44100)
+    17.0
 """
 
 #
@@ -33,15 +45,24 @@ from nasong.core.values.basic.value_constant import Constant
 
 #
 class Polynom(Value):
-    """
-    A Value that calculates a polynomial function:
-    y = terms[0] + terms[1]*X + terms[2]*X^2 + ...
+    """A Value that calculates a polynomial function: y = terms[0] + terms[1]*X + terms[2]*X^2 + ...
+
+    Attributes:
+        X (Value): The variable Value.
+        terms (list[Value]): The list of coefficient Values, starting from degree 0.
     """
 
     #
     def __init__(
         self, X: Value, terms: list[Value] = [Constant(0), Constant(1)]
     ) -> None:
+        """Initializes the Polynom operation.
+
+        Args:
+            X (Value): The input variable Value.
+            terms (list[Value], optional): The list of coefficient Value objects.
+                Defaults to [Constant(0), Constant(1)] (identity function).
+        """
 
         #
         super().__init__()
@@ -53,6 +74,15 @@ class Polynom(Value):
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
+        """Returns the polynomial result for a specific index.
+
+        Args:
+            index (int): The sample index.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            float: The result of the polynomial evaluation.
+        """
 
         #
         X_val: float = self.X.get_item(index=index, sample_rate=sample_rate)
@@ -69,6 +99,15 @@ class Polynom(Value):
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
+        """Returns a vectorized NumPy array of the polynomial results.
+
+        Args:
+            indexes_buffer (NDArray[np.float32]): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            NDArray[np.float32]: Vectorized polynomial samples.
+        """
 
         #
         X_val: NDArray[np.float32] = self.X.getitem_np(
@@ -96,6 +135,16 @@ class Polynom(Value):
         sample_rate: int,
         device: str | torch.device = "cpu",
     ) -> Tensor:
+        """Generates the polynomial results for training using PyTorch.
+
+        Args:
+            indexes_buffer (Tensor): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+            device (str | torch.device): The device to use for the tensor.
+
+        Returns:
+            Tensor: A tensor of polynomial samples.
+        """
 
         #
         X_val: Tensor = self.X.getitem_torch(
@@ -125,11 +174,14 @@ class Polynom(Value):
         context: dict[str, Any],
         sample_rate: int,
     ) -> None:
-        """
-        Propagate gradients through polynomial.
-        y = sum(a_i * X^i)
-        dy/dX = sum(i * a_i * X^(i-1))
-        dy/da_i = X^i
+        """Propagates gradients through the polynomial operation.
+
+        Computes gradients for the variable X and each coefficient term.
+
+        Args:
+            grad_output (NDArray[np.float32]): The gradient of the output.
+            context (dict[str, Any]): The backward context.
+            sample_rate (int): The audio sample rate.
         """
         X_val = self.X.getitem_np(context["indices"], sample_rate)
 

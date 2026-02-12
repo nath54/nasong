@@ -15,7 +15,11 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Song rendering and export engine.
+
+This module provides the `Song` class, which manages the rendering of
+`Value` objects into audio data and handles exporting the result to WAV files.
+It supports both NumPy and PyTorch backends.
 """
 
 #
@@ -33,20 +37,42 @@ except (ImportError, OSError):
     HAS_TORCH = False
 
     class Tensor:
-        pass
+        """
+        A placeholder class for PyTorch tensors when PyTorch is not available.
+        """
 
-    class torch:
-        class device:
+        pass  # pylint: disable=unnecessary-pass
+
+    class torch:  # pylint: disable=invalid-name
+        """
+        A placeholder class for PyTorch when PyTorch is not available.
+        """
+
+        class device:  # pylint: disable=invalid-name
+            """
+            A placeholder class for PyTorch device when PyTorch is not available.
+            """
+
             def __init__(self, *args):
                 pass
 
-        class cuda:
+        class cuda:  # pylint: disable=invalid-name
+            """
+            A placeholder class for PyTorch CUDA when PyTorch is not available.
+            """
+
             @staticmethod
             def is_available():
+                """
+                Returns False when PyTorch is not available.
+                """
                 return False
 
         @staticmethod
         def is_available():
+            """
+            Returns False when PyTorch is not available.
+            """
             return False
 
 
@@ -64,23 +90,37 @@ import nasong.core.wav as lw
 
 #
 def get_device() -> str | torch.device:
+    """Returns the best available device for PyTorch operations (CUDA or CPU).
 
-    #
-    if torch.cuda.is_available():
-        #
-        return torch.device("cuda")
-    #
-    else:
-        #
-        return torch.device("cpu")
+    Returns:
+        str | torch.device: The torch device object or string identifier.
+    """
 
 
 #
 class Song:
+    """Represents a song or audio segment to be rendered.
+
+    A Song combines a configuration (sample rate, duration) with a time-varying
+    Value function to produce a renderable audio signal.
+
+    Attributes:
+        config (lc.Config): Configuration settings for the song.
+        value_of_time (Callable[[lv.Value], lv.Value]): A function that takes
+             a time-varying Value (the "clock") and returns the audio Value tree.
+    """
+
     #
     def __init__(
         self, config: lc.Config, value_of_time: Callable[[lv.Value], lv.Value]
     ) -> None:
+        """Initializes the Song.
+
+        Args:
+            config (lc.Config): Global audio configuration.
+            value_of_time (Callable[[lv.Value], lv.Value]): Function defining
+                the audio structure based on time.
+        """
 
         #
         self.config: lc.Config = config
@@ -88,6 +128,14 @@ class Song:
 
     #
     def render(self) -> NDArray[np.float32]:
+        """Renders the song to a NumPy array.
+
+        This method uses the NumPy backend for rendering. It is stable and
+        suitable for most synthesis tasks.
+
+        Returns:
+            NDArray[np.float32]: The rendered audio signal.
+        """
 
         #
         time_val: lv.Value = lv.BasicScaling(
@@ -114,6 +162,18 @@ class Song:
 
     #
     def render_torch(self, device: str | torch.device = get_device()) -> Tensor:
+        """Renders the song to a PyTorch tensor.
+
+        This method uses the PyTorch backend, enabling hardware acceleration
+        and gradient-based optimization of the song's parameters.
+
+        Args:
+            device (str | torch.device, optional): The device to use for
+                rendering. Defaults to the result of `get_device()`.
+
+        Returns:
+            Tensor: The rendered audio signal as a torch tensor.
+        """
 
         #
         time_val: lv.Value = lv.BasicScaling(
@@ -146,6 +206,16 @@ class Song:
     def export_to_wav(
         self, use_torch: bool = False, device: str | torch.device = get_device()
     ) -> None:
+        """Renders the song and saves it as a WAV file.
+
+        The output filename and sample rate are determined by the song's config.
+
+        Args:
+            use_torch (bool, optional): Whether to use the PyTorch backend
+                for rendering. Defaults to False.
+            device (str | torch.device, optional): Device for PyTorch rendering.
+                Defaults to the result of `get_device()`.
+        """
 
         #
         audio_data: NDArray[np.float32]

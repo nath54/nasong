@@ -15,7 +15,10 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Core utilities for the NaSong engine.
+
+This module provides utility functions for dynamic module loading and other
+common tasks used throughout the core library.
 """
 
 #
@@ -33,16 +36,25 @@ import importlib.machinery
 
 #
 def import_module_from_filepath(
-    filepath: str, replace: list[tuple[str, str]] = []
+    filepath: str, replace: list[tuple[str, str]] | None = None
 ) -> object:
-    """
-    Imports a Python module from a filepath.
+    """Imports a Python module from a given filesystem path.
+
+    This utility allows for dynamic loading of instruments or song definitions.
+    It optionally supports on-the-fly string replacement in the source code
+    before importing, which is primarily used for testing or hot-patching.
 
     Args:
-        filepath (str): The path to the Python file to import as a module.
+        filepath (str): The absolute or relative path to the `.py` file.
+        replace (list[tuple[str, str]], optional): A list of (old, new) string
+            paires to replace in the source code before execution.
+            Defaults to None.
 
     Returns:
         object: The imported module object.
+
+    Raises:
+        ImportError: If the module specification or loader cannot be created.
     """
 
     #
@@ -51,7 +63,7 @@ def import_module_from_filepath(
     #
     ### If asked to replace. ###
     #
-    if replace:
+    if replace is not None:
         #
         ### Copy the base file to import into tmp.py. ###
         #

@@ -15,7 +15,10 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+WAV file export utilities.
+
+This module provides the `WavUtils` class, which handles converting floating-point
+audio data into PCM-encoded 16-bit integer format and saving to WAV files.
 """
 
 #
@@ -30,9 +33,19 @@ from scipy.io import wavfile
 
 #
 class WavUtils:
+    """Utility class for WAV file operations."""
+
     #
     @staticmethod
     def prepare_signal(audio_data: NDArray[np.float32]) -> NDArray[np.int16]:
+        """Converts floating-point audio data to 16-bit PCM integer format.
+
+        Args:
+            audio_data (NDArray[np.float32]): Input signal in the range [-1.0, 1.0].
+
+        Returns:
+            NDArray[np.int16]: The scaled signal as 16-bit integers.
+        """
 
         #
         ### The amplitude is scaled by 32767 for a 16-bit integer representation ###
@@ -52,13 +65,12 @@ class WavUtils:
     def save_wav_file(
         filename: str, sample_rate: int, audio_data: NDArray[np.int16]
     ) -> None:
-        """
-        Saves a NumPy array to a WAV file.
+        """Saves a PCM-encoded NumPy array to a WAV file.
 
         Args:
-            filename: The path and name for the output WAV file.
-            sample_rate: The sample rate (Hz) of the audio data.
-            audio_data: The NumPy array containing the audio signal.
+            filename (str): The path and name for the output WAV file.
+            sample_rate (int): The sample rate (Hz) of the audio data.
+            audio_data (NDArray[np.int16]): The 16-bit PCM audio signal.
         """
 
         #

@@ -15,7 +15,18 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Guitar distortion effect implementation.
+
+This module provides the `Distortion` class, which implements a soft-clipping
+distortion effect using the hyperbolic tangent (`tanh`) function.
+
+Example:
+    >>> from nasong.core.values.basic.value_constant import Constant
+    >>> from nasong.core.values.complex.value_distortion import Distortion
+    >>> signal = Constant(0.5)
+    >>> dist = Distortion(value=signal, gain=10.0)
+    >>> dist.get_item(0, 44100)
+    0.4999...
 """
 
 #
@@ -34,19 +45,23 @@ from nasong.core.values.basic.value_constant import Constant
 
 #
 class Distortion(Value):
-    """
-    Guitar distortion effect using `tanh` soft clipping.
+    """Guitar distortion effect using `tanh` soft clipping.
+
+    This class applies gain to an input signal and then clips it using the
+    `tanh` function to create a warm, analog-style distortion.
+
+    Attributes:
+        value (Value): The input audio signal.
+        gain (Value): The distortion gain (higher = more clipping).
     """
 
     #
     def __init__(self, value: Value, gain: Value = Constant(5.0)) -> None:
-        """
-        Initializes the distortion effect.
+        """Initializes the Distortion effect.
 
         Args:
-            value: The input `Value` (the audio signal) to be distorted.
-            gain: The amount of gain to apply before clipping.
-                    Higher values = more distortion.
+            value (Value): The input audio signal to be distorted.
+            gain (Value): The amount of gain before clipping.
         """
 
         #
@@ -58,6 +73,15 @@ class Distortion(Value):
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
+        """Returns the distorted sample value for a specific index.
+
+        Args:
+            index (int): The sample index.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            float: The distorted signal amplitude at the given index.
+        """
 
         #
         ### Apply gain. ###
@@ -75,6 +99,15 @@ class Distortion(Value):
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
+        """Returns a vectorized NumPy array of the distorted signal.
+
+        Args:
+            indexes_buffer (NDArray[np.float32]): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            NDArray[np.float32]: Vectorized distorted signal samples.
+        """
 
         #
         ### Get the input signal buffer and apply gain. ###
@@ -95,6 +128,16 @@ class Distortion(Value):
         sample_rate: int,
         device: str | torch.device = "cpu",
     ) -> Tensor:
+        """Generates the distorted signal for training using PyTorch.
+
+        Args:
+            indexes_buffer (Tensor): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+            device (str | torch.device): The device to use for the tensor.
+
+        Returns:
+            Tensor: A tensor of distorted signal samples.
+        """
 
         #
         x: Tensor = self.value.getitem_torch(
@@ -121,11 +164,15 @@ class Distortion(Value):
         context: dict[str, Any],
         sample_rate: int,
     ) -> None:
-        """
-        Propagate gradients through tanh distortion.
-        y = 0.5 * tanh(x * g)
-        dy/dx = 0.5 * g * (1 - tanh^2(x * g))
-        dy/dg = 0.5 * x * (1 - tanh^2(x * g))
+        """Propagates gradients through the tanh distortion.
+
+        Computes gradients for the input signal and gain using the derivative
+        of tanh: d/du tanh(u) = 1 - tanh^2(u).
+
+        Args:
+            grad_output (NDArray[np.float32]): The gradient of the output.
+            context (dict[str, Any]): The backward context.
+            sample_rate (int): The audio sample rate.
         """
         val_v = self.value.getitem_np(np.zeros_like(grad_output), sample_rate)
         gain_v = self.gain.getitem_np(np.zeros_like(grad_output), sample_rate)

@@ -15,7 +15,18 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Linear scaling operation implementation.
+
+This module provides the `BasicScaling` class, which calculates a linear
+transformation of an input `Value` object.
+
+Example:
+    >>> from nasong.core.values.basic.value_constant import Constant
+    >>> from nasong.core.values.single_itms_ops.value_basic_scaling import BasicScaling
+    >>> v, m, s = Constant(1.0), Constant(2.0), Constant(0.5)
+    >>> sc = BasicScaling(v, m, s)
+    >>> sc.get_item(0, 44100)
+    2.5
 """
 
 #
@@ -32,10 +43,23 @@ from nasong.core.value import torch, Tensor
 
 #
 class BasicScaling(Value):
-    """A Value that applies a linear transformation: value * mult_scale + sum_scale."""
+    """A Value that applies a linear transformation: value * mult_scale + sum_scale.
+
+    Attributes:
+        value (Value): The source value to scale.
+        mult_scale (Value): The multiplier (gain).
+        sum_scale (Value): The offset (bias).
+    """
 
     #
     def __init__(self, value: Value, mult_scale: Value, sum_scale: Value) -> None:
+        """Initializes the BasicScaling operation.
+
+        Args:
+            value (Value): The source Value.
+            mult_scale (Value): The gain Value.
+            sum_scale (Value): The bias Value.
+        """
 
         #
         super().__init__()
@@ -47,6 +71,15 @@ class BasicScaling(Value):
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
+        """Returns the scaled value for a specific index.
+
+        Args:
+            index (int): The sample index.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            float: The calculated linear transformation (v * m + s).
+        """
 
         #
         v: float = self.value.get_item(index=index, sample_rate=sample_rate)
@@ -60,6 +93,15 @@ class BasicScaling(Value):
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
+        """Returns a vectorized NumPy array of the scaled values.
+
+        Args:
+            indexes_buffer (NDArray[np.float32]): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            NDArray[np.float32]: Vectorized scaled samples.
+        """
 
         #
         v: NDArray[np.float32] = self.value.getitem_np(
@@ -82,6 +124,16 @@ class BasicScaling(Value):
         sample_rate: int,
         device: str | torch.device = "cpu",
     ) -> Tensor:
+        """Generates the scaled values for training using PyTorch.
+
+        Args:
+            indexes_buffer (Tensor): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+            device (str | torch.device): The device to use for the tensor.
+
+        Returns:
+            Tensor: A tensor of scaled samples.
+        """
 
         #
         v: Tensor = self.value.getitem_torch(
@@ -104,12 +156,15 @@ class BasicScaling(Value):
         context: dict[str, Any],
         sample_rate: int,
     ) -> None:
-        """
-        Propagate gradients through linear scaling.
-        y = v * m + s
-        dy/dv = m
-        dy/dm = v
-        dy/ds = 1
+        """Propagates gradients through the linear scaling operation.
+
+        Computes gradients for the value, multiplier, and offset using the
+        product and sum rules.
+
+        Args:
+            grad_output (NDArray[np.float32]): The gradient of the output.
+            context (dict[str, Any]): The backward context.
+            sample_rate (int): The audio sample rate.
         """
         v_val = self.value.getitem_np(context["indices"], sample_rate)
         m_val = self.mult_scale.getitem_np(context["indices"], sample_rate)

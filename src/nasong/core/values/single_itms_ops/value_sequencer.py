@@ -15,7 +15,19 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Sequencer operation implementation.
+
+This module provides the `Sequencer` class, which manages a collection of
+triggered events (notes) and sums their outputs.
+
+Example:
+    >>> from nasong.core.values.basic.value_constant import Constant
+    >>> from nasong.core.values.single_itms_ops.value_sequencer import Sequencer
+    >>> def factory(t, f, s, d): return Constant(f) # Dummy factory
+    >>> data = [(440.0, 0, 1), (880.0, 1, 1)]
+    >>> seq = Sequencer(Constant(0), factory, data)
+    >>> seq.get_item(0, 44100)
+    1320.0
 """
 
 #
@@ -33,28 +45,35 @@ from nasong.core.values.mult_itms_ops.value_sum import Sum
 
 #
 class Sequencer(Value):
-    """
-    A Value container that generates a sequence of "notes" or "events".
+    """A Value container that generates a sequence of "notes" or "events".
 
     This class automates the process of summing multiple `Value` objects
     that are triggered at different times.
 
-    It takes a list of data (e.g., a list of (start_time, frequency, duration)
-    tuples) and a "factory" function. It calls the factory for each
-    item in the data list to create a `Value` object, and then
-    creates a single `Sum` of all the created objects.
+    Attributes:
+        sum (Sum): The internal Sum object containing all generated notes.
     """
 
     #
     def __init__(
         self,
         time: Value,
-        # The factory function must accept `time` as its first argument,
-        # followed by the unpacked arguments from the data tuple.
-        # e.g.: factory(time, freq, start, dur)
         instrument_factory: Callable[..., Value],
         note_data_list: list[tuple[Any, ...]],
     ) -> None:
+        """Initializes the Sequencer.
+
+        Args:
+            time (Value): The master time Value to pass to each note.
+            instrument_factory (Callable[..., Value]): A function that creates
+                a Value object for each data tuple. Expected signature:
+                factory(time, *note_data).
+            note_data_list (list[tuple[Any, ...]]): A list of tuples containing
+                the arguments for each instrument factory call.
+
+        Raises:
+            ValueError: If the instrument factory returns None.
+        """
 
         #
         super().__init__()
@@ -84,6 +103,15 @@ class Sequencer(Value):
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
+        """Returns the summed sequence value for a specific index.
+
+        Args:
+            index (int): The sample index.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            float: The sum of all active notes at the given index.
+        """
 
         #
         ### Proxy the call to the internal Sum object. ###
@@ -94,6 +122,15 @@ class Sequencer(Value):
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
+        """Returns a vectorized NumPy array of the summed sequence values.
+
+        Args:
+            indexes_buffer (NDArray[np.float32]): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            NDArray[np.float32]: Vectorized sequence samples.
+        """
 
         #
         ### Proxy the call to the internal Sum object. ###
@@ -109,6 +146,16 @@ class Sequencer(Value):
         sample_rate: int,
         device: str | torch.device = "cpu",
     ) -> Tensor:
+        """Generates the summed sequence values for training using PyTorch.
+
+        Args:
+            indexes_buffer (Tensor): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+            device (str | torch.device): The device to use for the tensor.
+
+        Returns:
+            Tensor: A tensor of sequence samples.
+        """
 
         #
         ### Proxy the call to the internal Sum object. ###
@@ -124,8 +171,13 @@ class Sequencer(Value):
         context: dict[str, Any],
         sample_rate: int,
     ) -> None:
-        """
-        Propagate gradients through sequencer.
-        Proxies to the internal Sum object.
+        """Propagates gradients through the sequencer.
+
+        Proxies the call to the internal Sum object.
+
+        Args:
+            grad_output (NDArray[np.float32]): The gradient of the output.
+            context (dict[str, Any]): The backward context.
+            sample_rate (int): The audio sample rate.
         """
         self.sum.backward(grad_output, context, sample_rate)

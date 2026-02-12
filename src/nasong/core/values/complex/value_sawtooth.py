@@ -15,7 +15,19 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Naive sawtooth wave implementation.
+
+This module provides the `Sawtooth` class, which generates a naive sawtooth
+wave (linear ramp). Note that this waveform contains aliasing; for audio
+synthesis, `BandLimitedSawtooth` is usually preferred.
+
+Example:
+    >>> from nasong.core.values.basic.value_identity import Identity
+    >>> from nasong.core.values.complex.value_sawtooth import Sawtooth
+    >>> time = Identity()
+    >>> saw = Sawtooth(value=time, frequency=440.0)
+    >>> saw.get_item(0, 44100)
+    -1.0
 """
 
 #
@@ -34,8 +46,16 @@ from nasong.core.values.basic.value_constant import Constant
 
 #
 class Sawtooth(Value):
-    """
-    A Value that generates a "naive" sawtooth wave.
+    """A Value that generates a "naive" sawtooth wave.
+
+    Calculates a linear ramp from -1 to 1 (rising) or 1 to -1 (falling).
+
+    Attributes:
+        value (Value): The base phase source.
+        frequency (Value): The frequency multiplier.
+        amplitude (Value): The peak amplitude.
+        delta (Value): The phase offset.
+        direction (Value): Direction of the ramp (>=0 for rising, <0 for falling).
     """
 
     #
@@ -47,17 +67,14 @@ class Sawtooth(Value):
         delta: Value = Constant(0),
         direction: Value = Constant(1),  # 1 for rising, -1 for falling
     ) -> None:
-        """
-        Initializes the Sawtooth oscillator.
+        """Initializes the Sawtooth oscillator.
 
         Args:
-            value: The input phase Value (e.g., time).
-            frequency: The frequency multiplier.
-            amplitude: The amplitude (gain).
-            delta: The phase offset.
-            direction: A Value determinations the slope.
-                        >= 0 gives a rising sawtooth.
-                        < 0 gives a falling sawtooth.
+            value (Value): The input phase source (e.g., time).
+            frequency (Value): The frequency multiplier (default 1).
+            amplitude (Value): The peak amplitude (default 1).
+            delta (Value): The phase offset (default 0).
+            direction (Value): Slope direction (default 1, rising).
         """
 
         #
@@ -78,6 +95,15 @@ class Sawtooth(Value):
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
+        """Returns the sawtooth value for a specific index.
+
+        Args:
+            index (int): The sample index.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            float: The sawtooth amplitude at the given index.
+        """
 
         #
         val_v: float = self.value.get_item(index=index, sample_rate=sample_rate)
@@ -116,6 +142,15 @@ class Sawtooth(Value):
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
+        """Returns a vectorized NumPy array of the sawtooth wave.
+
+        Args:
+            indexes_buffer (NDArray[np.float32]): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            NDArray[np.float32]: Vectorized sawtooth samples.
+        """
 
         #
         val_v: NDArray[np.float32] = self.value.getitem_np(
@@ -165,6 +200,16 @@ class Sawtooth(Value):
         sample_rate: int,
         device: str | torch.device = "cpu",
     ) -> Tensor:
+        """Generates the sawtooth wave for training using PyTorch.
+
+        Args:
+            indexes_buffer (Tensor): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+            device (str | torch.device): The device to use for the tensor.
+
+        Returns:
+            Tensor: A tensor of sawtooth samples.
+        """
 
         #
         val_v: Tensor = self.value.getitem_torch(
@@ -212,15 +257,15 @@ class Sawtooth(Value):
         context: dict[str, Any],
         sample_rate: int,
     ) -> None:
-        """
-        Propagate gradients through sawtooth wave.
-        Ignoring the discontinuity (jump).
-        Rising: y = a * (2 * p - 1) where p = (v * f + d) % 1
-        dy/da = 2*p - 1
-        dy/dp = 2*a
-        dp/dv = f, dp/df = v, dp/dd = 1
-        Falling: y = a * (1 - 2 * p)
-        dy/dp = -2*a
+        """Propagates gradients through the sawtooth wave.
+
+        Computes gradients for amplitude, base value, frequency, and phase offset.
+        Note that the discontinuity (jump) is ignored in the gradient calculation.
+
+        Args:
+            grad_output (NDArray[np.float32]): The gradient of the output.
+            context (dict[str, Any]): The backward context.
+            sample_rate (int): The audio sample rate.
         """
         val_v = self.value.getitem_np(context["indices"], sample_rate)
         f_v = self.frequency.getitem_np(context["indices"], sample_rate)

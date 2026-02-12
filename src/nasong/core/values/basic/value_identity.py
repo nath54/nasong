@@ -15,7 +15,17 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Identity Value implementation.
+
+This module provides the `Identity` class, which represents a Value that returns
+the sample index itself as the value. This is typically used as the base
+representation of time in the audio generation process.
+
+Example:
+    >>> from nasong.core.values.basic.value_identity import Identity
+    >>> val = Identity()
+    >>> val.get_item(100, 44100)
+    100.0
 """
 
 #
@@ -32,26 +42,43 @@ from nasong.core.value import torch, Tensor
 
 #
 class Identity(Value):
-    """A Value that returns the sample index itself as the value."""
+    """A Value that returns the sample index itself as the value.
+
+    This class serves as the identity function for audio sample indexes,
+    effectively representing the raw time-step index.
+    """
 
     #
     def __init__(self) -> None:
-
-        #
+        """Initializes the Identity Value."""
         super().__init__()
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
+        """Returns the sample index as a float.
 
-        #
+        Args:
+            index (int): The sample index.
+            sample_rate (int): The audio sample rate (ignored).
+
+        Returns:
+            float: The index value.
+        """
         return float(index)
 
     #
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
+        """Returns the indexes buffer itself.
 
-        #
+        Args:
+            indexes_buffer (NDArray[np.float32]): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate (ignored).
+
+        Returns:
+            NDArray[np.float32]: The original indexes_buffer.
+        """
         return indexes_buffer
 
     #
@@ -61,8 +88,16 @@ class Identity(Value):
         sample_rate: int,
         device: str | torch.device = "cpu",
     ) -> Tensor:
+        """Returns the indexes buffer moved to the specified device.
 
-        #
+        Args:
+            indexes_buffer (Tensor): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate (ignored).
+            device (str | torch.device): The device to use for the tensor.
+
+        Returns:
+            Tensor: The indexes_buffer on the specified device.
+        """
         return indexes_buffer.to(device)
 
     #
@@ -72,5 +107,13 @@ class Identity(Value):
         context: dict[str, Any],
         sample_rate: int,
     ) -> None:
-        """Identity is the time input, so backward does nothing."""
+        """Propagates the gradient.
+
+        Identity is the time input, so the backward pass does nothing.
+
+        Args:
+            grad_output (NDArray[np.float32]): The gradient of the output.
+            context (dict[str, Any]): The backward context.
+            sample_rate (int): The audio sample rate.
+        """
         pass

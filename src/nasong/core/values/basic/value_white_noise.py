@@ -15,7 +15,18 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+White Noise Value implementation.
+
+This module provides the `WhiteNoise` class, which generates deterministic,
+pseudo-random white noise. It uses a hash-based approach to ensure that
+the noise is consistent for the same sample index and seed.
+
+Example:
+    >>> from nasong.core.values.basic.value_white_noise import WhiteNoise
+    >>> val = WhiteNoise(seed=42, scale=1.0)
+    >>> # returns a pseudo-random value
+    >>> isinstance(val.get_item(0, 44100), float)
+    True
 """
 
 #
@@ -32,22 +43,38 @@ from nasong.core.value import torch, Tensor
 
 #
 class WhiteNoise(Value):
+    """A Value that generates deterministic pseudo-random white noise.
+
+    Attributes:
+        seed (int): The seed for the pseudo-random generator.
+        scale (float): The scale factor for the noise output.
+    """
+
     #
     def __init__(self, seed: int = 42, scale: float = 1.0) -> None:
+        """Initializes the WhiteNoise Value.
 
-        #
+        Args:
+            seed (int): Determinism seed.
+            scale (float): Magnitude of the noise.
+        """
         super().__init__()
-
-        #
         self.seed: int = seed
-        #
         self.scale: float = scale
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
-        # We use a non-vectorized version for single samples if needed,
-        # but internal code usually uses getitem_np.
-        # Simple hash-based approach for single items:
+        """Returns a noise sample for a specific index.
+
+        Uses a simple hash-based approach for single samples.
+
+        Args:
+            index (int): The sample index.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            float: A pseudo-random noise value.
+        """
         noise = float(((index * self.seed + 12345) & 0xFFFFFFFF) / 0xFFFFFFFF - 0.5)
         return noise * 100.0 * self.scale
 
@@ -58,8 +85,15 @@ class WhiteNoise(Value):
     def vectorized_noise(
         indexes_buffer: NDArray[np.float32], seed: int, scale: float
     ) -> NDArray[np.float32]:
-        """
-        Generates a deterministic, pseudo-random noise value for each index.
+        """Generates a deterministic, pseudo-random noise value for each index.
+
+        Args:
+            indexes_buffer (NDArray[np.float32]): A buffer of sample indexes.
+            seed (int): Determinism seed.
+            scale (float): Magnitude of the noise.
+
+        Returns:
+            NDArray[np.float32]: Vectorized noise samples.
         """
 
         #
@@ -84,7 +118,15 @@ class WhiteNoise(Value):
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
-        #
+        """Returns a vectorized NumPy array of white noise.
+
+        Args:
+            indexes_buffer (NDArray[np.float32]): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            NDArray[np.float32]: Vectorized noise samples.
+        """
         return self.__class__.vectorized_noise(indexes_buffer, self.seed, self.scale)
 
     #
@@ -94,9 +136,18 @@ class WhiteNoise(Value):
         sample_rate: int,
         device: str | torch.device = "cpu",
     ) -> Tensor:
-        """
-        Generates deterministic, differentiable noise for training.
-        Uses LCG (Linear Congruential Generator) approach.
+        """Generates deterministic noise for training using PyTorch.
+
+        Uses a Linear Congruential Generator (LCG) approach to maintain
+        consistency and allow for differentiable range if needed.
+
+        Args:
+            indexes_buffer (Tensor): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+            device (str | torch.device): The device to use for the tensor.
+
+        Returns:
+            Tensor: A tensor of noise samples.
         """
 
         #
@@ -122,7 +173,14 @@ class WhiteNoise(Value):
         context: dict[str, Any],
         sample_rate: int,
     ) -> None:
-        """
-        WhiteNoise has no upstream trainable parameters in current implementation.
+        """Propagates the gradient.
+
+        WhiteNoise has no upstream trainable parameters in current
+        implementation, so the backward pass does nothing.
+
+        Args:
+            grad_output (NDArray[np.float32]): The gradient of the output.
+            context (dict[str, Any]): The backward context.
+            sample_rate (int): The audio sample rate.
         """
         pass

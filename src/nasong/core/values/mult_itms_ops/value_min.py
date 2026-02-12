@@ -15,7 +15,19 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Minimum operation implementation.
+
+This module provides the `Min` class, which returns the minimum value among
+a list of input `Value` objects at each sample.
+
+Example:
+    >>> from nasong.core.values.basic.value_constant import Constant
+    >>> from nasong.core.values.mult_itms_ops.value_min import Min
+    >>> v1 = Constant(1.0)
+    >>> v2 = Constant(2.0)
+    >>> m = Min(v1, v2)
+    >>> m.get_item(0, 44100)
+    1.0
 """
 
 #
@@ -33,10 +45,20 @@ from nasong.core.values.input_args import input_args_to_values
 
 #
 class Min(Value):
-    """A Value that returns the minimum value from a list of input Values."""
+    """A Value that returns the minimum value from a list of input Values.
+
+    Attributes:
+        values (list[Value]): The list of input values to compare.
+    """
 
     #
     def __init__(self, *values: Value | list[Value]) -> None:
+        """Initializes the Min operation.
+
+        Args:
+            *values (Value | list[Value]): One or more Value objects or a list
+                of Value objects to find the minimum of.
+        """
 
         #
         super().__init__()
@@ -46,6 +68,15 @@ class Min(Value):
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
+        """Returns the minimum value for a specific index.
+
+        Args:
+            index (int): The sample index.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            float: The minimum amplitude among all inputs at the given index.
+        """
 
         #
         return min(
@@ -56,6 +87,15 @@ class Min(Value):
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
+        """Returns a vectorized NumPy array of the minimum values.
+
+        Args:
+            indexes_buffer (NDArray[np.float32]): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            NDArray[np.float32]: Vectorized minimum samples.
+        """
 
         #
         arrays = [
@@ -74,6 +114,16 @@ class Min(Value):
         sample_rate: int,
         device: str | torch.device = "cpu",
     ) -> Tensor:
+        """Generates the minimum values for training using PyTorch.
+
+        Args:
+            indexes_buffer (Tensor): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+            device (str | torch.device): The device to use for the tensor.
+
+        Returns:
+            Tensor: A tensor of minimum samples.
+        """
 
         #
         ### Compute all values and stack them. ###
@@ -107,10 +157,15 @@ class Min(Value):
         context: dict[str, Any],
         sample_rate: int,
     ) -> None:
-        """
-        Propagate gradients through min.
-        y = min(x_i)
-        dy/dx_i = 1 if x_i is min, 0 otherwise.
+        """Propagates gradients through the min operation.
+
+        Gradients are passed only to the input that provided the minimum value
+        at each sample (using a mask).
+
+        Args:
+            grad_output (NDArray[np.float32]): The gradient of the output.
+            context (dict[str, Any]): The backward context.
+            sample_rate (int): The audio sample rate.
         """
         if not self.values:
             return

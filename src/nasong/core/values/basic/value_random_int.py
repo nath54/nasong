@@ -15,7 +15,18 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Random Integer Value implementation.
+
+This module provides the `RandomInt` class, which represents a Value that
+returns a random integer within a specified range for each sample. The range
+boundaries are themselves `Value` objects.
+
+Example:
+    >>> from nasong.core.values.basic.value_random_int import RandomInt
+    >>> from nasong.core.values.basic.value_constant import c
+    >>> val = RandomInt(min_range=c(1), max_range=c(10))
+    >>> 1.0 <= val.get_item(0, 44100) <= 10.0
+    True
 """
 
 #
@@ -36,25 +47,40 @@ from nasong.core.value import torch, Tensor
 
 #
 class RandomInt(Value):
-    """
-    A Value that returns a random integer within a specified range
-    for each sample.
+    """A Value that returns a random integer within a specified range.
+
+    This class generates stochastic integer values by sampling from a uniform
+    distribution and applying a floor operation. The boundaries are defined
+    by two boundary Value objects.
+
+    Attributes:
+        min_range (Value): The lower bound Value (inclusive).
+        max_range (Value): The upper bound Value (inclusive).
     """
 
     #
     def __init__(self, min_range: Value, max_range: Value) -> None:
+        """Initializes the RandomInt Value.
 
-        #
+        Args:
+            min_range (Value): The Value defining the lower bound.
+            max_range (Value): The Value defining the upper bound.
+        """
         super().__init__()
-
-        #
         self.min_range: Value = min_range
         self.max_range: Value = max_range
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
+        """Returns a random integer (as float) for a specific index.
 
-        #
+        Args:
+            index (int): The sample index.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            float: A random integer within [min, max], returned as a float.
+        """
         return float(
             random.randint(
                 a=int(self.min_range.get_item(index=index, sample_rate=sample_rate)),
@@ -66,8 +92,17 @@ class RandomInt(Value):
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
-        """
-        Returns a vectorized array of random integers (as floats).
+        """Returns a vectorized array of random integers (as floats).
+
+        This override provides a performance-optimized implementation using
+        NumPy's vectorized operations and a floor-based stochastic proxy.
+
+        Args:
+            indexes_buffer (NDArray[np.float32]): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            NDArray[np.float32]: An array of random integers in float32 format.
         """
 
         #
@@ -122,9 +157,19 @@ class RandomInt(Value):
         sample_rate: int,
         device: str | torch.device = "cpu",
     ) -> Tensor:
-        """
-        Returns differentiable random values for training.
-        Min/max are trainable, but the random selection itself is not.
+        """Returns differentiable random integer values for training.
+
+        The min and max boundaries are treated as differentiable inputs.
+        Internally uses a continuous uniform distribution and rounding to
+        maintain gradient flow for the boundaries.
+
+        Args:
+            indexes_buffer (Tensor): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+            device (str | torch.device): The device to use for the tensor.
+
+        Returns:
+            Tensor: A tensor of random integers in float32 format.
         """
 
         #
@@ -158,11 +203,17 @@ class RandomInt(Value):
         context: dict[str, Any],
         sample_rate: int,
     ) -> None:
-        """
-        Straight-through differentiation for RandomInt bounds.
+        """Straight-through differentiation for RandomInt bounds.
+
+        Uses a continuous proxy to propagate gradients to the boundaries:
         y = floor(min + r*(max - min + 1))
         Proxy dy/dmin = 1 - r
         Proxy dy/dmax = r
+
+        Args:
+            grad_output (NDArray[np.float32]): The gradient of the output.
+            context (dict[str, Any]): The backward context.
+            sample_rate (int): The audio sample rate.
         """
         if hasattr(self, "_last_random_vals"):
             r = self._last_random_vals

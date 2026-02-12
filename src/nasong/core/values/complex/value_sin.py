@@ -15,7 +15,18 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Sine wave implementation.
+
+This module provides the `Sin` class, which generates a sine wave based on
+an input value, frequency, amplitude, and phase offset (delta).
+
+Example:
+    >>> from nasong.core.values.basic.value_identity import Identity
+    >>> from nasong.core.values.complex.value_sin import Sin
+    >>> time = Identity()
+    >>> sin_wave = Sin(value=time, frequency=440.0)
+    >>> sin_wave.get_item(0, 44100)
+    0.0
 """
 
 #
@@ -34,9 +45,15 @@ from nasong.core.values.basic.value_constant import Constant
 
 #
 class Sin(Value):
-    """
-    A Value that generates a sine wave:
-    amplitude * sin( (value * frequency) + delta )
+    """A Value that generates a sine wave.
+
+    Calculates: amplitude * sin( (value * frequency) + delta )
+
+    Attributes:
+        value (Value): The base value (often time or phase).
+        frequency (Value): The frequency multiplier.
+        amplitude (Value): The peak amplitude.
+        delta (Value): The phase offset in radians.
     """
 
     #
@@ -47,6 +64,14 @@ class Sin(Value):
         amplitude: Value = Constant(1),
         delta: Value = Constant(0),
     ) -> None:
+        """Initializes the Sin wave.
+
+        Args:
+            value (Value): The base input value.
+            frequency (Value): The frequency multiplier (default 1).
+            amplitude (Value): The peak amplitude (default 1).
+            delta (Value): The phase offset (default 0).
+        """
 
         #
         super().__init__()
@@ -64,6 +89,15 @@ class Sin(Value):
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
+        """Returns the sine value for a specific index.
+
+        Args:
+            index (int): The sample index.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            float: The sine amplitude at the given index.
+        """
 
         #
         val_v: float = self.value.get_item(index=index, sample_rate=sample_rate)
@@ -78,6 +112,15 @@ class Sin(Value):
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
+        """Returns a vectorized NumPy array of the sine wave.
+
+        Args:
+            indexes_buffer (NDArray[np.float32]): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            NDArray[np.float32]: Vectorized wave samples.
+        """
 
         #
         val_v: NDArray[np.float32] = self.value.getitem_np(
@@ -103,6 +146,16 @@ class Sin(Value):
         sample_rate: int,
         device: str | torch.device = "cpu",
     ) -> Tensor:
+        """Generates the sine wave for training using PyTorch.
+
+        Args:
+            indexes_buffer (Tensor): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+            device (str | torch.device): The device to use for the tensor.
+
+        Returns:
+            Tensor: A tensor of wave samples.
+        """
 
         #
         val_v: Tensor = self.value.getitem_torch(
@@ -128,13 +181,15 @@ class Sin(Value):
         context: dict[str, Any],
         sample_rate: int,
     ) -> None:
-        """
-        Propagate gradients through Sine wave.
-        y = a * sin(v * f + d)
-        dy/da = sin(v * f + d)
-        dy/dv = a * f * cos(v * f + d)
-        dy/df = a * v * cos(v * f + d)
-        dy/dd = a * cos(v * f + d)
+        """Propagates gradients through the sine wave.
+
+        Computes gradients for amplitude, base value, frequency, and phase (delta)
+        using the chain rule.
+
+        Args:
+            grad_output (NDArray[np.float32]): The gradient of the output.
+            context (dict[str, Any]): The backward context.
+            sample_rate (int): The audio sample rate.
         """
         val_v = self.value.getitem_np(context["indices"], sample_rate)
         fre_v = self.frequency.getitem_np(context["indices"], sample_rate)

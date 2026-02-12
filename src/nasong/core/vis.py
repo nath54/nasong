@@ -95,8 +95,14 @@ def plot_waveform(
     filename: str | None = None,
     show: bool = True,
 ) -> None:
-    """
-    Plots the amplitude of the audio signal over time.
+    """Plots the amplitude of the audio signal over time.
+
+    Args:
+        audio_data (NDArray[np.float32]): The audio signal as a NumPy array.
+        sample_rate (int): The audio sample rate in Hz.
+        title (str, optional): The title for the plot. Defaults to "Waveform".
+        filename (str, optional): If provided, saves the plot to this file path.
+        show (bool, optional): Whether to display the plot window. Defaults to True.
     """
 
     #
@@ -130,8 +136,14 @@ def plot_spectrogram(
     filename: str | None = None,
     show: bool = True,
 ) -> None:
-    """
-    Plots the frequency content of the audio signal over time.
+    """Plots the frequency content of the audio signal over time.
+
+    Args:
+        audio_data (NDArray[np.float32]): The audio signal as a NumPy array.
+        sample_rate (int): The audio sample rate in Hz.
+        title (str, optional): The title for the plot. Defaults to "Spectrogram".
+        filename (str, optional): If provided, saves the plot to this file path.
+        show (bool, optional): Whether to display the plot window. Defaults to True.
     """
 
     #
@@ -165,8 +177,14 @@ def plot_spectrum(
     filename: str | None = None,
     show: bool = True,
 ) -> None:
-    """
-    Plots the magnitude spectrum (FFT) of the audio signal.
+    """Plots the magnitude spectrum (FFT) of the audio signal.
+
+    Args:
+        audio_data (NDArray[np.float32]): The audio signal as a NumPy array.
+        sample_rate (int): The audio sample rate in Hz.
+        title (str, optional): The title for the plot. Defaults to "Frequency Spectrum".
+        filename (str, optional): If provided, saves the plot to this file path.
+        show (bool, optional): Whether to display the plot window. Defaults to True.
     """
 
     #
@@ -206,12 +224,25 @@ def plot_spectrum(
 
 
 class AudioAnalyzer:
-    """
-    Class for analyzing audio data and extracting features for verification.
+    """Utility class for analyzing audio data and extracting acoustic features.
+
+    This class provides a suite of methods for calculating statistical, temporal,
+    spectral, and harmonic metrics useful for characterizing sounds and
+    verifying synthesis results.
+
+    Attributes:
+        audio_data (NDArray[np.float32]): The audio signal to analyze.
+        sample_rate (int): The audio sample rate in Hz.
     """
 
     #
     def __init__(self, audio_data: NDArray[np.float32], sample_rate: int) -> None:
+        """Initializes the AudioAnalyzer.
+
+        Args:
+            audio_data (NDArray[np.float32]): Audio array to be analyzed.
+            sample_rate (int): Sampling frequency in Hz.
+        """
         self.audio_data = audio_data
         self.sample_rate = sample_rate
 

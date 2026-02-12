@@ -15,7 +15,18 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Mask threshold operation implementation.
+
+This module provides the `MaskTreshold` class, which acts as a switch between
+two values based on whether a mask value exceeds a threshold.
+
+Example:
+    >>> from nasong.core.values.basic.value_constant import Constant
+    >>> from nasong.core.values.single_itms_ops.value_mask_treshold import MaskTreshold
+    >>> val, mask, threshold, m_val = Constant(0.5), Constant(1.0), Constant(0.8), Constant(0.0)
+    >>> mt = MaskTreshold(val, mask, threshold, m_val)
+    >>> mt.get_item(0, 44100)
+    0.0
 """
 
 #
@@ -33,10 +44,15 @@ from nasong.core.values.basic.value_constant import Constant
 
 #
 class MaskTreshold(Value):
-    """
-    A Value that acts as a switch:
-    if mask >= treshold, return mask_value.
-    Otherwise, return the original value.
+    """A Value that acts as a switch based on a mask and threshold.
+
+    If mask >= threshold, returns mask_value. Otherwise, returns the original value.
+
+    Attributes:
+        value (Value): The original value to return if mask < threshold.
+        mask (Value): The value to compare against the threshold.
+        treshold_to_mask (Value): The threshold value.
+        mask_value (Value): The value to return if mask >= threshold.
     """
 
     #
@@ -47,6 +63,14 @@ class MaskTreshold(Value):
         treshold_to_mask: Value = Constant(1),
         mask_value: Value = Constant(0),
     ) -> None:
+        """Initializes the MaskTreshold operation.
+
+        Args:
+            value (Value): The original Value object.
+            mask (Value): The mask Value object.
+            treshold_to_mask (Value, optional): The threshold Value. Defaults to 1.
+            mask_value (Value, optional): The value to use when masked. Defaults to 0.
+        """
 
         #
         super().__init__()
@@ -65,6 +89,15 @@ class MaskTreshold(Value):
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
+        """Returns the switched value for a specific index.
+
+        Args:
+            index (int): The sample index.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            float: Either mask_value or the original value based on the threshold.
+        """
 
         #
         mask_v: float = self.mask.get_item(index=index, sample_rate=sample_rate)
@@ -85,6 +118,15 @@ class MaskTreshold(Value):
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
+        """Returns a vectorized NumPy array of the switched values.
+
+        Args:
+            indexes_buffer (NDArray[np.float32]): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            NDArray[np.float32]: Vectorized switched samples.
+        """
 
         #
         base_value: NDArray[np.float32] = self.value.getitem_np(
@@ -110,6 +152,16 @@ class MaskTreshold(Value):
         sample_rate: int,
         device: str | torch.device = "cpu",
     ) -> Tensor:
+        """Generates the switched values for training using PyTorch.
+
+        Args:
+            indexes_buffer (Tensor): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+            device (str | torch.device): The device to use for the tensor.
+
+        Returns:
+            Tensor: A tensor of switched samples.
+        """
 
         #
         base_value: Tensor = self.value.getitem_torch(
@@ -137,11 +189,15 @@ class MaskTreshold(Value):
         context: dict[str, Any],
         sample_rate: int,
     ) -> None:
-        """
-        Propagate gradients through mask threshold.
-        y = value if mask < threshold else mask_value
-        dy/dvalue = 1 if mask < threshold else 0
-        dy/dmask_value = 1 if mask >= threshold else 0
+        """Propagates gradients through the mask threshold operation.
+
+        Gradients are passed to either the original value or the mask value branch
+        depending on whether the mask was below or above the threshold.
+
+        Args:
+            grad_output (NDArray[np.float32]): The gradient of the output.
+            context (dict[str, Any]): The backward context.
+            sample_rate (int): The audio sample rate.
         """
         mask_v = self.mask.getitem_np(context["indices"], sample_rate)
         tresh_v = self.treshold_to_mask.getitem_np(context["indices"], sample_rate)

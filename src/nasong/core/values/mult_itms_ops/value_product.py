@@ -15,7 +15,18 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Product operation implementation.
+
+This module provides the `Product` class, which calculates the product of a list
+of input `Value` objects at each sample.
+
+Example:
+    >>> from nasong.core.values.basic.value_constant import Constant
+    >>> from nasong.core.values.mult_itms_ops.value_product import Product
+    >>> v1, v2 = Constant(2.0), Constant(3.0)
+    >>> p = Product(v1, v2)
+    >>> p.get_item(0, 44100)
+    6.0
 """
 
 #
@@ -33,10 +44,23 @@ from nasong.core.values.input_args import input_args_to_values
 
 #
 class Product(Value):
-    """A Value that returns the product of a list of input Values."""
+    """A Value that returns the product of a list of input Values.
+
+    Attributes:
+        values (list[Value]): The list of input values to multiply.
+    """
 
     #
     def __init__(self, *values: Value | list[Value]) -> None:
+        """Initializes the Product operation.
+
+        Args:
+            *values (Value | list[Value]): One or more Value objects or a list
+                of Value objects to multiply.
+
+        Raises:
+            ValueError: If any input value is None.
+        """
 
         #
         super().__init__()
@@ -51,6 +75,15 @@ class Product(Value):
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
+        """Returns the product for a specific index.
+
+        Args:
+            index (int): The sample index.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            float: The product of all input amplitudes at the given index.
+        """
 
         #
         result: float = 1
@@ -67,6 +100,15 @@ class Product(Value):
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
+        """Returns a vectorized NumPy array of the products.
+
+        Args:
+            indexes_buffer (NDArray[np.float32]): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            NDArray[np.float32]: Vectorized product samples.
+        """
 
         #
         result: NDArray[np.float32] = np.ones_like(indexes_buffer, dtype=np.float32)
@@ -89,6 +131,16 @@ class Product(Value):
         sample_rate: int,
         device: str | torch.device = "cpu",
     ) -> Tensor:
+        """Generates the products for training using PyTorch.
+
+        Args:
+            indexes_buffer (Tensor): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+            device (str | torch.device): The device to use for the tensor.
+
+        Returns:
+            Tensor: A tensor of product samples.
+        """
 
         #
         result: Tensor = torch.ones_like(
@@ -112,10 +164,14 @@ class Product(Value):
         context: dict[str, Any],
         sample_rate: int,
     ) -> None:
-        """
-        Propagate gradients through product.
-        y = prod(x_i)
-        dy/dx_i = y / x_i
+        """Propagates gradients through the product operation.
+
+        Uses the product rule: dy/dx_i = y / x_i (approximate for efficiency).
+
+        Args:
+            grad_output (NDArray[np.float32]): The gradient of the output.
+            context (dict[str, Any]): The backward context.
+            sample_rate (int): The audio sample rate.
         """
         y = self.getitem_np(context["indices"], sample_rate)
 

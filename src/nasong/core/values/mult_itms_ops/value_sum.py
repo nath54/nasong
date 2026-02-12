@@ -15,7 +15,18 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Sum operation implementation.
+
+This module provides the `Sum` class, which calculates the sum of a list
+of input `Value` objects at each sample.
+
+Example:
+    >>> from nasong.core.values.basic.value_constant import Constant
+    >>> from nasong.core.values.mult_itms_ops.value_sum import Sum
+    >>> v1, v2 = Constant(1.0), Constant(2.0)
+    >>> s = Sum(v1, v2)
+    >>> s.get_item(0, 44100)
+    3.0
 """
 
 #
@@ -33,10 +44,23 @@ from nasong.core.values.input_args import input_args_to_values
 
 #
 class Sum(Value):
-    """A Value that returns the sum of a list of input Values."""
+    """A Value that returns the sum of a list of input Values.
+
+    Attributes:
+        values (list[Value]): The list of input values to add.
+    """
 
     #
     def __init__(self, *values: Value | list[Value]) -> None:
+        """Initializes the Sum operation.
+
+        Args:
+            *values (Value | list[Value]): One or more Value objects or a list
+                of Value objects to sum.
+
+        Raises:
+            ValueError: If any input value is None.
+        """
 
         #
         super().__init__()
@@ -51,6 +75,15 @@ class Sum(Value):
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
+        """Returns the sum for a specific index.
+
+        Args:
+            index (int): The sample index.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            float: The sum of all input amplitudes at the given index.
+        """
 
         #
         return sum(
@@ -61,6 +94,15 @@ class Sum(Value):
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
+        """Returns a vectorized NumPy array of the sums.
+
+        Args:
+            indexes_buffer (NDArray[np.float32]): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+
+        Returns:
+            NDArray[np.float32]: Vectorized sum samples.
+        """
 
         #
         arrays = [
@@ -79,6 +121,16 @@ class Sum(Value):
         sample_rate: int,
         device: str | torch.device = "cpu",
     ) -> Tensor:
+        """Generates the sums for training using PyTorch.
+
+        Args:
+            indexes_buffer (Tensor): A buffer of sample indexes.
+            sample_rate (int): The audio sample rate.
+            device (str | torch.device): The device to use for the tensor.
+
+        Returns:
+            Tensor: A tensor of sum samples.
+        """
 
         #
         ### Compute all values and stack them. ###
@@ -112,10 +164,14 @@ class Sum(Value):
         context: dict[str, Any],
         sample_rate: int,
     ) -> None:
-        """
-        Propagate gradients through sum.
-        y = sum(x_i)
-        dy/dx_i = 1
+        """Propagates gradients through the sum operation.
+
+        Uses the linearity of addition: dy/dx_i = 1.
+
+        Args:
+            grad_output (NDArray[np.float32]): The gradient of the output.
+            context (dict[str, Any]): The backward context.
+            sample_rate (int): The audio sample rate.
         """
         for v in self.values:
             v.backward(grad_output, context, sample_rate)

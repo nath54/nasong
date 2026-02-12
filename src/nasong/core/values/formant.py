@@ -15,7 +15,18 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Formant synthesis implementation.
+
+This module provides tools for formant-based synthesis, which simulates the
+resonant characteristics of acoustic instruments or human speech. It includes
+the `Formant` data structure and the `generate_formant_harmonics` utility.
+
+Example:
+    >>> from nasong.core.values.basic.value_constant import Constant
+    >>> from nasong.core.values.formant import Formant, generate_formant_harmonics
+    >>> t = Constant(0.0)
+    >>> f1 = Formant(freq=500.0, gain_db=0.0, q=10.0)
+    >>> v = generate_formant_harmonics(t, 100.0, [f1], 10, 44100)
 """
 
 #
@@ -38,12 +49,26 @@ from nasong.core.values.mult_itms_ops.value_sum import Sum
 
 #
 class Formant:
-    """
-    Data structure for a formant resonance.
+    """Data structure representing a formant resonance.
+
+    A formant is a spectral peak of the spectrum of the voice or an instrument,
+    caused by resonance.
+
+    Attributes:
+        freq (float): The center frequency of the resonance in Hz.
+        gain (float): The linear gain multiplier derived from gain_db.
+        q (float): The quality factor (Q) of the resonance, determining its bandwidth.
     """
 
     #
     def __init__(self, freq: float, gain_db: float, q: float) -> None:
+        """Initializes a Formant.
+
+        Args:
+            freq (float): Center frequency in Hz.
+            gain_db (float): Peak gain in decibels.
+            q (float): Quality factor.
+        """
 
         #
         self.freq: float = freq
@@ -52,6 +77,7 @@ class Formant:
 
     #
     def __repr__(self) -> str:
+        """Returns a string representation of the formant."""
 
         #
         return f"Formant(freq={self.freq}, gain={self.gain}, q={self.q})"
@@ -67,9 +93,25 @@ def generate_formant_harmonics(
     base_amplitude: Value = Constant(1.0),
     phase_shift: bool = True,
 ) -> Value:
-    """
-    Generates harmonics shaped by a set of formants (resonances).
-    This simulates the body resonance of an instrument (like a violin or cello).
+    """Generates harmonics shaped by a set of formants (resonances).
+
+    This simulates the body resonance of an instrument (like a violin or cello)
+    or vocal tract filtering. It creates a series of sine waves at harmonic
+    intervals and scales their amplitudes according to the resonant response
+    of the provided formants.
+
+    Args:
+        time (Value): The time input for the sine oscillators.
+        base_frequency (float): The fundamental frequency in Hz.
+        formants (list[Formant]): A list of Formant objects defining the spectrum.
+        num_harmonics (int): Maximum number of harmonics to generate.
+        sample_rate (int): The audio sample rate for anti-aliasing.
+        base_amplitude (Value, optional): Overall amplitude scaling. Defaults to 1.0.
+        phase_shift (bool, optional): If True, applies random phase shifts to
+            harmonics to avoid coherent transients. Defaults to True.
+
+    Returns:
+        Value: A Sum of Sin waves representing the formant-shaped harmonics.
     """
 
     #

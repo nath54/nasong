@@ -15,7 +15,13 @@
 
 
 """
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+Fundamental Value abstraction for audio generation.
+
+This module defines the `Value` base class and related infrastructure for
+time-varying signals. It includes support for vectorized operations (NumPy/PyTorch),
+automatic differentiation (PyTorch), and manual differentiation (NumPy). It also
+provides a mechanism for trainable parameters through `ValueTrainableParameter`
+and `ParameterContext`.
 """
 
 #
@@ -28,6 +34,13 @@ import numpy as np
 from numpy.typing import NDArray
 
 #
+from nasong.core.values.mult_itms_ops.value_sum import Sum
+from nasong.core.values.basic.value_constant import Constant
+from nasong.core.values.mult_itms_ops.value_product import Product
+from nasong.core.values.complex.value_pow import Pow
+from nasong.core.values.single_itms_ops.value_modulo import Modulo
+
+#
 try:
     import torch
     from torch import Tensor
@@ -37,7 +50,7 @@ except (ImportError, OSError):
     HAS_TORCH = False
     torch = Any  # type: ignore # Mock for imports
 
-    class Tensor:
+    class Tensor:  # pylint: disable=missing-class-docstring
         pass  # Mock for runtime type hints
 
 
@@ -48,11 +61,12 @@ except (ImportError, OSError):
 
 #
 class Value:
-    """
-    Abstract base class for a time-varying value.
+    """Abstract base class for a time-varying value.
 
     This class defines the interface for all 'Value' objects, which are used
     to generate signals, envelopes, modulations, etc., on a per-sample basis.
+    Subclasses must implement at least one of the `get_item`, `getitem_np`, or
+    `getitem_torch` methods.
     """
 
     #
@@ -60,22 +74,24 @@ class Value:
         """Initializes the base Value object."""
 
         #
-        pass
+        pass  # pylint: disable=unnecessary-pass
 
     #
     def get_item(self, index: int, sample_rate: int) -> float:
-        """
-        Get the value at a single sample index.
+        """Calculates the value at a single sample index.
 
-        This is the non-vectorized, sample-by-sample method.
-        It's often slower and used as a fallback.
+        This is the non-vectorized, sample-by-sample method. It is primarily
+        used as a fallback or for simple scalar calculations.
 
         Args:
-            index: The sample index (integer).
+            index (int): The discrete sample index.
+            sample_rate (int): The audio sample rate in Hz.
 
         Returns:
-            The calculated value (float) at that index.
+            float: The calculated value at the given index.
         """
+
+        print(f"Value.get_item({index}, {sample_rate})")
 
         #
         return 0
@@ -84,29 +100,25 @@ class Value:
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
-        """
-        Get the values for an array of sample indexes (vectorized).
+        """Calculates values for an array of sample indexes using NumPy.
 
-        This is the performance-critical method used for rendering audio blocks.
-
-        For the implementation of the base Value class:
-
-            - The base implementation is a slow, non-optimized placeholder
-            that iterates and calls get_item.
-
-            - Subclasses should override this
-            with a fast, vectorized NumPy implementation.
+        This is the performance-critical method used for rendering audio blocks
+        using the CPU. Subclasses should override this with a fast, vectorized
+        NumPy implementation.
 
         Args:
-            indexes_buffer: A NumPy array of sample indexes (as floats).
+            indexes_buffer (NDArray[np.float32]): A NumPy array of sample indexes.
+            sample_rate (int): The audio sample rate in Hz.
 
         Returns:
-            A NumPy array of calculated values (float32), matching the
-            shape of indexes_buffer.
+            NDArray[np.float32]: A NumPy array of calculated values, matching the
+                shape of `indexes_buffer`.
         """
 
         #
-        ### If we arrive here, it is because there are not implemented getitem_np method, so we are using this non optimized placeholder. ###
+        ### If we arrive here, ###
+        ### it is because there are not implemented getitem_np method, ###
+        ### so we are using this non optimized placeholder. ###
         #
         default: NDArray[np.float32] = np.zeros_like(indexes_buffer, dtype=np.float32)
 
@@ -122,29 +134,24 @@ class Value:
     def getitem_torch(
         self,
         indexes_buffer: Tensor,
-        sample_rate: int,
+        sample_rate: int,  # pylint: disable=unused-argument
         device: str | torch.device = "cpu",
     ) -> Tensor:
-        """
-        Get the values for a tensor of sample indexes (vectorized).
+        """Calculates values for a tensor of sample indexes using PyTorch.
 
-        Note: Very very important, the torch part will be used to learn parameters
-        for ValueParameter objects.
-
-        So the gradient flow is important and need to be well implemented
-        without much discontinuity with all the other torch operations.
-
-        So for instance, we should avoid randint, clamp or using the get_item
-        method.
+        This method is used for hardware-accelerated rendering and is essential
+        for gradient-based parameter optimization. Implementations should focus
+        on differentiable operations.
 
         Args:
-            indexes_buffer: A PyTorch tensor of sample indexes (as floats).
-            sample_rate: The sample rate.
-            device: Device to use for tensor operations ("cpu", "cuda", etc.)
+            indexes_buffer (Tensor): A PyTorch tensor of sample indexes.
+            sample_rate (int): The audio sample rate in Hz.
+            device (str | torch.device, optional): The device to use for
+                tensor operations. Defaults to "cpu".
 
         Returns:
-            A PyTorch tensor of calculated values (float32), matching the
-            shape of indexes_buffer.
+            Tensor: A PyTorch tensor of calculated values, matching the shape
+                of `indexes_buffer`.
         """
 
         #
@@ -165,40 +172,30 @@ class Value:
     #
 
     def __add__(self, other):
-        from nasong.core.values.mult_itms_ops.value_sum import Sum
-        from nasong.core.values.basic.value_constant import Constant
 
         if not isinstance(other, Value):
             other = Constant(other)
         return Sum([self, other])
 
     def __radd__(self, other):
-        from nasong.core.values.mult_itms_ops.value_sum import Sum
-        from nasong.core.values.basic.value_constant import Constant
 
         if not isinstance(other, Value):
             other = Constant(other)
         return Sum([other, self])
 
     def __mul__(self, other):
-        from nasong.core.values.mult_itms_ops.value_product import Product
-        from nasong.core.values.basic.value_constant import Constant
 
         if not isinstance(other, Value):
             other = Constant(other)
         return Product([self, other])
 
     def __rmul__(self, other):
-        from nasong.core.values.mult_itms_ops.value_product import Product
-        from nasong.core.values.basic.value_constant import Constant
 
         if not isinstance(other, Value):
             other = Constant(other)
         return Product([other, self])
 
     def __sub__(self, other):
-        from nasong.core.values.mult_itms_ops.value_sum import Sum
-        from nasong.core.values.basic.value_constant import Constant
 
         # self - other = self + (other * -1)
         if not isinstance(other, Value):
@@ -206,8 +203,6 @@ class Value:
         return Sum([self, other * Constant(-1.0)])
 
     def __rsub__(self, other):
-        from nasong.core.values.mult_itms_ops.value_sum import Sum
-        from nasong.core.values.basic.value_constant import Constant
 
         # other - self = other + (self * -1)
         if not isinstance(other, Value):
@@ -215,9 +210,6 @@ class Value:
         return Sum([other, self * Constant(-1.0)])
 
     def __truediv__(self, other):
-        from nasong.core.values.mult_itms_ops.value_product import Product
-        from nasong.core.values.basic.value_constant import Constant
-        from nasong.core.values.complex.value_pow import Pow
 
         if not isinstance(other, Value):
             other = Constant(other)
@@ -225,41 +217,30 @@ class Value:
         return Product([self, Pow(other, Constant(-1.0))])
 
     def __rtruediv__(self, other):
-        from nasong.core.values.mult_itms_ops.value_product import Product
-        from nasong.core.values.basic.value_constant import Constant
-        from nasong.core.values.complex.value_pow import Pow
 
         if not isinstance(other, Value):
             other = Constant(other)
         return Product([other, Pow(self, Constant(-1.0))])
 
     def __mod__(self, other):
-        from nasong.core.values.single_itms_ops.value_modulo import Modulo
-        from nasong.core.values.basic.value_constant import Constant
 
         if not isinstance(other, Value):
             other = Constant(other)
         return Modulo(self, other)
 
     def __rmod__(self, other):
-        from nasong.core.values.single_itms_ops.value_modulo import Modulo
-        from nasong.core.values.basic.value_constant import Constant
 
         if not isinstance(other, Value):
             other = Constant(other)
         return Modulo(other, self)
 
     def __pow__(self, other):
-        from nasong.core.values.complex.value_pow import Pow
-        from nasong.core.values.basic.value_constant import Constant
 
         if not isinstance(other, Value):
             other = Constant(other)
         return Pow(self, other)
 
     def __rpow__(self, other):
-        from nasong.core.values.complex.value_pow import Pow
-        from nasong.core.values.basic.value_constant import Constant
 
         if not isinstance(other, Value):
             other = Constant(other)
@@ -271,18 +252,20 @@ class Value:
         context: dict[str, Any],
         sample_rate: int,
     ) -> None:
-        """
-        Calculates gradients for the NumPy engine (manual differentiation).
+        """Calculates gradients for the NumPy engine (manual differentiation).
 
-        Subclasses should override this to propagate gradients to their inputs
-        and update their internal parameters.
+        This method facilitates backpropagation for the non-PyTorch engine.
+        Subclasses that house trainable parameters must override this to
+        propagate gradients to their inputs or update internal state.
 
         Args:
-            grad_output: The gradient of the loss with respect to this node's output.
-            context: A storage for intermediate values from the forward pass.
-            sample_rate: The sample rate.
+            grad_output (NDArray[np.float32]): The gradient of the loss with
+                respect to this node's output.
+            context (dict[str, Any]): Intermediate values stored during the
+                forward pass (`getitem_np`).
+            sample_rate (int): The audio sample rate in Hz.
         """
-        pass
+        pass  # pylint: disable=unnecessary-pass
 
 
 #
@@ -292,8 +275,11 @@ class Value:
 
 #
 class ParameterContext:
-    """
-    Context manager to capture or inject parameters into ValueTrainableParameter.
+    """Context manager for managing `ValueTrainableParameter` instances.
+
+    This class serves as a global (or thread-local) registry to either capture
+    newly created parameters (during training) or inject specific values into
+    parameters (during inference).
     """
 
     _current = None
@@ -304,6 +290,9 @@ class ParameterContext:
         capture: bool = False,
         ignore_unknown: bool = True,
     ):
+        """
+        Initialize the context manager.
+        """
         self.parameters = parameters or {}
         self.capture = capture
         self.captured_params: list["ValueTrainableParameter"] = []
@@ -311,15 +300,24 @@ class ParameterContext:
         self._param_counter = 0
 
     def __enter__(self):
+        """
+        Enter the context manager.
+        """
         self._previous = ParameterContext._current
         ParameterContext._current = self
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        """
+        Exit the context manager.
+        """
         ParameterContext._current = self._previous
 
     @classmethod
     def get_current(cls):
+        """
+        Get the current context manager.
+        """
         return cls._current
 
 
@@ -330,21 +328,32 @@ class ParameterContext:
 
 #
 class ValueTrainableParameter(Value):
-    """
-    A Value that can be trained.
+    """A specialized `Value` that represents a learnable parameter.
+
+    ValueTrainableParameter encapsulates a scalar value that can be optimized
+    using either PyTorch's Autograd (when using `getitem_torch`) or the engine's
+    manual differentiation (when using `getitem_np` and `backward`).
     """
 
     @property
     def value(self) -> Any:
+        """
+        Get the value of the parameter.
+        """
         return self._value
 
     @value.setter
     def value(self, val: Any) -> None:
+        """
+        Set the value of the parameter.
+        """
         self._value = val
 
     #
     def __init__(self, initial_value: float | int, name: str | None = None) -> None:
-
+        """
+        Initialize the parameter.
+        """
         #
         super().__init__()
 
@@ -380,8 +389,10 @@ class ValueTrainableParameter(Value):
                 self._value = float(initial_value)
 
     #
-    #
     def get_item(self, index: int, sample_rate: int) -> float:
+        """
+        Get the value of the parameter.
+        """
 
         #
         val = self.value
@@ -408,6 +419,9 @@ class ValueTrainableParameter(Value):
     def getitem_np(
         self, indexes_buffer: NDArray[np.float32], sample_rate: int
     ) -> NDArray[np.float32]:
+        """
+        Get the value of the parameter.
+        """
 
         #
         val = self.value
@@ -422,10 +436,7 @@ class ValueTrainableParameter(Value):
         if HAS_TORCH and isinstance(val, torch.Tensor):
             val = val.item()
 
-        # For standard numpy, we want to ensure val is a scalar float.
-        # For autograd, val will be an ArrayBox.
-        # Using ones_like * val is a robust way to broadcast that works for both.
-        # IMPORTANT: Autograd + float32 often fails. We use the dtype of the indices (usually float64 in autograd)
+        #
         return np.ones_like(indexes_buffer, dtype=indexes_buffer.dtype) * val
 
     #
@@ -435,6 +446,9 @@ class ValueTrainableParameter(Value):
         sample_rate: int,
         device: str | torch.device = "cpu",
     ) -> Tensor:
+        """
+        Get the value of the parameter.
+        """
 
         #
         ### Best way to pass the value correctly with good gradient flow. ###
@@ -451,6 +465,7 @@ class ValueTrainableParameter(Value):
             t_val = torch.tensor(self.value, device=device)
             return t_val.expand_as(indexes_buffer)
 
+        #
         return self.value.to(device).expand_as(indexes_buffer)
 
     #
