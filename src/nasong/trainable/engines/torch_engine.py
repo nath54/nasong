@@ -45,11 +45,15 @@ try:
     HAS_TORCH = True
 except (ImportError, OSError):
     HAS_TORCH = False
-    torch = Any
-    optim = Any
+    torch = None  # type: ignore
+    optim = None  # type: ignore
 
-    class Tensor:
-        pass
+    class Tensor:  # type: ignore[no-redef] # pylint: disable=too-few-public-methods
+        """
+        Mock Tensor class for type hinting when torch is not available.
+        """
+
+        pass  # pylint: disable=unnecessary-pass
 
 
 #
@@ -84,7 +88,7 @@ class TorchEngine(BaseTrainingEngine):
         self,
         synthesized: Tensor,
         target: Tensor,
-        sample_rate: int = 44100,
+        sample_rate: int = 44100,  # pylint: disable=unused-argument
         n_fft: int = 2048,
         hop_length: int = 512,
         high_freq_emphasis: float = 2.0,
@@ -102,14 +106,14 @@ class TorchEngine(BaseTrainingEngine):
         Returns:
             Tensor: Scalar loss value.
         """
-        synth_stft = torch.stft(
+        synth_stft = torch.stft(  # pylint: disable=no-member
             synthesized,
             n_fft=n_fft,
             hop_length=hop_length,
             window=torch.hann_window(n_fft, device=synthesized.device),
             return_complex=True,
         )
-        target_stft = torch.stft(
+        target_stft = torch.stft(  # pylint: disable=no-member
             target,
             n_fft=n_fft,
             hop_length=hop_length,
@@ -117,11 +121,11 @@ class TorchEngine(BaseTrainingEngine):
             return_complex=True,
         )
 
-        synth_mag = torch.abs(synth_stft)
-        target_mag = torch.abs(target_stft)
+        synth_mag = torch.abs(synth_stft)  # pylint: disable=no-member
+        target_mag = torch.abs(target_stft)  # pylint: disable=no-member
 
         freq_bins = synth_mag.shape[0]
-        freq_weights = torch.linspace(
+        freq_weights = torch.linspace(  # pylint: disable=no-member
             1.0, high_freq_emphasis, freq_bins, device=synthesized.device
         )
         freq_weights = freq_weights.unsqueeze(1)
@@ -129,11 +133,11 @@ class TorchEngine(BaseTrainingEngine):
         synth_mag_weighted = synth_mag * freq_weights
         target_mag_weighted = target_mag * freq_weights
 
-        mag_loss = torch.mean(torch.abs(synth_mag_weighted - target_mag_weighted))
+        mag_loss = torch.mean(torch.abs(synth_mag_weighted - target_mag_weighted))  # pylint: disable=no-member
 
-        synth_log_mag = torch.log(synth_mag + 1e-5)
-        target_log_mag = torch.log(target_mag + 1e-5)
-        log_mag_loss = torch.mean(torch.abs(synth_log_mag - target_log_mag))
+        synth_log_mag = torch.log(synth_mag + 1e-5)  # pylint: disable=no-member
+        target_log_mag = torch.log(target_mag + 1e-5)  # pylint: disable=no-member
+        log_mag_loss = torch.mean(torch.abs(synth_log_mag - target_log_mag))  # pylint: disable=no-member
 
         return mag_loss + 0.5 * log_mag_loss
 
@@ -160,7 +164,7 @@ class TorchEngine(BaseTrainingEngine):
         if fft_sizes is None:
             fft_sizes = [2048, 1024, 512]
 
-        total_loss: Tensor = torch.tensor(0.0, device=self.device)
+        total_loss: Tensor = torch.tensor(0.0, device=self.device)  # pylint: disable=no-member
 
         for n_fft in fft_sizes:
             hop_length = n_fft // 4
@@ -231,10 +235,10 @@ class TorchEngine(BaseTrainingEngine):
         """Currently unimplemented as a standalone atomic op, usually handled in batch loops."""
         # For TorchEngine, we typically do this inside the batch loop in `step`
         # or a higher-level loop. But we'll provide a basic implementation.
-        target_tensor = torch.from_numpy(target_audio).to(self.device).float()
+        target_tensor = torch.from_numpy(target_audio).to(self.device).float()  # pylint: disable=no-member
 
         # Identity indices for full rendering (careful with memory)
-        indices = torch.arange(len(target_audio), device=self.device).float()
+        indices = torch.arange(len(target_audio), device=self.device).float()  # pylint: disable=no-member
         synthesized = blueprint.getitem_torch(indices, sample_rate, device=self.device)
 
         loss = self.multi_resolution_spectral_loss(
@@ -273,4 +277,4 @@ class TorchEngine(BaseTrainingEngine):
         # This requires a naming convention consistency.
         # For now, we assume simple index-based or name-based if available.
         # This will be refined as we implement model saving/loading.
-        pass
+        pass  # pylint: disable=unnecessary-pass

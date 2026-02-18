@@ -27,7 +27,7 @@ from typing import Any
 import os
 import argparse
 import datetime
-import scipy.io.wavfile as wavfile
+import scipy.io.wavfile as wavfile  # type: ignore
 
 #
 import numpy as np
@@ -53,7 +53,7 @@ try:
     HAS_TORCH = True
 except (ImportError, OSError):
     HAS_TORCH = False
-    torch = Any
+    torch = None  # type: ignore
 
 
 #
@@ -162,17 +162,17 @@ def render_audio_in_chunks(
 
         if HAS_TORCH and (device != "cpu" or True):
             # indices relative to global time for the graph
-            idx = torch.arange(current, end, dtype=torch.float32, device=device)
+            idx_torch = torch.arange(current, end, dtype=torch.float32, device=device)  # pylint: disable=no-member
             chunk = (
-                synth_output.getitem_torch(idx, sr, device=device)
+                synth_output.getitem_torch(idx_torch, sr, device=device)
                 .detach()
                 .cpu()
                 .numpy()
             )
         else:
             # Fallback to NumPy
-            idx = np.arange(current, end, dtype=np.float32)
-            chunk = synth_output.getitem_np(idx, sr)
+            idx_np = np.arange(current, end, dtype=np.float32)
+            chunk = synth_output.getitem_np(idx_np, sr)
 
         audio_chunks.append(chunk)
         current = end
@@ -345,7 +345,11 @@ def train_instrument(config: TrainingConfig) -> dict[str, Any]:
     if hasattr(engine, "initialize_optimizer"):
         engine.initialize_optimizer(synth_output)
 
-    history = {"losses": [], "epochs": [], "validation_losses": []}
+    history: dict[str, list[float]] = {
+        "losses": [],
+        "epochs": [],
+        "validation_losses": [],
+    }
 
     print(f"Starting training for {config.epochs} epochs...")
 
@@ -502,7 +506,7 @@ def main():
 
         if config.engine_type == "torch":
             # Fallback to CPU if CUDA is not available
-            if config.device == "cuda" and not torch.cuda.is_available():
+            if config.device == "cuda" and not torch.cuda.is_available():  # pylint: disable=no-member
                 config.device = "cpu"
                 print("CUDA not available. Switching to CPU.")
 
@@ -532,7 +536,7 @@ def main():
 
         if config.engine_type == "torch":
             # Fallback to CPU if CUDA is not available
-            if config.device == "cuda" and not torch.cuda.is_available():
+            if config.device == "cuda" and not torch.cuda.is_available():  # pylint: disable=no-member
                 config.device = "cpu"
                 print("CUDA not available. Switching to CPU.")
 

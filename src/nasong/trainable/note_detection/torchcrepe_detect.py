@@ -49,7 +49,7 @@ except (ImportError, OSError):
 try:
     import torchcrepe  # type: ignore
 except ImportError:
-    torchcrepe = None
+    torchcrepe = None  # type: ignore
 
 
 class TorchCrepeDetector(NoteDetector):
@@ -77,12 +77,14 @@ class TorchCrepeDetector(NoteDetector):
                 "TorchCrepe is not installed. Please install 'torchcrepe'."
             )
 
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+        device = "cuda" if torch.cuda.is_available() else "cpu"  # pylint: disable=no-member
 
         # Prepare audio tensor
         # Crepe expects shape (batch, time)
-        audio_tensor = torch.tensor(
-            audio_data, dtype=torch.float32, device=device
+        audio_tensor = torch.tensor(  # pylint: disable=no-member
+            audio_data,
+            dtype=torch.float32,
+            device=device,  # pylint: disable=no-member
         ).unsqueeze(0)
 
         step_size_ms = self.config.get("crepe_step_size", 10)
