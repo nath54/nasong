@@ -271,6 +271,29 @@ def song(time: lv.Value) -> lv.Value:
 - `song_examples/`: Example song definitions.
 - `tests/`: Automated tests **(for now, there are only pre generated empty tests)**.
 
+## Documentation
+
+### Getting Started
+- [Quick Start Guide](doc/getting_started.md) — Installation, "Hello World", CLI reference
+- [Song Scripting Guide](doc/song_scripting.md) — The `song(time)`/`duration` contract, audio graphs, Sequencer, full walkthrough
+
+### User Guides
+- [Music Theory Module](doc/music_theory.md) — Scales, chords, progressions, style generators, `render()`
+- [Algo-Rave Live Coding](doc/algo_rave.md) — TUI & headless modes, hot-reload, keyboard shortcuts
+- [DSL Reference](doc/dsl_reference.md) — Signal chaining (`>>`), decorators, units
+- [Instruments](doc/instruments.md) — Pre-built instrument library (normal & trainable)
+- [Training Configuration](doc/training_config.md) — YAML config reference for the training pipeline
+
+### Developer & Contributor Guides
+- [Value System](doc/value_system.md) — Core "Everything is a Value" architecture
+- [Project Architecture](doc/architecture.md) — Module diagram, data flow, RenderEngine, training pipeline
+- [Contributing](doc/contributing.md) — Dev setup, code style, step-by-step checklists
+
+### API Reference
+- [Core Value Nodes](doc/api/core_values.md) — All Value nodes with signatures and examples
+- [Effects](doc/api/effects.md) — ADSR_Piano, Vibrato, LFO, Distortion, etc.
+- [Style Generators](doc/api/theory_generators.md) — Jazz, EDM, Lofi, Salsa, Afrobeat, and more
+
 ## License
 
 This project is licensed under the terms of the GPLv3 license.
