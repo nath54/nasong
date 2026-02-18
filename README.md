@@ -6,6 +6,41 @@
 
 Nasong is a Python-based music synthesizer and sequencer that allows you to create music programmatically. It provides a framework for defining instruments, effects, and songs using Python code, which are then rendered to WAV files.
 
+## Installation
+
+### PyPI Installation
+
+This project is now available on [PyPI](https://pypi.org/project/nasong/). You can install it using pip:
+
+```bash
+pip install nasong
+```
+
+### From Source / Manual Installation
+
+1.  Clone the repository:
+    ```bash
+    git clone https://github.com/nasong/nasong.git
+    cd nasong
+    ```
+2.  Install the package (editable mode recommended for development):
+    ```bash
+    pip install -e .
+    ```
+    *Note: PyTorch is an optional dependency for GPU acceleration and training. If you want to use it, install it separately following instructions at [pytorch.org](https://pytorch.org).*
+
+### CLI Commands available after installation
+
+After the installation from the both previous methods, you will then be able to use the different cli commands directly:
+- `nasong`: Generate music.
+- `nasong-daw`: Launch a textual editor for nasong.
+- `nasong-rave`: Launch the live coding TUI environment.
+- `nasong-vis`: Visualize audio.
+- `nasong-train`: Train instruments.
+- `nasong-monitor`: Manage experiments.
+
+Then, for more details, see the [Usage](#usage) section.
+
 ## Features
 
 - **Programmatic Music Generation**: Define songs and instruments using Python code.
@@ -38,30 +73,8 @@ At the heart of Nasong is the `Value` class.
 
 ## Constraints
 
-- **Not Real-Time**: Nasong is a "music compiler". You write code, runs the script to render a WAV file, and then listen. It is not designed for live performance or real-time jamming.
 - **Requires Coding**: You need to be comfortable with Python to use it effectively.
 - **Render Time**: Complex songs with many voices and heavy processing (like convolution reverb) may take some time to render.
-
-
-## Installation
-
-1.  Clone the repository:
-    ```bash
-    git clone https://github.com/nasong/nasong.git
-    cd nasong
-    ```
-2.  Install the package (editable mode recommended for development):
-    ```bash
-    pip install -e .
-    ```
-    *Note: PyTorch is an optional dependency for GPU acceleration and training. If you want to use it, install it separately following instructions at [pytorch.org](https://pytorch.org).*
-
-This installation exposes the following CLI commands:
-- `nasong`: Generate music.
-- `nasong-vis`: Visualize audio.
-- `nasong-train`: Train instruments.
-- `nasong-monitor`: Manage experiments.
-- `nasong-rave`: Launch the live coding TUI environment.
 
 ## Usage
 
@@ -256,7 +269,7 @@ def song(time: lv.Value) -> lv.Value:
 - `src/nasong/scripts/`: CLI entry points.
 - `src/nasong/trainable/`: Training logic and trainable instrument definitions.
 - `song_examples/`: Example song definitions.
-- `tests/`: Automated tests.
+- `tests/`: Automated tests **(for now, there are only pre generated empty tests)**.
 
 ## License
 
