@@ -9,10 +9,17 @@ time = Identity()
 
 def drone_voice(freq_base, mod_rate):
     # Slowly drifting frequency
-    freq = Constant(freq_base) + LFO(time, rate=mod_rate, depth=2.0)
+    freq = Constant(freq_base) + LFO(
+        time, rate_hz=Constant(mod_rate), waveform_class=Sin, amplitude=Constant(2.0)
+    )
 
     # Slowly drifting amplitude
-    amp = LFO(time, rate=mod_rate * 0.7, depth=0.3) + Constant(0.5)
+    amp = LFO(
+        time,
+        rate_hz=Constant(mod_rate * 0.7),
+        waveform_class=Sin,
+        amplitude=Constant(0.3),
+    ) + Constant(0.5)
 
     return Sin(time, freq) * amp
 

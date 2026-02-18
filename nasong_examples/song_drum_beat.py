@@ -26,32 +26,34 @@ def song(time: lv.Value) -> lv.Value:
     """
 
     # Kick drum pattern (on beats 1 and 3, plus some variations)
+    # Note: percussion instruments require (time, frequency, start_time, duration, velocity)
+    # but frequency is ignored for drums. We pass 0.0 as a dummy frequency.
     kicks: list[lv.Value] = []
     for bar in range(8):
         base = bar * 2.0
-        kicks.append(KickDrum(time, base + 0.0))  # Beat 1
-        kicks.append(KickDrum(time, base + 1.0))  # Beat 3
+        kicks.append(KickDrum(time, 0.0, base + 0.0))  # Beat 1
+        kicks.append(KickDrum(time, 0.0, base + 1.0))  # Beat 3
         if bar % 2 == 1:
-            kicks.append(KickDrum(time, base + 1.75))  # Variation
+            kicks.append(KickDrum(time, 0.0, base + 1.75))  # Variation
 
     # Snare drum pattern (on beats 2 and 4)
     snares: list[lv.Value] = []
     for bar in range(8):
         base = bar * 2.0
-        snares.append(SnareDrum(time, base + 0.5))  # Beat 2
-        snares.append(SnareDrum(time, base + 1.5))  # Beat 4
+        snares.append(SnareDrum(time, 0.0, base + 0.5))  # Beat 2
+        snares.append(SnareDrum(time, 0.0, base + 1.5))  # Beat 4
 
     # Hi-hat pattern (eighth notes)
     hihats: list[lv.Value] = []
     for i in range(64):  # 16 seconds * 4 eighth notes per second
         t = i * 0.25
         is_open = i % 4 == 2  # Open hi-hat on upbeats occasionally
-        hihats.append(HiHat(time, t, open=is_open))
+        hihats.append(HiHat(time, 0.0, t, open=is_open))
 
     # Crash cymbals (at the beginning and middle)
     crashes = [
-        CrashCymbal(time, 0.0),
-        CrashCymbal(time, 8.0),
+        CrashCymbal(time, 0.0, 0.0),
+        CrashCymbal(time, 0.0, 8.0),
     ]
 
     #

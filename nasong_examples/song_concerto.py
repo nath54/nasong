@@ -55,7 +55,7 @@ def song(time: lv.Value) -> lv.Value:
         (587.33, 1.5),
     ]
 
-    lv.SimpleMelody(
+    violin_seq = lv.SimpleMelody(
         time, instrument_factory=Violin, notes=violin_notes, start_time=0.5, gap=0.0
     )
 
@@ -93,4 +93,4 @@ def song(time: lv.Value) -> lv.Value:
     #
     ### Mix ###
     #
-    return cello_seq  # lv.Sum(violin_seq, cello_seq)
+    return lv.Sum(violin_seq, cello_seq)
