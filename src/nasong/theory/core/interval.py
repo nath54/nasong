@@ -59,7 +59,6 @@ class Interval:
             self.semitones = float(value)
             self.ratio = 2 ** (self.semitones / 12.0)
         elif isinstance(value, str):
-            # TODO: Parse interval names like "P5", "min3"
             target = self._parse_name(value)
             self.semitones = float(target)
             self.ratio = 2 ** (self.semitones / 12.0)

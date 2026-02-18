@@ -14,8 +14,41 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Training script for Nasong synthesizer instruments.
+
+This module provides a complete pipeline for training differentiable synthesizer
+instruments to match a target audio file. It supports multiple training engines
+(NumPy, Autograd, PyTorch) and automatic note detection.
+
+Key Functions:
+    get_engine:
+        Factory that instantiates the requested training engine (numpy, autograd,
+        or torch) from a ``TrainingConfig``.
+
+    load_wav_segment:
+        Loads a segment of a WAV file, normalises it to float32, resamples to a
+        target sample rate, and pads/trims to the requested duration.
+
+    render_audio_in_chunks:
+        Renders audio from a ``Value`` synthesis graph in manageable chunks to
+        avoid out-of-memory errors, using either PyTorch or NumPy indexing.
+
+    train_instrument:
+        End-to-end training loop. Loads audio, detects notes, builds the
+        synthesis graph, runs the optimisation loop, and saves the resulting
+        audio, parameters, and history to disk.
+
+    main:
+        CLI entry-point. Parses arguments (WAV file, YAML config, overrides)
+        and launches ``train_instrument``.
+
+Usage::
+
+    # With a YAML config file
+    python -m nasong.trainable.train --config my_config.yaml
+
+    # Quick run with defaults
+    python -m nasong.trainable.train target.wav -i sine -e 200 --engine autograd
 """
 
 #

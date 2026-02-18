@@ -23,9 +23,10 @@ leveraging West African pentatonic scales and polyrhythmic structures.
 #
 ### Import Modules. ###
 #
-from nasong.theory.core.time import QUARTER
+from nasong.theory.core.time import QUARTER, SIXTEENTH
 from nasong.theory.systems.african import African
 from nasong.theory.structures.progression import Progression
+from nasong.theory.structures.rhythm import Rhythm, RhythmEvent
 
 
 class Afrobeat:
@@ -35,20 +36,38 @@ class Afrobeat:
     def polyrhythmic_groove(root: str = "C4") -> Progression:
         """Generates a basic Afrobeat groove with a 3:2 polyrhythm structure.
 
+        Builds a harmonic I-IV vamp and converts the polyrhythm onset data
+        into ``Rhythm`` objects, which are attached to the returned
+        ``Progression`` as ``rhythm_a`` and ``rhythm_b`` attributes.
+
         Args:
             root (str): The root note for the scale. Defaults to "C4".
 
         Returns:
-            Progression: A rhythmic progression representing the groove.
+            Progression: A rhythmic progression with ``rhythm_a`` (3-beat line)
+                and ``rhythm_b`` (2-beat line) attached as attributes.
         """
         scale = African.pentatonic(root)
         # 3 against 2
         r_a, r_b = African.polyrhythm((3, 2), length=12)
 
-        # TODO: Return actual Rhythm objects with notes mapped from scale
-        # For now, returning the raw onset data structure or a placeholder progression
+        # Build Rhythm objects from onset indices
+        def _onsets_to_rhythm(onsets: list[int], length: int) -> Rhythm:
+            """Converts a list of onset step indices into a ``Rhythm``."""
+            events: list[RhythmEvent] = []
+            for step in range(length):
+                is_hit = step in onsets
+                events.append(RhythmEvent(SIXTEENTH, is_rest=not is_hit))
+            return Rhythm(events, loop=True)
 
-        # A progression that stays on the root but has complex rhythm?
-        # Or just a simple I-IV vamp
+        rhythm_a = _onsets_to_rhythm(r_a, 12)
+        rhythm_b = _onsets_to_rhythm(r_b, 12)
+
+        # Harmonic foundation: simple I-IV vamp
         prog = Progression.from_roman_numerals(scale, ["I", "IV"], duration=QUARTER * 4)
+
+        # Attach polyrhythm lines for consumers that need them
+        prog.rhythm_a = rhythm_a  # type: ignore[attr-defined]
+        prog.rhythm_b = rhythm_b  # type: ignore[attr-defined]
+
         return prog

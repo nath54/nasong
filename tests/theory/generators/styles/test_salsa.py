@@ -1,38 +1,38 @@
+"""Tests for theory.generators.styles.salsa."""
 
-
-
-"""Auto-generated test stubs for theory.generators.styles.salsa."""
-
-import pytest
-from unittest.mock import MagicMock, patch
-import theory.generators.styles.salsa
+from nasong.theory.generators.styles.salsa import Salsa
+from nasong.theory.structures.rhythm import Rhythm
+from nasong.theory.structures.progression import Progression
 
 
 class TestSalsa:
     """Tests for Salsa."""
 
-    def setup_method(self):
-        """Create a fresh instance for each test."""
-        self.instance = theory.generators.styles.salsa.Salsa()
+    def test_montuno_progression_minor(self):
+        """Test montuno_progression returns a valid minor Progression."""
+        result = Salsa.montuno_progression("G4", minor=True)
+        assert isinstance(result, Progression)
+        assert len(result.chords) == 2
 
-    def test_montuno_progression(self):
-        """Test for Salsa.montuno_progression."""
-        # -- Setup --
-        root = ""
-        minor = False
-        # mock_from_roman_numerals = MagicMock(return_value=None)
-        # mock_minor = MagicMock(return_value=None)
-        # mock_major = MagicMock(return_value=None)
-        # -- Act --
-        result = self.instance.montuno_progression(root, minor)
-        # -- Assert --
-        assert result == None
+    def test_montuno_progression_major(self):
+        """Test montuno_progression returns a valid major Progression."""
+        result = Salsa.montuno_progression("C4", minor=False)
+        assert isinstance(result, Progression)
+        assert len(result.chords) == 2
 
-    def test_clave_rhythm(self):
-        """Test for Salsa.clave_rhythm."""
-        # -- Setup --
-        direction = ""
-        # -- Act --
-        result = self.instance.clave_rhythm(direction)
-        # -- Assert --
-        assert result == None
+    def test_clave_rhythm_2_3(self):
+        """Test clave_rhythm returns a Rhythm for 2-3 direction."""
+        result = Salsa.clave_rhythm("2-3")
+        assert isinstance(result, Rhythm)
+        assert len(result.events) > 0
+
+    def test_clave_rhythm_3_2(self):
+        """Test clave_rhythm returns a Rhythm for 3-2 direction."""
+        result = Salsa.clave_rhythm("3-2")
+        assert isinstance(result, Rhythm)
+        assert len(result.events) > 0
+
+    def test_clave_rhythm_default_is_2_3(self):
+        """Test that the default clave direction is 2-3."""
+        result = Salsa.clave_rhythm()
+        assert isinstance(result, Rhythm)

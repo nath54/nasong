@@ -23,10 +23,10 @@ specifically targeting the 'In' pentatonic scale and Koto-like motifs.
 #
 ### Import Modules. ###
 #
-from nasong.theory.core.time import QUARTER
 from nasong.theory.systems.east_asian import EastAsian
 from nasong.theory.structures.progression import Progression
 from nasong.theory.structures.chord import Chord
+from nasong.theory.core.pitch import Pitch
 
 
 class Koto:
@@ -47,6 +47,8 @@ class Koto:
             # Fallback
             notes = []
         # Create single-note chords
-        chords = [Chord(root=n, intervals=[], name="Note") for n in notes]
+        chords: list[Chord | Pitch] = [
+            Chord(root=n, intervals=[], name="Note") for n in notes
+        ]
 
-        return Progression(chords, [QUARTER] * 4)
+        return Progression(chords, scale)

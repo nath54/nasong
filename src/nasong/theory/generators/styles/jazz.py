@@ -23,6 +23,9 @@ standard ii-V-I turnarounds and random lead-sheet style progressions.
 #
 ### Import Modules. ###
 #
+import random
+
+#
 from nasong.theory.core.scale import Scale
 from nasong.theory.core.time import QUARTER
 from nasong.theory.structures.progression import Progression
@@ -68,6 +71,37 @@ class Jazz:
 
     @staticmethod
     def generate_random_standards_progression(length: int = 4) -> Progression:
-        """Generates a random lead-sheet sequence using common jazz patterns."""
-        # TODO: replace Placeholder
-        return Jazz.ii_V_I()
+        """Generates a random lead-sheet sequence using common jazz patterns.
+
+        Builds a progression of the requested ``length`` by randomly choosing
+        from a pool of idiomatic jazz chord snippets and concatenating them.
+
+        Args:
+            length (int): Desired number of chords. Defaults to 4.
+
+        Returns:
+            Progression: A randomly assembled jazz chord progression.
+        """
+        # Pool of common jazz chord-pattern snippets (Roman numerals)
+        _patterns: list[list[str]] = [
+            ["ii", "V", "I"],  # ii-V-I turnaround
+            ["I", "vi", "ii", "V"],  # rhythm changes / "I Got Rhythm"
+            ["iii", "vi", "ii", "V"],  # long approach
+            ["IV", "iv", "I"],  # plagal / backdoor cadence
+            ["I", "IV"],  # simple vamp
+            ["ii", "V"],  # unresolved tension
+        ]
+
+        roots = ["C4", "F4", "Bb4", "Eb4", "Ab4", "Db4", "G4", "D4", "A4", "E4", "B4"]
+
+        collected: list[str] = []
+        while len(collected) < length:
+            snippet = random.choice(_patterns)
+            collected.extend(snippet)
+
+        # Trim to exact length
+        collected = collected[:length]
+
+        root = random.choice(roots)
+        scale = Scale.from_name(root, "major")
+        return Progression.from_roman_numerals(scale, collected, duration=QUARTER)

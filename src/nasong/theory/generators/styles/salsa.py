@@ -39,10 +39,26 @@ class Salsa:
 
     @staticmethod
     def clave_rhythm(direction: str = "2-3") -> Rhythm:
-        """Returns a pulse pattern for Son Clave (2-3 or 3-2)."""
-        # 2-3 Son Clave: ..X.X... .X..X...
-        # 3-2 Son Clave: X..X..X. ..X.X...
+        """Returns a pulse pattern for Son Clave (2-3 or 3-2).
 
-        # TODO
+        The Son Clave is a foundational rhythmic pattern in Afro-Cuban music,
+        expressed here as a 16-step (sixteenth-note) grid.
 
-        return None
+        Args:
+            direction (str): Either ``"2-3"`` or ``"3-2"`` for the clave
+                direction. Defaults to ``"2-3"``.
+
+        Returns:
+            Rhythm: A looping ``Rhythm`` of 16 sixteenth-note pulses.
+
+        Raises:
+            ValueError: If ``direction`` is not ``"2-3"`` or ``"3-2"``.
+        """
+        # 16-step grid (one bar of 4/4 in sixteenth notes)
+        # 2-3 Son Clave: ..x.x.....x..x.x...  (side 2 then side 3)
+        # 3-2 Son Clave: x..x..x...x.x.......  (side 3 then side 2)
+        if direction == "2-3":
+            return Rhythm.from_string("..x.x.....x..x.x...")
+        if direction == "3-2":
+            return Rhythm.from_string("x..x..x...x.x......")
+        raise ValueError(f"Unknown clave direction: {direction!r} (use '2-3' or '3-2')")

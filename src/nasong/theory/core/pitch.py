@@ -28,6 +28,9 @@ from typing import Optional
 from dataclasses import dataclass
 
 #
+import re
+
+#
 from nasong.core.value import Value
 from nasong.core.values.basic.value_constant import Constant
 
@@ -184,15 +187,14 @@ class Note(Pitch):
         # 1. Normalize name (handle basic flats)
         # Separate letter/accidental from octave
         # Finds the last digit
-        import re
 
         match = re.match(r"([A-Ga-g][b#]?)(-?\d+)", note_str)
         if not match:
             # Fallback: maybe just midi number as string?
             try:
                 return int(note_str)
-            except ValueError:
-                raise ValueError(f"Invalid note format: {note_str}")
+            except ValueError as e:
+                raise ValueError(f"Invalid note format: {note_str}") from e
 
         note_part, octave_part = match.groups()
 
@@ -215,13 +217,16 @@ class Note(Pitch):
 
     @property
     def midi(self) -> int:
+        """The MIDI note number."""
         return self._midi_index
 
     @property
     def freq(self) -> float:
+        """The frequency in Hz."""
         return self.tuning.freq_from_midi(self._midi_index)
 
     def to_hz(self) -> float:
+        """The frequency in Hz."""
         return self.freq
 
     def transpose(self, semitones: int) -> "Note":

@@ -1,10 +1,5 @@
-
-
-
 """Auto-generated test stubs for theory.generators.styles.koto."""
 
-import pytest
-from unittest.mock import MagicMock, patch
 import theory.generators.styles.koto
 
 
@@ -18,11 +13,10 @@ class TestKoto:
     def test_traditional_motif(self):
         """Test for Koto.traditional_motif."""
         # -- Setup --
-        root = ""
-        # mock_in_scale = MagicMock(return_value=None)
-        # mock_Progression = MagicMock(return_value=None)
-        # mock_Chord = MagicMock(return_value=None)
+        root = "D4"
         # -- Act --
         result = self.instance.traditional_motif(root)
         # -- Assert --
-        assert result == None
+        assert result is not None
+        assert len(result.chords) == 4
+        assert result.scale.name == "In Scale"

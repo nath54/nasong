@@ -1,41 +1,48 @@
-
-
-
-"""Auto-generated test stubs for theory.core.interval."""
+"""Tests for theory.core.interval."""
 
 import pytest
-from unittest.mock import MagicMock, patch
-import theory.core.interval
+
+from nasong.theory.core.interval import Interval
 
 
 class TestInterval:
     """Tests for Interval."""
 
-    def setup_method(self):
-        """Create a fresh instance for each test."""
-        # -- Setup Constructor Arguments --
-        value = 0
-        self.instance = theory.core.interval.Interval(value)
+    def test_from_semitones(self):
+        """Test creating an Interval from an integer semitone count."""
+        iv = Interval(7)
+        assert iv.semitones == 7.0
+        assert iv.ratio == pytest.approx(2 ** (7 / 12.0))
 
-    def test__parse_name(self):
-        """Test for Interval._parse_name."""
-        # -- Setup --
-        name = ""
-        # mock_ValueError = MagicMock(return_value=None)
-        # -- Act --
-        result = self.instance._parse_name(name)
-        # -- Assert --
-        assert result == 0
+    def test_from_name_P5(self):
+        """Test parsing 'P5' returns 7 semitones."""
+        iv = Interval("P5")
+        assert iv.semitones == 7.0
 
-    def test_add_to(self):
-        """Test for Interval.add_to."""
-        # -- Setup --
-        pitch = None
-        # mock_TypeError = MagicMock(return_value=None)
-        # mock_is_integer = MagicMock(return_value=None)
-        # mock_transpose = MagicMock(return_value=None)
-        # mock_Hz = MagicMock(return_value=None)
-        # -- Act --
-        result = self.instance.add_to(pitch)
-        # -- Assert --
-        assert result == None
+    def test_from_name_min3(self):
+        """Test parsing 'min3' returns 3 semitones."""
+        iv = Interval("min3")
+        assert iv.semitones == 3.0
+
+    def test_from_name_octave(self):
+        """Test parsing 'octave' returns 12 semitones."""
+        iv = Interval("octave")
+        assert iv.semitones == 12.0
+
+    def test_from_name_unknown_raises(self):
+        """Test that an unknown name raises ValueError."""
+        with pytest.raises(ValueError, match="Unknown interval name"):
+            Interval("bad_name")
+
+    def test_add_intervals(self):
+        """Test adding two intervals."""
+        a = Interval(3)
+        b = Interval(4)
+        result = a + b
+        assert result.semitones == 7.0
+
+    def test_negate_interval(self):
+        """Test negating an interval."""
+        iv = Interval(7)
+        neg = -iv
+        assert neg.semitones == -7.0
