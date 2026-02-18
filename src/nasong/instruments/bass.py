@@ -98,7 +98,11 @@ def WobbleBass(
 
 #
 def DeepBass(
-    time: lv.Value, frequency: float, start_time: float, duration: float = 0.5
+    time: lv.Value,
+    frequency: float,
+    start_time: float,
+    duration: float = 0.5,
+    amplitude: float = 0.4,
 ) -> lv.Value:
     """Creates a deep, atmospheric subtractive-style bass note.
 
@@ -110,6 +114,7 @@ def DeepBass(
         frequency (float): The frequency of the bass note.
         start_time (float): The activation time in seconds.
         duration (float, optional): The note duration in seconds. Defaults to 0.5.
+        amplitude (float, optional): Overall volume scaling. Defaults to 0.4.
 
     Returns:
         lv.Value: The audio value graph for the deep bass.
@@ -133,6 +138,6 @@ def DeepBass(
     signal: lv.Value = lv.Sin(relative_time, frequency=lv.c(frequency * 2 * math.pi))
 
     #
-    ### Final = 0.4 * Gate * AmpEnv * Signal ###
+    ### Final = amplitude * Gate * AmpEnv * Signal ###
     #
-    return lv.Product(lv.c(0.4), gate_env, amp_env, signal)
+    return lv.Product(lv.c(amplitude), gate_env, amp_env, signal)

@@ -110,7 +110,11 @@ def PianoNote(
 
 #
 def PianoNote2(
-    time: lv.Value, frequency: float, start_time: float, duration: float = 2.0
+    time: lv.Value,
+    frequency: float,
+    start_time: float,
+    duration: float = 2.0,
+    amplitude: float = 0.3,
 ) -> lv.Value:
     """Creates an alternate piano note with exponential decay.
 
@@ -122,6 +126,7 @@ def PianoNote2(
         frequency (float): Fundamental frequency (Hz).
         start_time (float): Activation time in seconds.
         duration (float, optional): Length of the note in seconds. Defaults to 2.0.
+        amplitude (float, optional): Overall volume scaling. Defaults to 0.3.
 
     Returns:
         lv.Value: The audio value graph for the alternate piano note.
@@ -158,6 +163,6 @@ def PianoNote2(
     signal: lv.Value = lv.Sum(h1, h2, h3, h4, h5)
 
     #
-    ### Final = 0.3 * AmpEnv * Signal ###
+    ### Final = amplitude * AmpEnv * Signal ###
     #
-    return lv.Product(lv.c(0.3), amp_env, signal)
+    return lv.Product(lv.c(amplitude), amp_env, signal)

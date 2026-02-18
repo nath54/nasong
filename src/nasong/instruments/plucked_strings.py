@@ -180,6 +180,7 @@ def AcousticString(
     time: lv.Value,
     frequency: float,
     pluck_time: float,
+    duration: float = 3.0,
     amplitude: float = 0.3,
     decay_rate: float = 2.0,
 ) -> lv.Value:
@@ -189,6 +190,7 @@ def AcousticString(
         time (lv.Value): Global time provider.
         frequency (float): Fundamental frequency (Hz).
         pluck_time (float): Pluck event time in seconds.
+        duration (float, optional): Gate length in seconds. Defaults to 3.0.
         amplitude (float, optional): Overall volume. Defaults to 0.3.
         decay_rate (float, optional): Speed of volume decay. Defaults to 2.0.
 
@@ -206,9 +208,9 @@ def AcousticString(
     amp_env: lv.Value = lv.Product(attack_env, decay_env)
 
     #
-    ### Gate: 3.0s hard gate  ###
+    ### Gate: hard gate at duration  ###
     #
-    gate_env: lv.Value = lv.ADSR2(time, pluck_time, 3.0, 0.001, 0.001, 1.0, 0.001)
+    gate_env: lv.Value = lv.ADSR2(time, pluck_time, duration, 0.001, 0.001, 1.0, 0.001)
 
     #
     ### Oscillator: 5 harmonics, using `time` (t)  ###
@@ -289,7 +291,7 @@ def Fingerpicking(
         t: lv.Value, freq: float, p_time: float, amp: float, d_rate: float
     ) -> lv.Value:
         #
-        return AcousticString(t, freq, p_time, amp, d_rate)
+        return AcousticString(t, freq, p_time, amplitude=amp, decay_rate=d_rate)
 
     #
     return lv.Sequencer(
