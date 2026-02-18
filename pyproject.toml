@@ -24,6 +24,7 @@ dependencies = [
     "PyYAML",
     "tabulate", # For markdown table
     "textual[syntax]",
+    "sounddevice",
 ]
 
 [project.scripts]

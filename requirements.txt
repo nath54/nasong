@@ -10,6 +10,7 @@ tabulate
 librosa
 soundfile
 audioflux
+sounddevice
 
 # Machine Learning & Training (Optional but recommended for the full feature set)
 torch
