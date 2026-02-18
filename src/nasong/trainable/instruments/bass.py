@@ -14,8 +14,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Bass instrument blueprints for training.
+
+This module provides bass synthesizers with emphasized low-end and
+controllable grit, suitable for learning rhythmic foundation sounds.
 """
 
 #
@@ -32,10 +34,21 @@ def TrainableBass(
     init_amplitude: float = 0.6,
     name_prefix: str = "bass",
 ) -> lv.Value:
-    """
-    Trainable bass synthesizer.
+    """Creates a trainable bass synthesizer node.
 
-    Rich low-end with controllable harmonics.
+    Combines a band-limited sawtooth oscillator with a sub-octave sine wave
+    and an optional distortion stage for harmonic saturation.
+
+    Args:
+        time (lv.Value): The master time value.
+        frequency (lv.Value): The fundamental frequency.
+        start_time (float): Trigger time for the note in seconds.
+        duration (float): Length of the note in seconds.
+        init_amplitude (float): Initial amplitude multiplier. Defaults to 0.6.
+        name_prefix (str): Prefix for parameter identifiers. Defaults to "bass".
+
+    Returns:
+        lv.Value: The output node of the bass synthesis graph.
     """
 
     # Trainable parameters

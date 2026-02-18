@@ -14,8 +14,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Atmospheric and ambient instrument blueprints for training.
+
+This module provides synthesizers designed for long, evolving sounds, pads,
+and textures, with trainable envelopes and detuning parameters.
 """
 
 #
@@ -32,10 +34,23 @@ def TrainablePad(
     init_amplitude: float = 0.3,
     name_prefix: str = "pad",
 ) -> lv.Value:
-    """
-    Trainable pad synthesizer (warm, sustained, atmospheric).
+    """Creates a trainable pad synthesizer node.
 
-    Uses detuned oscillators and long envelopes.
+    This instrument generates warm, sustained atmospheric sounds using three
+    detuned oscillators and an exponential ADSR envelope with slow attack
+    and release.
+
+    Args:
+        time (lv.Value): The master time value (normalized to seconds).
+        frequency (lv.Value): The fundamental frequency of the note.
+        start_time (float): Trigger time for the note in seconds.
+        duration (float): Length of the note in seconds.
+        init_amplitude (float): Starting gain multiplier. Defaults to 0.3.
+        name_prefix (str): Prefix for all trainable parameter names.
+            Defaults to "pad".
+
+    Returns:
+        lv.Value: The output node of the synthesis graph.
     """
 
     # Trainable parameters

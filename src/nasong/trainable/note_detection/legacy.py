@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Legacy energy-based transcription backend.
+
+Maintains backward compatibility with the original NaSong note detection
+logic, which uses energy thresholds for onsets and FFT peak detection
+for pitch estimation.
 """
 
 #
@@ -32,18 +35,27 @@ from .base import NoteDetector
 
 #
 class LegacyDetector(NoteDetector):
-    """
-    Original energy-based onset detection and FFT pitch tracking.
+    """Legacy note detection using energy peaks and FFT analysis.
+
+    Simple, lightweight, and deterministic. Good for clear onset sounds but
+    less robust than modern neural or DSP methods.
     """
 
-    def detect(
-        self, audio_segment: np.ndarray, sample_rate: int
-    ) -> list[dict[str, Any]]:
+    def detect(self, audio_data: np.ndarray, sample_rate: int) -> list[dict[str, Any]]:
+        """Detects notes using energy-based onset detection.
+
+        Args:
+            audio_data (np.ndarray): Audio data.
+            sample_rate (int): Sampling rate.
+
+        Returns:
+            list[dict[str, Any]]: Detected notes.
+        """
         # Unpack config
         num_notes = self.config.get("legacy_num_notes", 1)
         use_onset_detection = self.config.get("legacy_use_onset", True)
 
-        total_duration = len(audio_segment) / sample_rate
+        total_duration = len(audio_data) / sample_rate
         notes = []
 
         if use_onset_detection:
@@ -56,21 +68,21 @@ class LegacyDetector(NoteDetector):
             hop_length = int(hop_len_sec * sample_rate)
 
             energy = []
-            for i in range(0, len(audio_segment) - frame_length, hop_length):
-                frame = audio_segment[i : i + frame_length]
+            for i in range(0, len(audio_data) - frame_length, hop_length):
+                frame = audio_data[i : i + frame_length]
                 energy.append(np.sum(frame**2))
 
-            energy = np.array(energy)
+            energy_arr = np.array(energy)
 
             # Find peaks in energy (onsets)
             threshold_ratio = self.config.get("legacy_onset_threshold", 0.3)
-            threshold = threshold_ratio * np.max(energy)
+            threshold = threshold_ratio * np.max(energy_arr)
             onsets = []
-            for i in range(1, len(energy) - 1):
+            for i in range(1, len(energy_arr) - 1):
                 if (
-                    energy[i] > threshold
-                    and energy[i] > energy[i - 1]
-                    and energy[i] > energy[i + 1]
+                    energy_arr[i] > threshold
+                    and energy_arr[i] > energy_arr[i - 1]
+                    and energy_arr[i] > energy_arr[i + 1]
                 ):
                     onset_time = i * hop_length / sample_rate
                     onsets.append(onset_time)
@@ -98,7 +110,7 @@ class LegacyDetector(NoteDetector):
             # Use first 100ms or duration, whichever is shorter
             analysis_duration = min(0.1, duration)
             end_idx = int((start_time + analysis_duration) * sample_rate)
-            note_segment = audio_segment[start_idx:end_idx]
+            note_segment = audio_data[start_idx:end_idx]
 
             # Detect multiple pitches (chord detection)
             max_pitches = self.config.get("legacy_max_pitches", 3)
@@ -128,7 +140,7 @@ class LegacyDetector(NoteDetector):
 
     def _detect_pitches_fft(
         self,
-        audio_segment: np.ndarray,
+        audio_data: np.ndarray,
         sample_rate: int,
         max_pitches: int = 3,
         min_freq: float = 50.0,
@@ -138,11 +150,11 @@ class LegacyDetector(NoteDetector):
         Detect multiple pitches using FFT peak detection.
         """
 
-        if len(audio_segment) == 0:
+        if len(audio_data) == 0:
             return [220.0]  # Default A3
 
         # Apply window
-        windowed = audio_segment * np.hanning(len(audio_segment))
+        windowed = audio_data * np.hanning(len(audio_data))
 
         # FFT
         fft = np.fft.rfft(windowed)

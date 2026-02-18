@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Note detection backend using Spotify's Basic Pitch.
+
+Uses the `basic-pitch` library for polyphonic piano transcription and
+general-purpose instrument note detection. It typically runs via ONNX
+for efficiency and to avoid heavy deep learning dependencies.
 """
 
 #
@@ -35,22 +38,33 @@ from .base import NoteDetector
 ### Try to import basic_pitch and soundfile. ###
 #
 try:
-    from basic_pitch.inference import predict
-    import soundfile as sf
+    from basic_pitch.inference import predict  # type: ignore
+    import soundfile as sf  # type: ignore
 except ImportError:
-    predict = None
-    sf = None
+    predict = None  # type: ignore
+    sf = None  # type: ignore
 
 
 #
 class BasicPitchDetector(NoteDetector):
-    """
-    Note detection using Basic Pitch (Spotify) with ONNX runtime.
+    """Note detection using Spotify's Basic Pitch model.
+
+    Particularly effective for polyphonic audio and complex instrument
+    recordings. Interacts with the `predict` function from the
+    `basic-pitch` library.
     """
 
-    def detect(
-        self, audio_segment: np.ndarray, sample_rate: int
-    ) -> list[dict[str, Any]]:
+    def detect(self, audio_data: np.ndarray, sample_rate: int) -> list[dict[str, Any]]:
+        """Detects notes using Basic Pitch inference.
+
+        Args:
+            audio_data (np.ndarray): The audio to transcribe.
+            sample_rate (int): Sampling rate of the audio.
+
+        Returns:
+            list[dict[str, Any]]: List of note event dictionaries including
+                pitch, timing, and confidence.
+        """
         if predict is None:
             raise ImportError(
                 "Basic Pitch or SoundFile is not installed. Please install 'basic-pitch' and 'soundfile'."
@@ -59,7 +73,7 @@ class BasicPitchDetector(NoteDetector):
         # Write to temp file because basic-pitch expects a file path
         # (predict takes a path string)
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
-            sf.write(tmp.name, audio_segment, sample_rate)
+            sf.write(tmp.name, audio_data, sample_rate)
             tmp_path = tmp.name
 
         try:
@@ -68,7 +82,7 @@ class BasicPitchDetector(NoteDetector):
             # We enforce ONNX serialization to avoid TensorFlow dependency.
             # predict expects a list of paths
             # basic-pitch 0.4.0 takes single audio_path, no model_serialization arg
-            model_output, midi_data, note_events = predict(
+            _model_output, _midi_data, note_events = predict(
                 tmp_path,
                 onset_threshold=self.config.get("bp_onset_threshold", 0.5),
                 frame_threshold=self.config.get("bp_frame_threshold", 0.3),
@@ -96,7 +110,7 @@ class BasicPitchDetector(NoteDetector):
 
         notes = []
         # note_events is a list of lists of tuples
-        for start, end, pitch_midi, amp, bends in file_events:
+        for start, end, pitch_midi, amp, _bends in file_events:
             # Convert MIDI pitch to Hz
             freq = 440.0 * (2.0 ** ((pitch_midi - 69.0) / 12.0))
 

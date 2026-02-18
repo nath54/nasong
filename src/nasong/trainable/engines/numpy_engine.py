@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Manual reverse-mode differentiation engine using pure NumPy.
+
+This engine uses the built-in `backward` methods of `Value` nodes to compute
+gradients without external AD libraries. It is lightweight and has zero
+dependencies beyond NumPy and SciPy.
 """
 
 #
@@ -36,11 +39,16 @@ from nasong.trainable.engines.base import BaseTrainingEngine
 
 
 class NumpyEngine(BaseTrainingEngine):
-    """
-    Pure NumPy training engine using manual reverse-mode differentiation.
+    """Pure NumPy training engine using manual reverse-mode differentiation.
 
     This engine leverages the `backward` methods implemented in the `Value`
-    classes to compute gradients without depending on PyTorch.
+    classes to compute gradients without depending on PyTorch. It supports
+    both standard MSE and spectral loss metrics.
+
+    Attributes:
+        learning_rate (float): The optimizer step size.
+        optimizer_type (str): Optimizer algorithm ('adam' or 'sgd').
+        loss_type (str): Loss function type ('mse' or 'spectral').
     """
 
     def __init__(self, config: Any) -> None:
@@ -70,7 +78,19 @@ class NumpyEngine(BaseTrainingEngine):
         hop_length: int = 512,
         high_freq_emphasis: float = 2.0,
     ) -> float:
-        """NumPy implementation of spectral loss using scipy."""
+        """Calculates a multi-component spectral distance between two audio signals.
+
+        Args:
+            synthesized (NDArray[np.float32]): The generated audio.
+            target (NDArray[np.float32]): The reference audio.
+            sample_rate (int): Sampling rate in Hz.
+            n_fft (int): Size of the FFT window.
+            hop_length (int): Distance between windows.
+            high_freq_emphasis (float): Weight multiplier for high frequencies.
+
+        Returns:
+            float: Combined magnitude and log-magnitude spectral loss.
+        """
 
         # Compute STFT
         _, _, synth_stft = signal.stft(

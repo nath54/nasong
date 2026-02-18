@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Melodic and polyphonic instrument blueprints for training.
+
+Provides blueprints for plucked strings, piano-like tones, and bowed
+instruments, each with specific spectral and temporal characteristics
+governed by trainable parameters.
 """
 
 #
@@ -32,10 +35,21 @@ def TrainablePlucked(
     init_amplitude: float = 0.4,
     name_prefix: str = "plucked",
 ) -> lv.Value:
-    """
-    Trainable plucked string instrument (guitar, harp-like).
+    """Creates a trainable plucked string instrument (e.g., guitar, harp).
 
-    Uses multiple harmonics with individual decay rates.
+    Uses a band-limited sawtooth oscillator modulated by both an ADSR envelope
+    and a specific exponential decay for the 'pluck' character.
+
+    Args:
+        time (lv.Value): The master time node.
+        frequency (lv.Value): Frequency of the note.
+        start_time (float): When the string is plucked (seconds).
+        duration (float): How long the note is held.
+        init_amplitude (float): Initial gain. Defaults to 0.4.
+        name_prefix (str): Parameter prefix. Defaults to "plucked".
+
+    Returns:
+        lv.Value: The plucked string audio graph node.
     """
 
     # Trainable parameters
@@ -81,8 +95,21 @@ def TrainablePiano(
     init_amplitude: float = 0.5,
     name_prefix: str = "piano",
 ) -> lv.Value:
-    """
-    Simplified trainable piano-like instrument.
+    """Creates a simplified trainable piano-like instrument.
+
+    Generates tones using a combination of a fundamental sine wave and
+    the first two integer harmonics, with an ADSR envelope.
+
+    Args:
+        time (lv.Value): Master time.
+        frequency (lv.Value): Note frequency.
+        start_time (float): When the key is pressed.
+        duration (float): Length of the press.
+        init_amplitude (float): Base gain. Defaults to 0.5.
+        name_prefix (str): Parameter prefix. Defaults to "piano".
+
+    Returns:
+        lv.Value: The piano synthesis node.
     """
 
     # Trainable parameters
@@ -135,10 +162,21 @@ def TrainableBowed(
     init_amplitude: float = 0.4,
     name_prefix: str = "bowed",
 ) -> lv.Value:
-    """
-    Trainable bowed string (violin/cello-like).
+    """Creates a trainable bowed string (e.g., violin, cello).
 
-    Characteristics: slow attack, sustained tone, rich harmonics.
+    Features a slow attack, high sustain, and frequency modulation to
+    simulate natural vibrato.
+
+    Args:
+        time (lv.Value): Master time.
+        frequency (lv.Value): Fundamental frequency.
+        start_time (float): Bowing start time.
+        duration (float): Length of the bow stroke.
+        init_amplitude (float): Master gain. Defaults to 0.4.
+        name_prefix (str): Parameter prefix. Defaults to "bowed".
+
+    Returns:
+        lv.Value: The bowed instrument node.
     """
 
     # Trainable parameters

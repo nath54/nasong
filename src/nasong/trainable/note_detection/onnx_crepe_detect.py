@@ -14,19 +14,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Note detection backend using the CREPE model via ONNX Runtime.
+
+Implements high-resolution monophonic pitch tracking using the 'tiny'
+CREPE model serialized to ONNX. This allows for neural-network based
+transcription without a full deep learning framework dependency.
 """
 
 #
 ### Import Modules. ###
 #
-from typing import Any
+from typing import Any, Optional
 
 #
 import os
-import numpy as np
 import urllib.request
+import numpy as np
 
 #
 from .base import NoteDetector
@@ -35,7 +38,7 @@ from .base import NoteDetector
 ### Try importing onnxruntime, handle failure gracefully ###
 #
 try:
-    import onnxruntime as ort
+    import onnxruntime as ort  # type: ignore
 
     HAS_ORT = True
 except ImportError:
@@ -45,7 +48,7 @@ except ImportError:
 ### Try importing scipy for resampling ###
 #
 try:
-    from scipy import signal
+    from scipy import signal  # type: ignore
 
     HAS_SCIPY = True
 except ImportError:
@@ -60,11 +63,22 @@ CREPE_MODEL_URL = (
 
 #
 class OnnxCrepeDetector(NoteDetector):
-    """
-    Note detection using CREPE with ONNX Runtime.
+    """Neural-network based pitch detection using CREPE with ONNX Runtime.
+
+    Handles model downloading, audio resampling to 16kHz, framing,
+    inference, and conversion of frame-level activations to note events.
     """
 
     def detect(self, audio_data: np.ndarray, sample_rate: int) -> list[dict[str, Any]]:
+        """Transcribes audio using the CREPE ONNX model.
+
+        Args:
+            audio_data (np.ndarray): Raw audio signal.
+            sample_rate (int): Input sampling rate.
+
+        Returns:
+            list[dict[str, Any]]: Transcribed note events.
+        """
         if not HAS_ORT:
             raise ImportError(
                 "onnxruntime is required for OnnxCrepeDetector. Please install 'onnxruntime'."
@@ -162,7 +176,7 @@ class OnnxCrepeDetector(NoteDetector):
         confidences = []
 
         for act in activations:
-            best_bin = np.argmax(act)
+            best_bin = int(np.argmax(act))
             confidence = act[best_bin]
 
             # Optional: weighted average for better precision
@@ -182,20 +196,20 @@ class OnnxCrepeDetector(NoteDetector):
             pitches.append(freq)
             confidences.append(confidence)
 
-        pitches = np.array(pitches)
-        confidences = np.array(confidences)
+        pitches_arr = np.array(pitches)
+        confidences_arr = np.array(confidences)
 
         # 4. Convert frames to note events
         # This is a simplified "monophonic" tracker logic
         # merge consecutive frames above threshold
 
-        notes = []
-        current_note = None
+        notes: list[dict[str, Any]] = []
+        current_note: Optional[dict[str, Any]] = None
 
         # Time per frame in original audio seconds
         dt = hop_length / 16000.0
 
-        for i, (freq, conf) in enumerate(zip(pitches, confidences)):
+        for i, (freq, conf) in enumerate(zip(pitches_arr, confidences_arr)):
             time = i * dt
 
             if conf >= confidence_threshold:

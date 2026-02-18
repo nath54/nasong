@@ -14,14 +14,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Inference utilities for trained instruments.
+
+This module provides tools for loading saved experiment results (trained
+parameters) and wrapping the original instrument blueprints so they can be
+easily used in sequencing and playback without manual parameter injection.
 """
 
 #
 ### Import Modules. ###
 #
-from typing import Callable
+from typing import Callable, Any
 
 #
 import os
@@ -36,18 +39,23 @@ from nasong.core.value import ParameterContext
 
 #
 def load_trained_instrument(experiment_id_or_path: str) -> Callable:
-    """
-    Load a trained instrument from an experiment and return a usable function.
+    """Loads a trained instrument and returns a pre-configured inference wrapper.
 
-    This function wraps the instrument blueprint with a ParameterContext,
-    so that when called, it automatically uses the trained parameters
-    (in pure Python/NumPy inference mode) instead of defaults.
+    The returned callable automatically uses the optimized parameters from the
+    specified experiment. It uses `ParameterContext` internally to inject
+    these values during the audio graph construction.
 
     Args:
-        experiment_id_or_path: ID of the experiment or full path to experiment folder.
+        experiment_id_or_path (str): The ID of a completed experiment or the
+            full file system path to the experiment directory.
 
     Returns:
-        A callable function corresponding to the instrument, with trained parameters pre-loaded.
+        Callable: A function that takes the same arguments as the original
+            instrument blueprint but uses trained parameter values.
+
+    Raises:
+        ValueError: If the experiment cannot be found or meta-data is corrupt.
+        FileNotFoundError: If `params.json` is missing from the experiment.
     """
 
     manager = ExperimentManager()
@@ -55,33 +63,22 @@ def load_trained_instrument(experiment_id_or_path: str) -> Callable:
     # Resolve experiment
     if os.path.exists(experiment_id_or_path) and os.path.isdir(experiment_id_or_path):
         try:
-            exp = Experiment.load(experiment_id_or_path)
-        except Exception:  # pylint: disable=broad-except
+            exp: Any = Experiment.load(experiment_id_or_path)
+        except Exception as e:  # pylint: disable=broad-except
             # Fallback: try to construct experiment from config.yaml if meta.json is missing
             config_path = os.path.join(experiment_id_or_path, "config.yaml")
             if os.path.exists(config_path):
                 # Import here to avoid circular dependencies if any
-                import yaml
+                import yaml  # type: ignore  # pylint: disable=import-outside-toplevel
 
                 with open(config_path, "r", encoding="utf-8") as f:
                     config_data = yaml.safe_load(f)
 
-                # Create a dummy/wrapper experiment object
-                exp = Experiment(
-                    experiment_id="local",
-                    name=config_data.get("instrument_name", "unknown"),
-                    timestamp=0,
-                    metrics={},
-                    params={
-                        "instrument": config_data.get("instrument_name", "unknown")
-                    },
-                    status="completed",
-                )
-                # Monkey-patch path
-                _original_path_prop = Experiment.path
-                exp.__dict__["path"] = experiment_id_or_path
-
                 class MockExperiment:
+                    """
+                    Mock experiment class for backward compatibility.
+                    """
+
                     def __init__(self, path, params):
                         self.path = path
                         self.params = params
@@ -94,8 +91,9 @@ def load_trained_instrument(experiment_id_or_path: str) -> Callable:
 
             else:
                 raise ValueError(
-                    f"Could not load experiment from {experiment_id_or_path}: missing meta.json and config.yaml"
-                )
+                    f"Could not load experiment from {experiment_id_or_path}:\
+                      missing meta.json and config.yaml"
+                ) from e
     else:
         exp = manager.get_experiment(experiment_id_or_path)
 

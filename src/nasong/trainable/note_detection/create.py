@@ -14,8 +14,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Factory module for instantiating note detectors.
+
+Provides the `create_note_detector` function which maps configuration
+settings to appropriate `NoteDetector` implementations.
 """
 
 #
@@ -36,8 +38,17 @@ from ..config import NoteDetectionConfig
 
 #
 def create_note_detector(config: NoteDetectionConfig) -> NoteDetector:
-    """
-    Factory function to create a note detector instance.
+    """Instantiates a note detector based on the provided configuration.
+
+    Args:
+        config (NoteDetectionConfig): The configuration object specifying
+            the detection method and its hyperparameters.
+
+    Returns:
+        NoteDetector: An initialized instance of the requested detector.
+
+    Raises:
+        ValueError: If the requested detection method is unknown.
     """
     method = config.method.lower().replace("-", "_").strip()
     config_dict = dataclasses.asdict(config)

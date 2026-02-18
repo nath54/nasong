@@ -14,14 +14,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Automatic differentiation training engine using the `autograd` library.
+
+This engine enables gradients for pure NumPy code by patching the `numpy` module
+with `autograd.numpy` during execution. It avoids the need for manual
+differentiation while maintaining compatibility with NumPy-based Value nodes.
 """
 
 #
 ### Import Modules. ###
 #
-from typing import Any
+from typing import Any, Optional
 
 #
 import sys
@@ -30,8 +33,8 @@ from contextlib import contextmanager
 #
 import numpy as np
 from numpy.typing import NDArray
-from autograd import grad
-import autograd.numpy as anp
+from autograd import grad  # type: ignore
+import autograd.numpy as anp  # type: ignore
 
 #
 from nasong.core.value import Value, ValueTrainableParameter
@@ -39,14 +42,23 @@ from nasong.trainable.engines.base import BaseTrainingEngine
 
 
 class AutogradEngine(BaseTrainingEngine):
-    """
-    Training engine using the 'autograd' library for automatic differentiation.
+    """Training engine using the 'autograd' library for automatic differentiation.
 
-    It works by patching the 'np' attribute in all Value modules to use
-    autograd.numpy instead of the standard numpy.
+    Works by dynamically patching the `np` references in `nasong.core` modules
+    to use `autograd.numpy`. It supports Adam and SGD optimizers.
+
+    Attributes:
+        learning_rate (float): Step size for updates.
+        optimizer_type (str): Either 'adam' or 'sgd'.
+        loss_type (str): Loss function identifier (e.g., 'mse').
     """
 
     def __init__(self, config: Any) -> None:
+        """Initializes the Autograd engine.
+
+        Args:
+            config (Any): The training configuration.
+        """
         super().__init__(config)
         self.learning_rate = getattr(config, "learning_rate", 0.001)
         self.optimizer_type = getattr(config, "optimizer_type", "adam")
@@ -60,9 +72,16 @@ class AutogradEngine(BaseTrainingEngine):
         self.captured_params: list[ValueTrainableParameter] = []
         self.gradients: dict[ValueTrainableParameter, NDArray[np.float64]] = {}
 
+        # Training state
+        self.target_audio: Optional[NDArray[np.float32]] = None
+        self.blueprint: Optional[Value] = None
+        self.sample_rate: int = 0
+        self.indices: Optional[NDArray[np.float32]] = None
+        self.current_loss: float = 0.0
+
     @contextmanager
-    def _patch_context(self):
-        """Temporary replacement of standard numpy with autograd.numpy."""
+    def _patch_context(self) -> Any:
+        """Context manager to temporarily replace standard numpy with autograd.numpy."""
 
         # Modules to patch (under nasong.core.values or the base Value class)
         to_patch_names = [
@@ -95,7 +114,7 @@ class AutogradEngine(BaseTrainingEngine):
         self, node: Any, seen: set
     ) -> list[ValueTrainableParameter]:
         """Deeply traverses the Value graph to find all trainable parameters."""
-        params = []
+        params: list[ValueTrainableParameter] = []
         if id(node) in seen:
             return params
         seen.add(id(node))
@@ -126,14 +145,17 @@ class AutogradEngine(BaseTrainingEngine):
         self.captured_params = self._collect_parameters(blueprint, set())
 
         # Store as autograd-compatible arrays
-        self.target_audio = anp.array(target_audio, dtype=anp.float64)
+        self.target_audio = anp.array(target_audio, dtype=np.float32)
         self.blueprint = blueprint
         self.sample_rate = sample_rate
-        self.indices = anp.arange(len(target_audio), dtype=anp.float64)
+        self.indices = anp.arange(len(target_audio), dtype=np.float32)  # pylint: disable=no-member
+
+        if self.indices is None or self.target_audio is None or self.blueprint is None:
+            raise ValueError("Missing required attributes for loss computation.")
 
         with self._patch_context():
             prediction = blueprint.getitem_np(self.indices, sample_rate)
-            loss = anp.mean(anp.square(prediction - self.target_audio))
+            loss = anp.mean(anp.square(prediction - self.target_audio))  # pylint: disable=no-member
 
         self.current_loss = float(loss)
         return self.current_loss
@@ -150,13 +172,14 @@ class AutogradEngine(BaseTrainingEngine):
 
             prediction = self.blueprint.getitem_np(self.indices, self.sample_rate)
             diff = prediction - self.target_audio
-            return anp.mean(anp.square(diff))
+            return anp.mean(anp.square(diff))  # pylint: disable=no-member
 
         with self._patch_context():
-            grad_fn = grad(loss_wrapper)
+            grad_fn = grad(loss_wrapper)  # pylint: disable=no-value-for-parameter
+
             # Use anp.array of floats for the input
             p_vals = anp.array(
-                [float(p.value) for p in self.captured_params], dtype=anp.float64
+                [float(p.value) for p in self.captured_params], dtype=np.float64
             )
             grads = grad_fn(p_vals)
 
@@ -167,7 +190,7 @@ class AutogradEngine(BaseTrainingEngine):
             # Restore to float
             val = p.value
             if hasattr(val, "_value"):
-                val = val._value
+                val = val._value  # pylint: disable=protected-access
             p.value = float(val)
 
     def step(self) -> dict[str, float]:
@@ -203,7 +226,7 @@ class AutogradEngine(BaseTrainingEngine):
             # Ensure float
             val = p.value
             if hasattr(val, "_value"):
-                val = val._value
+                val = val._value  # pylint: disable=protected-access
             p.value = float(val)
 
         return {"loss": self.current_loss, "lr": self.learning_rate}

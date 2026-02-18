@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Percussive and rhythmic instrument blueprints for training.
+
+Includes drum-specific topologies (Kick, Snare, Hi-Hat) designed to learn
+non-tonal and transient-heavy sounds using a mix of oscillators, noise,
+and pitch envelopes.
 """
 
 #
@@ -27,14 +30,18 @@ import nasong.core.all_values as lv
 def TrainableKick(
     time: lv.Value, start_time: float, name_prefix: str = "kick"
 ) -> lv.Value:
-    """
-    Trainable kick drum.
+    """Generates a trainable kick drum node.
 
-    Trainable parameters:
-    - Base frequency and pitch sweep
-    - Decay rate
-    - Noise amount
-    - Click amount
+    Combines a sine wave with a fast pitch sweep (exponential) and a mix of
+    white noise and a short high-frequency click for the transient.
+
+    Args:
+        time (lv.Value): Master time value.
+        start_time (float): Trigger time for the kick beat.
+        name_prefix (str): Prefix for trainable params. Defaults to "kick".
+
+    Returns:
+        lv.Value: The kick synthesis output node.
     """
 
     # Trainable parameters
@@ -87,8 +94,18 @@ def TrainableKick(
 def TrainableSnare(
     time: lv.Value, start_time: float, name_prefix: str = "snare"
 ) -> lv.Value:
-    """
-    Trainable snare drum.
+    """Creates a trainable snare drum node.
+
+    Mixes a tonal sine component (representing the membrane) with a white
+    noise burst (representing the snare wires).
+
+    Args:
+        time (lv.Value): Master time.
+        start_time (float): Trigger time for the snare beat.
+        name_prefix (str): Prefix for identifiers. Defaults to "snare".
+
+    Returns:
+        lv.Value: The snare synthesis output node.
     """
 
     # Trainable parameters
@@ -121,8 +138,19 @@ def TrainableSnare(
 def TrainableHiHat(
     time: lv.Value, start_time: float, is_open: bool = False, name_prefix: str = "hihat"
 ) -> lv.Value:
-    """
-    Trainable hi-hat (closed or open).
+    """Creates a trainable hi-hat node.
+
+    Simulates cymbals using white noise and a sum of high-frequency sine waves
+    for a 'metallic' texture.
+
+    Args:
+        time (lv.Value): Master time.
+        start_time (float): Trigger time.
+        is_open (bool): Whether to use a longer 'open' decay or short 'closed' one.
+        name_prefix (str): Identifier prefix. Defaults to "hihat".
+
+    Returns:
+        lv.Value: The hi-hat synthesis output node.
     """
 
     # Trainable parameters

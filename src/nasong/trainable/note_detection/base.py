@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Base interface for music transcription and note detection backends.
+
+Defines the abstract `NoteDetector` class which all specific detection
+algorithms (Librosa, CREPE, Basic Pitch, etc.) must implement to be
+compatible with the NaSong training pipeline.
 """
 
 #
@@ -32,8 +35,10 @@ import numpy as np
 
 #
 class NoteDetector(ABC):
-    """
-    Abstract base class for note detection algorithms.
+    """Abstract base class for note detection and transcription algorithms.
+
+    Provides a consistent interface for extracting musical events (notes) from
+    raw audio data, regardless of the underlying detection technology.
     """
 
     def __init__(self, config: dict[str, Any]):
@@ -67,4 +72,4 @@ class NoteDetector(ABC):
                 ...
             ]
         """
-        pass
+        pass  # pylint: disable=unnecessary-pass

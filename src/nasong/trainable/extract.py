@@ -14,13 +14,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Instrument registry and lookup for trainable blueprints.
+
+This module maintains a registry of 'trainable' instruments—audio graph nodes
+whose parameters can be optimized to match a reference signal. It provides
+factory methods to retrieve these blueprints by string identifier.
 """
 
 #
 ### Import Modules. ###
 #
+from typing import Callable, Any
 from nasong.trainable.instruments import (
     TrainableSawtoothSynth,
     TrainableSquareSynth,
@@ -39,15 +43,16 @@ from nasong.trainable.instruments import (
 ### INSTRUMENT REGISTRY ###
 #
 
-# Dictionary of all available trainable instruments
-TRAINABLE_INSTRUMENTS = {
+# Dictionary of all available trainable instruments.
+# Maps instrument names to their respective factory functions/classes.
+TRAINABLE_INSTRUMENTS: dict[str, Callable[..., Any]] = {
     # Synthesis
     "sawtooth": TrainableSawtoothSynth,
     "square": TrainableSquareSynth,
     "sine": TrainableSineSynth,
     # Percussion
-    "kick": TrainableKick,  # Note: kick doesn't take frequency
-    "snare": TrainableSnare,  # Note: snare doesn't take frequency
+    "kick": TrainableKick,
+    "snare": TrainableSnare,
     "hihat_closed": lambda t, f, st, d: TrainableHiHat(t, st, is_open=False),
     "hihat_open": lambda t, f, st, d: TrainableHiHat(t, st, is_open=True),
     # Melodic
@@ -57,24 +62,26 @@ TRAINABLE_INSTRUMENTS = {
     # Atmospheric
     "pad": TrainablePad,
     # Bass
-    # Bass
     "bass": TrainableBass,
 }
 
 
-def get_trainable_instrument(instrument_name: str):
-    """
-    Get a trainable instrument blueprint by name.
+def get_trainable_instrument(instrument_name: str) -> Callable[..., Any]:
+    """Retrieves a trainable instrument blueprint by its registry name.
 
     Args:
-        instrument_name: Name of instrument from TRAINABLE_INSTRUMENTS
+        instrument_name (str): The name identifier (e.g., 'sine', 'piano').
 
     Returns:
-        Instrument blueprint function
+        Callable: A function or class that can instantiate the instrument.
+
+    Raises:
+        ValueError: If the instrument name is not found in the registry.
     """
     if instrument_name not in TRAINABLE_INSTRUMENTS:
         raise ValueError(
-            f"Unknown instrument: {instrument_name}. Available: {list(TRAINABLE_INSTRUMENTS.keys())}"
+            f"Unknown instrument: {instrument_name}.\
+              Available: {list(TRAINABLE_INSTRUMENTS.keys())}"
         )
 
     return TRAINABLE_INSTRUMENTS[instrument_name]

@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Note detection backend using the AudioFlux library.
+
+Leverages high-performance C++ implementations of pitch estimation
+algorithms like PEF (Pitch Estimation Filter) and YIN. Best suited for
+monophonic audio transcription.
 """
 
 #
@@ -33,26 +36,34 @@ from .base import NoteDetector
 ### Try to import audioflux. ###
 #
 try:
-    import audioflux as af
+    import audioflux as af  # type: ignore
 except ImportError:
-    af = None
+    af = None  # type: ignore
 
 
 class AudioFluxDetector(NoteDetector):
-    """
-    Note detection using AudioFlux (PEF or YIN algorithms).
-    High-performance C/C++ core with Python wrapper.
-    Typically monophonic.
+    """Note detection backend using AudioFlux's pitch estimation algorithms.
+
+    Supports 'PEF' and 'YIN' algorithms. This detector is monophonic and
+    processes audio segments to identify continuous voiced regions.
     """
 
-    def detect(
-        self, audio_segment: np.ndarray, sample_rate: int
-    ) -> list[dict[str, Any]]:
+    def detect(self, audio_data: np.ndarray, sample_rate: int) -> list[dict[str, Any]]:
+        """Detects notes using the configured AudioFlux algorithm.
+
+        Args:
+            audio_data (np.ndarray): Float32 audio samples.
+            sample_rate (int): Sample rate of the audio.
+
+        Returns:
+            list[dict[str, Any]]: Detected note events with 'start_time',
+                'duration', 'frequencies', and 'amplitude'.
+        """
         if af is None:
             raise ImportError("AudioFlux is not installed. Please install 'audioflux'.")
 
         # AudioFlux expects contiguous C-order array
-        audio_segment = np.ascontiguousarray(audio_segment, dtype=np.float32)
+        audio_data = np.ascontiguousarray(audio_data, dtype=np.float32)
 
         algo_type = self.config.get("audioflux_type", "PEF")
         min_freq = self.config.get("audioflux_min_freq", 50.0)
@@ -76,7 +87,7 @@ class AudioFluxDetector(NoteDetector):
                 radix2_exp=radix2_exp,  # 2^12 = 4096
                 slide_length=slide_length,
             )
-            fre_arr, val1_arr, val2_arr = pitch_obj.pitch(audio_segment)
+            fre_arr, _val1_arr, val2_arr = pitch_obj.pitch(audio_data)
 
             pitches = fre_arr
             num_frames = len(fre_arr)
@@ -91,7 +102,7 @@ class AudioFluxDetector(NoteDetector):
                 radix2_exp=radix2_exp,
                 slide_length=slide_length,
             )
-            fre_arr = pitch_obj.pitch(audio_segment)
+            fre_arr = pitch_obj.pitch(audio_data)
 
             pitches = fre_arr
             num_frames = len(fre_arr)
@@ -120,10 +131,10 @@ class AudioFluxDetector(NoteDetector):
                         start_sample = int(current_start * sample_rate)
                         end_sample = int(times[i] * sample_rate)
                         start_sample = max(0, start_sample)
-                        end_sample = min(len(audio_segment), end_sample)
+                        end_sample = min(len(audio_data), end_sample)
 
                         if end_sample > start_sample:
-                            segment = audio_segment[start_sample:end_sample]
+                            segment = audio_data[start_sample:end_sample]
                             amplitude = float(np.sqrt(np.mean(segment**2)))
                         else:
                             amplitude = 0.0
@@ -149,10 +160,10 @@ class AudioFluxDetector(NoteDetector):
                 start_sample = int(current_start * sample_rate)
                 end_sample = int(times[-1] * sample_rate)
                 start_sample = max(0, start_sample)
-                end_sample = min(len(audio_segment), end_sample)
+                end_sample = min(len(audio_data), end_sample)
 
                 if end_sample > start_sample:
-                    segment = audio_segment[start_sample:end_sample]
+                    segment = audio_data[start_sample:end_sample]
                     amplitude = float(np.sqrt(np.mean(segment**2)))
                 else:
                     amplitude = 0.0

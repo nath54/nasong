@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Optimization engine using PyTorch for automatic differentiation.
+
+This engine provides the fastest training by leveraging PyTorch tensors and
+GPU acceleration (if available). It converts Value nodes to Torch-compatible
+computations and uses standard PyTorch optimizers.
 """
 
 #
@@ -51,8 +54,15 @@ except (ImportError, OSError):
 
 #
 class TorchEngine(BaseTrainingEngine):
-    """
-    Training engine using PyTorch for automatic differentiation.
+    """Training engine using PyTorch for automatic differentiation.
+
+    Automates the rendering of audio graphs as PyTorch tensors and uses
+    Torch's native autograd for gradient calculation. Particularly efficient
+    for multi-resolution spectral loss.
+
+    Attributes:
+        device (str): Computation device ('cpu', 'cuda').
+        optimizer (Optional[optim.Optimizer]): The Torch optimizer instance.
     """
 
     def __init__(self, config: Any) -> None:
@@ -79,7 +89,19 @@ class TorchEngine(BaseTrainingEngine):
         hop_length: int = 512,
         high_freq_emphasis: float = 2.0,
     ) -> Tensor:
-        """PyTorch implementation of spectral loss."""
+        """PyTorch calculation of spectral convergence and log-magnitude distance.
+
+        Args:
+            synthesized (Tensor): The generated audio tensor.
+            target (Tensor): The ground truth audio tensor.
+            sample_rate (int): Sampling rate in Hz.
+            n_fft (int): Size of the FFT window.
+            hop_length (int): Distance between windows.
+            high_freq_emphasis (float): Weight for high frequencies.
+
+        Returns:
+            Tensor: Scalar loss value.
+        """
         synth_stft = torch.stft(
             synthesized,
             n_fft=n_fft,
@@ -123,7 +145,18 @@ class TorchEngine(BaseTrainingEngine):
         fft_sizes: Optional[list[int]] = None,
         high_freq_emphasis: float = 2.0,
     ) -> Tensor:
-        """PyTorch implementation of multi-resolution spectral loss."""
+        """Computes a sum of spectral losses across multiple FFT resolutions.
+
+        Args:
+            synthesized (Tensor): The generated audio tensor.
+            target (Tensor): The reference audio tensor.
+            sample_rate (int): Sampling rate in Hz.
+            fft_sizes (Optional[list[int]]): List of window sizes for analysis.
+            high_freq_emphasis (float): High-frequency boost.
+
+        Returns:
+            Tensor: Averaged multi-resolution loss.
+        """
         if fft_sizes is None:
             fft_sizes = [2048, 1024, 512]
 
@@ -141,7 +174,15 @@ class TorchEngine(BaseTrainingEngine):
     def collect_trainable_parameters(
         self, value: Value, params: Optional[set[Tensor]] = None
     ) -> list[Tensor]:
-        """Recursively collects all Torch tensors that require gradients."""
+        """Recursively scans the Value graph for Torch tensors requiring gradients.
+
+        Args:
+            value (Value): The starting node of the graph.
+            params (Optional[set[Tensor]]): Accumulator set for unique tensors.
+
+        Returns:
+            list[Tensor]: A list of all unique trainable tensors found.
+        """
         if params is None:
             params = set()
 
@@ -172,7 +213,11 @@ class TorchEngine(BaseTrainingEngine):
         return list(params)
 
     def initialize_optimizer(self, blueprint: Value) -> None:
-        """Initializes the optimizer with parameters from the graph."""
+        """Collects parameters from the audio graph and initializes the Adam optimizer.
+
+        Args:
+            blueprint (Value): The root of the synthesis graph.
+        """
         self.all_params = self.collect_trainable_parameters(blueprint)
         for p in self.all_params:
             p.requires_grad = True

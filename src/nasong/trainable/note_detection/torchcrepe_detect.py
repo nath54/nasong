@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Note detection backend using the TorchCrepe implementation.
+
+Leverages PyTorch-based CREPE for state-of-the-art pitch tracking and
+Viterbi decoding for temporal consistency. Best for high-accuracy
+monophonic transcription when GPU acceleration is available.
 """
 
 #
@@ -38,26 +41,34 @@ try:
     HAS_TORCH = True
 except (ImportError, OSError):
     HAS_TORCH = False
-    torch = None
+    torch = None  # type: ignore
 
 #
 ### Try importing torchcrepe, handle failure gracefully ###
 #
 try:
-    import torchcrepe
+    import torchcrepe  # type: ignore
 except ImportError:
     torchcrepe = None
 
 
 class TorchCrepeDetector(NoteDetector):
-    """
-    Note detection using TorchCrepe (viterbi decoding + segmentation).
-    High accuracy for monophonic audio.
+    """SOTA pitch detection using PyTorch implementation of CREPE.
+
+    Utilizes Viterbi decoding for smooth pitch contours and a thresholded
+    segmentation approach to identify note boundaries.
     """
 
-    def detect(
-        self, audio_segment: np.ndarray, sample_rate: int
-    ) -> list[dict[str, Any]]:
+    def detect(self, audio_data: np.ndarray, sample_rate: int) -> list[dict[str, Any]]:
+        """Detects notes using TorchCrepe inference and Viterbi decoding.
+
+        Args:
+            audio_data (np.ndarray): The audio data.
+            sample_rate (int): Audio sampling rate.
+
+        Returns:
+            list[dict[str, Any]]: List of detected note events.
+        """
         if not HAS_TORCH:
             raise ImportError("PyTorch is not installed. Cannot use TorchCrepe.")
 
@@ -71,7 +82,7 @@ class TorchCrepeDetector(NoteDetector):
         # Prepare audio tensor
         # Crepe expects shape (batch, time)
         audio_tensor = torch.tensor(
-            audio_segment, dtype=torch.float32, device=device
+            audio_data, dtype=torch.float32, device=device
         ).unsqueeze(0)
 
         step_size_ms = self.config.get("crepe_step_size", 10)
@@ -98,7 +109,7 @@ class TorchCrepeDetector(NoteDetector):
                 batch_size=2048,
             )
         except Exception as e:  # pylint: disable=broad-except
-            raise RuntimeError(f"TorchCrepe prediction failed: {e}")
+            raise RuntimeError(f"TorchCrepe prediction failed: {e}") from e
 
         # Move to CPU for processing
         pitch = pitch.squeeze(0).cpu().numpy()
@@ -108,7 +119,7 @@ class TorchCrepeDetector(NoteDetector):
         # Find continuous regions where periodicity > threshold
         is_voiced = periodicity > conf_thresh
 
-        notes = []
+        notes: list[dict[str, Any]] = []
         hop_s = step_size_ms / 1000.0
 
         current_start_idx = None
@@ -131,7 +142,7 @@ class TorchCrepeDetector(NoteDetector):
                         current_pitches,
                         current_confs,
                         hop_s,
-                        audio_segment,
+                        audio_data,
                         sample_rate,
                     )
                     current_start_idx = None
@@ -147,7 +158,7 @@ class TorchCrepeDetector(NoteDetector):
                 current_pitches,
                 current_confs,
                 hop_s,
-                audio_segment,
+                audio_data,
                 sample_rate,
             )
 
@@ -161,7 +172,7 @@ class TorchCrepeDetector(NoteDetector):
         pitches,
         confs,
         hop_s,
-        audio_segment,
+        audio_data,
         sample_rate,
     ):
         duration = (end_idx - start_idx) * hop_s
@@ -178,10 +189,10 @@ class TorchCrepeDetector(NoteDetector):
 
         # Clamp indices
         start_sample = max(0, start_sample)
-        end_sample = min(len(audio_segment), end_sample)
+        end_sample = min(len(audio_data), end_sample)
 
         if end_sample > start_sample:
-            segment = audio_segment[start_sample:end_sample]
+            segment = audio_data[start_sample:end_sample]
             amplitude = float(np.sqrt(np.mean(segment**2)))
         else:
             amplitude = 0.0

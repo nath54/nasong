@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Base interface for instrument training engines.
+
+This module defines the abstract requirements for an engine. Engines are
+responsible for the core optimization loop: rendering audio, calculating
+gradients (either automatically or manually), and updating parameters.
 """
 
 #
@@ -46,8 +49,11 @@ class BaseTrainingEngine(ABC):
 
     @abstractmethod
     def __init__(self, config: Any) -> None:
-        """
-        Initializes the engine with a configuration object.
+        """Initializes the engine with a configuration object.
+
+        Args:
+            config (Any): A configuration object (usually TrainingConfig)
+                containing hyperparameters like learning rate and engine type.
         """
         self.config = config
 
@@ -80,14 +86,20 @@ class BaseTrainingEngine(ABC):
 
     @abstractmethod
     def get_parameter_values(self) -> dict[str, float]:
-        """
-        Retrieves the current values of all trainable parameters.
+        """Retrieves the current values of all trainable parameters.
+
+        Returns:
+            dict[str, float]: A dictionary mapping parameter names (or IDs)
+                to their current float values.
         """
         pass
 
     @abstractmethod
     def set_parameter_values(self, parameters: dict[str, float]) -> None:
-        """
-        Injects values into the trainable parameters.
+        """Injects values into the trainable parameters.
+
+        Args:
+            parameters (dict[str, float]): A dictionary mapping parameter
+                names to the values to be applied.
         """
         pass

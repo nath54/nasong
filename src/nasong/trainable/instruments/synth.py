@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Generic synthesizer blueprints for instrument training.
+
+Provides standard synthesizer topologies (Sawtooth, Square, Sine) with
+ADSR envelopes and trainable parameters, serving as versatile baselines
+for general-purpose sound matching.
 """
 
 #
@@ -32,14 +35,21 @@ def TrainableSawtoothSynth(
     init_amplitude: float = 0.3,
     name_prefix: str = "saw_synth",
 ) -> lv.Value:
-    """
-    Trainable sawtooth-based synthesizer.
+    """Creates a trainable sawtooth-based synthesizer node.
 
-    Trainable parameters:
-    - Base amplitude
-    - Attack, decay, sustain, release times and levels
-    - Harmonics count
-    - Filter cutoff/resonance (future)
+    Uses a band-limited sawtooth oscillator (to prevent aliasing during
+    training) with an exponential ADSR envelope.
+
+    Args:
+        time (lv.Value): Master time signal.
+        frequency (lv.Value): Target frequency of the oscillator.
+        start_time (float): Note onset time in seconds.
+        duration (float): Note duration in seconds.
+        init_amplitude (float): Starting gain. Defaults to 0.3.
+        name_prefix (str): Prefix for params. Defaults to "saw_synth".
+
+    Returns:
+        lv.Value: The sawtooth synth graph node.
     """
 
     # Trainable parameters
@@ -80,8 +90,20 @@ def TrainableSquareSynth(
     init_amplitude: float = 0.3,
     name_prefix: str = "sq_synth",
 ) -> lv.Value:
-    """
-    Trainable square wave synthesizer.
+    """Creates a trainable square wave synthesizer node.
+
+    Features a band-limited square wave and an exponential ADSR envelope.
+
+    Args:
+        time (lv.Value): Master time.
+        frequency (lv.Value): Target frequency.
+        start_time (float): Key-down time.
+        duration (float): Key-hold duration.
+        init_amplitude (float): Initial gain. Defaults to 0.3.
+        name_prefix (str): Prefix for params. Defaults to "sq_synth".
+
+    Returns:
+        lv.Value: The square synth node.
     """
 
     # Trainable parameters

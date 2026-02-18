@@ -14,8 +14,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Training configuration and hyperparameter management.
+
+This module defines the configuration structure for instrument training,
+including audio settings, note detection parameters, loss functions, and
+training engine options. It uses dataclasses for type safety and provides
+YAML serialization.
 """
 
 #
@@ -25,11 +29,19 @@ import dataclasses
 from dataclasses import dataclass, field
 
 #
-import yaml
+import yaml  # type: ignore
 
 
 @dataclass
 class AudioConfig:
+    """Configuration for target audio loading and sampling.
+
+    Attributes:
+        start_time (float): The start offset in the WAV file (seconds).
+        duration (float): The length of the segment to load (seconds).
+        sample_rate (int): The target sample rate for processing (Hz).
+    """
+
     start_time: float = 0.0
     duration: float = 5.0
     sample_rate: int = 44100
@@ -37,6 +49,13 @@ class AudioConfig:
 
 @dataclass
 class NoteDetectionConfig:
+    """Settings for the note detection / transcription preprocessing.
+
+    Attributes:
+        method (str): The detection backend to use (e.g., 'legacy', 'onnx_crepe').
+        onnx_path (str): Path to the ONNX model weights (if applicable).
+    """
+
     method: str = "legacy"  # 'legacy', 'basic_pitch_onnx', 'librosa', 'torchcrepe'
     onnx_path: str = "models/nmp.onnx"
 
@@ -78,6 +97,15 @@ class NoteDetectionConfig:
 
 @dataclass
 class SpectralLossConfig:
+    """Parameters for the Multi-Resolution STFT Spectral Loss.
+
+    Attributes:
+        n_fft (int): Standard FFT size.
+        hop_length (int): Distance between STFT windows.
+        high_freq_emphasis (float): Multiplier for high-frequency loss weight.
+        fft_sizes (list[int]): List of FFT sizes for multi-resolution analysis.
+    """
+
     n_fft: int = 2048
     hop_length: int = 512
     high_freq_emphasis: float = 2.0
@@ -86,6 +114,29 @@ class SpectralLossConfig:
 
 @dataclass
 class TrainingConfig:
+    """Global configuration for an instrument training experiment.
+
+    Attributes:
+        instrument_name (str): Identifier for the instrument blueprint.
+        target_wav (str): Path to the reference audio file.
+        output_dir (str): Base directory for saving model parameters and audio.
+        device (str): Execution device ('cpu' or 'cuda').
+        engine_type (str): Gradient engine ('autograd', 'numpy', or 'torch').
+        epochs (int): Number of optimization iterations.
+        learning_rate (float): Step size for the optimizer.
+        save_interval (int): How often (in epochs) to save intermediate results.
+        audio (AudioConfig): Specific audio loading settings.
+        note_detection (NoteDetectionConfig): Settings for note extraction.
+        spectral_loss (SpectralLossConfig): Loss function hyperparameters.
+        train_duration (float): segment length for main training split.
+        val_duration (float): segment length for validation split.
+        test_duration (float): segment length for final testing.
+        batch_duration (float): Maximum audio length per training step.
+        batch_overlap (float): Overlap between batches in seconds.
+        save_config (bool): Whether to save this config to YAML in the output.
+        save_history (bool): Whether to save loss history to JSON in the output.
+    """
+
     instrument_name: str
     target_wav: str
     output_dir: str = "trained_models"
@@ -110,7 +161,14 @@ class TrainingConfig:
 
     @staticmethod
     def from_yaml(path: str) -> "TrainingConfig":
-        """Load configuration from a YAML file."""
+        """Loads configuration from a YAML file.
+
+        Args:
+            path (str): Path to the YAML file.
+
+        Returns:
+            TrainingConfig: The loaded configuration object.
+        """
         with open(path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
@@ -134,8 +192,12 @@ class TrainingConfig:
 
         return load_dataclass(TrainingConfig, data)
 
-    def to_yaml(self, path: str):
-        """Save configuration to a YAML file."""
+    def to_yaml(self, path: str) -> None:
+        """Saves the current configuration to a YAML file.
+
+        Args:
+            path (str): Output file path.
+        """
 
         def as_dict(obj):
             if dataclasses.is_dataclass(obj):

@@ -58,6 +58,19 @@ except (ImportError, OSError):
 
 #
 def get_engine(config: TrainingConfig) -> BaseTrainingEngine:
+    """Factory function to instantiate the requested training engine.
+
+    Args:
+        config (TrainingConfig): The global training configuration.
+
+    Returns:
+        BaseTrainingEngine: An instance of the selected engine (NumPy, Torch, etc.).
+
+    Raises:
+        ImportError: If the 'torch' engine is requested but PyTorch is not installed.
+        ValueError: If the engine type is unrecognized.
+    """
+
     if config.engine_type == "numpy":
         return NumpyEngine(config)
     elif config.engine_type == "autograd":

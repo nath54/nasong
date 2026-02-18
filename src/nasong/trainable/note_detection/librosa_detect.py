@@ -14,8 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""
-TODO: add full docstring, explaining what the goal of this script is, and explaining for each class and each function what is it, how it works, and how to use it.
+"""Classic DSP note detection backend using Librosa.
+
+Implements transcription by combining energy-based onset detection with
+probabilistic YIN (pYIN) pitch tracking. Robust for monophonic sources
+and does not require neural network models.
 """
 
 #
@@ -35,19 +38,28 @@ from .base import NoteDetector
 try:
     import librosa
 except ImportError:
-    librosa = None
+    librosa = None  # type: ignore
 
 
 #
 class LibrosaDetector(NoteDetector):
-    """
-    Note detection using Librosa (onset detection + pyin).
-    Robust for monophonic instruments.
+    """Traditional DSP-based note detection using Librosa.
+
+    Uses `librosa.onset.onset_detect` for event boundaries and
+    `librosa.pyin` for pitch estimation within those boundaries.
     """
 
-    def detect(
-        self, audio_segment: np.ndarray, sample_rate: int
-    ) -> list[dict[str, Any]]:
+    def detect(self, audio_data: np.ndarray, sample_rate: int) -> list[dict[str, Any]]:
+        """Detects notes using onset detection followed by pYIN.
+
+        Args:
+            audio_data (np.ndarray): Raw audio samples.
+            sample_rate (int): Audio sampling rate.
+
+        Returns:
+            list[dict[str, Any]]: Detected notes with pitch, timing, and
+                confidence metrics.
+        """
         if librosa is None:
             raise ImportError(
                 "Librosa is not installed. Please install it to use this detector."
@@ -55,7 +67,7 @@ class LibrosaDetector(NoteDetector):
 
         # Onset detection
         onset_frames = librosa.onset.onset_detect(
-            y=audio_segment, sr=sample_rate, backtrack=True, units="frames"
+            y=audio_data, sr=sample_rate, backtrack=True, units="frames"
         )
         onset_times = librosa.frames_to_time(onset_frames, sr=sample_rate)
 
@@ -67,10 +79,10 @@ class LibrosaDetector(NoteDetector):
             # Ensure 0.0 is included if first onset is late?
             # Usually onset detection finds the start.
             # If the note starts at 0, onset_detect might find 0 or not.
-            pass
+            pass  # pylint: disable=unnecessary-pass
 
         notes = []
-        total_duration = len(audio_segment) / sample_rate
+        total_duration = len(audio_data) / sample_rate
 
         fmin = self.config.get("librosa_fmin", 50.0)
         fmax = self.config.get("librosa_fmax", 2000.0)
@@ -89,7 +101,7 @@ class LibrosaDetector(NoteDetector):
             if end_sample - start_sample < frame_len:
                 continue
 
-            segment = audio_segment[start_sample:end_sample]
+            segment = audio_data[start_sample:end_sample]
 
             # Run pYIN
             f0, voiced_flag, voiced_probs = librosa.pyin(
