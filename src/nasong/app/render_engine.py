@@ -60,6 +60,11 @@ class RenderEngine:
         self.sequencer = None
         self.cursor_time = 0.0
 
+        # Force re-render support: re-execute script every N chunks
+        self.force_rerender_every = 0  # 0 = disabled
+        self.chunks_rendered_since_invalidation = 0
+        self.rerender_callback: Optional[callable] = None
+
         # Priority Queue: (priority, start_sample)
         # Priority is distance from cursor (lower is better)
         self.render_queue = queue.PriorityQueue()
@@ -90,6 +95,7 @@ class RenderEngine:
             self.sequencer = sequencer
             # We do NOT clear cache, but increment version
             self.current_version_id += 1
+            self.chunks_rendered_since_invalidation = 0
 
         with self.queued_lock:
             self.queued_chunks.clear()
@@ -102,6 +108,32 @@ class RenderEngine:
                 pass
 
         self._enqueue_chunks_near_cursor()
+
+    def set_force_rerender_every(self, n: int):
+        """
+        Configures periodic cache invalidation for randomness-based scripts.
+
+        When set to a positive integer N, the engine will clear its cache and
+        invoke the rerender_callback every N rendered chunks, causing the user
+        script to be re-executed and fresh random values to be generated.
+
+        Args:
+            n: Number of chunks between forced re-renders. 0 disables.
+        """
+        self.force_rerender_every = max(0, int(n))
+        self.chunks_rendered_since_invalidation = 0
+
+    def set_rerender_callback(self, cb: Optional[callable]):
+        """
+        Registers a callback invoked when a forced re-render is triggered.
+
+        The callback should re-execute the user script so that new random
+        values are generated (e.g., ``session.load_script(path)``).
+
+        Args:
+            cb: A callable with no arguments, or None to clear.
+        """
+        self.rerender_callback = cb
 
     def update_cursor(self, time_seconds: float):
         """
@@ -150,11 +182,12 @@ class RenderEngine:
                 if sample_idx in self.queued_chunks:
                     continue
 
-                # Check directly, cache check is done in render loop too but good to avoid dupes here
-                # Actually, check cache without lock if possible or optimize
+                # Check cache: skip only if chunk is cached AND current version
                 with self.cache_lock:
                     if sample_idx in self.cache:
-                        continue
+                        _, cached_version = self.cache[sample_idx]
+                        if cached_version == self.current_version_id:
+                            continue
 
                 # Priority: Distance to cursor
                 priority = abs(sample_idx - center_sample_idx)
@@ -221,11 +254,13 @@ class RenderEngine:
                     if start_sample in self.queued_chunks:
                         self.queued_chunks.remove(start_sample)
 
-                # Check cache again just in case
+                # Check cache: skip only if chunk is cached with current version
                 ignore = False
                 with self.cache_lock:
                     if start_sample in self.cache:
-                        ignore = True
+                        _, cached_version = self.cache[start_sample]
+                        if cached_version == self.current_version_id:
+                            ignore = True
 
                 if ignore:
                     self.render_queue.task_done()
@@ -282,6 +317,15 @@ class RenderEngine:
                             audio.astype(np.float32),
                             self.current_version_id,
                         )
+                        self.chunks_rendered_since_invalidation += 1
+
+                    # Check if we should force a re-render cycle
+                    if (
+                        self.force_rerender_every > 0
+                        and self.chunks_rendered_since_invalidation
+                        >= self.force_rerender_every
+                    ):
+                        self._force_rerender()
 
                 self.render_queue.task_done()
 
@@ -290,6 +334,39 @@ class RenderEngine:
             except Exception:  # pylint: disable=broad-except
                 # logging.error(f"Render Loop Error: {e}")
                 pass
+
+    def _force_rerender(self):
+        """
+        Triggers a re-render cycle with double-buffering.
+
+        Called internally when ``chunks_rendered_since_invalidation`` reaches
+        ``force_rerender_every``. Increments the version to mark existing cache
+        entries as stale, but does NOT clear the cache. Stale chunks continue
+        to be served to the audio callback while fresh versions are rendered
+        in the background, preventing silence gaps.
+        """
+        with self.cache_lock:
+            self.current_version_id += 1
+            # NOTE: We intentionally do NOT clear the cache here.
+            # Stale chunks (old version_id) remain playable while new
+            # versions are rendered in the background.
+            self.chunks_rendered_since_invalidation = 0
+
+        with self.queued_lock:
+            self.queued_chunks.clear()
+            try:
+                while not self.render_queue.empty():
+                    self.render_queue.get_nowait()
+            except queue.Empty:
+                pass
+
+        if self.rerender_callback:
+            try:
+                self.rerender_callback()
+            except Exception:  # pylint: disable=broad-except
+                pass
+
+        self._enqueue_chunks_near_cursor()
 
     def stop(self):
         """

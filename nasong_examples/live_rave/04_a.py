@@ -10,6 +10,9 @@ LOOP_QUARTERS = 4
 # (16 quarters / BPM) * 60 seconds
 LOOP_SECONDS = (LOOP_QUARTERS * 60.0) / BPM
 
+# Force re-render every N chunks to get fresh random progressions
+FORCE_RERENDER_EVERY = 256
+
 # 1. Define Looping Time: This is the secret for infinite loops!
 time = Identity() % LOOP_SECONDS
 

@@ -82,6 +82,7 @@ class LiveSession:
         self.volume = 0.8
         self.log_callback: Optional[callable] = None
         self.reload_cursor: Optional[int] = None  # Marker for visualization
+        self.current_script_path: Optional[str] = None  # For re-render callback
 
         # Initialize RenderEngine
         self.render_engine = RenderEngine(
@@ -238,8 +239,27 @@ class LiveSession:
                     with self.lock:
                         self.user_module = module
                         self.reload_cursor = self.cursor  # Set marker
+                        self.current_script_path = script_path
                         # Pass sequencer to RenderEngine
                         self.render_engine.set_sequencer(sequencer)
+
+                        # Check for FORCE_RERENDER_EVERY global parameter
+                        force_rerender = getattr(module, "FORCE_RERENDER_EVERY", 0)
+                        if force_rerender and isinstance(force_rerender, (int, float)):
+                            self.render_engine.set_force_rerender_every(
+                                int(force_rerender)
+                            )
+                            self.render_engine.set_rerender_callback(
+                                self._on_force_rerender
+                            )
+                            self.log(
+                                f"Force re-render enabled every"
+                                f" {int(force_rerender)} chunks"
+                            )
+                        else:
+                            self.render_engine.set_force_rerender_every(0)
+                            self.render_engine.set_rerender_callback(None)
+
                         self.log(f"Loaded {script_path}")
                     return True
                 else:
@@ -377,6 +397,17 @@ class LiveSession:
         self.cursor += frames
         # Update RenderEngine cursor priority
         self.render_engine.update_cursor(self.cursor / self.sample_rate)
+
+    def _on_force_rerender(self):
+        """
+        Callback invoked by RenderEngine when a forced re-render is triggered.
+
+        Re-executes the current user script to regenerate random values,
+        producing a fresh sequencer for subsequent chunks.
+        """
+        if self.current_script_path:
+            self.log("Force re-render: re-executing script for fresh random values...")
+            self.load_script(self.current_script_path)
 
     def seek(self, time_seconds: float):
         """
