@@ -34,12 +34,12 @@ import nasong.core.all_values as lv
 #
 
 
-def SaxophoneNote(
+def SaxophoneNote(  # pylint: disable=invalid-name
     time: lv.Value,
     frequency: float,
     start_time: float,
     duration: float,
-    amplitude: float = 0.3,
+    velocity: float = 1.0,
 ) -> lv.Value:
     """Simulates a saxophone note.
 
@@ -99,12 +99,12 @@ def SaxophoneNote(
     #
     ### Breath noise  ###
     #
-    breath: lv.Value = lv.WhiteNoise(seed=7919, scale=(1 / 1000.0 * 0.5))
+    breath: lv.Value = lv.WhiteNoise(seed=7919, scale=1 / 1000.0 * 0.5)
 
     #
     signal: lv.Value = lv.Sum(harmonics, breath)
 
     #
-    ### Final = Amplitude * AmpEnv * Signal ###
+    ### Final = 0.3 * velocity * AmpEnv * Signal ###
     #
-    return lv.Product(lv.c(amplitude), amp_env, signal)
+    return lv.Product(lv.c(0.3 * velocity), amp_env, signal)

@@ -31,7 +31,11 @@ import nasong.core.all_values as lv
 
 #
 def SynthLead(
-    time: lv.Value, frequency: float, start_time: float, duration: float = 1.0
+    time: lv.Value,
+    frequency: float,
+    start_time: float,
+    duration: float = 1.0,
+    velocity: float = 1.0,
 ) -> lv.Value:
     """Creates a smooth, powerful "Unison" lead synthesizer.
 
@@ -106,14 +110,18 @@ def SynthLead(
     )
 
     #
-    ### Final = 0.4 * AmpEnv * MixedSignal ###
+    ### Final = 0.4 * velocity * AmpEnv * MixedSignal ###
     #
-    return lv.Product(lv.c(0.4), amp_env, mixed_signal)
+    return lv.Product(lv.c(0.4 * velocity), amp_env, mixed_signal)
 
 
 #
 def SynthBass(
-    time: lv.Value, frequency: float, start_time: float, duration: float = 0.5
+    time: lv.Value,
+    frequency: float,
+    start_time: float,
+    duration: float = 0.5,
+    velocity: float = 1.0,
 ) -> lv.Value:
     """Creates a punchy, anti-aliased synthesizer bass.
 
@@ -169,14 +177,18 @@ def SynthBass(
     signal: lv.Value = lv.Sum(osc_square, osc_sub)
 
     #
-    ### Final = 0.35 * AmpEnv * Signal ###
+    ### Final = 0.35 * velocity * AmpEnv * Signal ###
     #
-    return lv.Product(lv.c(0.35), amp_env, signal)
+    return lv.Product(lv.c(0.35 * velocity), amp_env, signal)
 
 
 #
 def SynthPad(
-    time: lv.Value, frequency: float, start_time: float, duration: float = 4.0
+    time: lv.Value,
+    frequency: float,
+    start_time: float,
+    duration: float = 4.0,
+    velocity: float = 1.0,
 ) -> lv.Value:
     """Creates an atmospheric synthesizer pad.
 
@@ -224,6 +236,6 @@ def SynthPad(
     signal: lv.Value = lv.Product(lv.Sum(osc1, osc2, osc3), lv.c(1.0 / 3.0))
 
     #
-    ### Final = 0.2 * AmpEnv * Signal ###
+    ### Final = 0.2 * velocity * AmpEnv * Signal ###
     #
-    return lv.Product(lv.c(0.2), amp_env, signal)
+    return lv.Product(lv.c(0.2 * velocity), amp_env, signal)

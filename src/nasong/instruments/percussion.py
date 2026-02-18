@@ -35,7 +35,13 @@ import nasong.core.all_values as lv
 
 
 #
-def KickDrum(time: lv.Value, trigger_time: float, amplitude: float = 0.6) -> lv.Value:
+def KickDrum(
+    time: lv.Value,
+    frequency: float,
+    start_time: float,
+    duration: float = 0.5,
+    velocity: float = 1.0,
+) -> lv.Value:
     """Creates a basic synthesized kick drum sound.
 
     Synthesized using a pitch-modulated sine wave (dropping from 150Hz) and
@@ -43,8 +49,10 @@ def KickDrum(time: lv.Value, trigger_time: float, amplitude: float = 0.6) -> lv.
 
     Args:
         time (lv.Value): The global time value.
-        trigger_time (float): The time the drum is struck.
-        amplitude (float, optional): Overall volume scaling. Defaults to 0.6.
+        frequency (float): Unused (standard signature).
+        start_time (float): The time the drum is struck.
+        duration (float): Unused (standard signature).
+        velocity (float): Overall volume scaling. Defaults to 1.0.
 
     Returns:
         lv.Value: The audio value graph for the kick drum.
@@ -53,24 +61,24 @@ def KickDrum(time: lv.Value, trigger_time: float, amplitude: float = 0.6) -> lv.
     #
     ### The original had a 0.5s hard gate. We use ADSR2 for this. ###
     #
-    gate_env: lv.Value = lv.ADSR2(time, trigger_time, 0.5, 0.001, 0.001, 1.0, 0.001)
+    gate_env: lv.Value = lv.ADSR2(time, start_time, 0.5, 0.001, 0.001, 1.0, 0.001)
 
     #
     ### Amplitude envelope: exp(-relative_time * 8) ###
     #
-    amp_env: lv.Value = lv.ExponentialDecay(time, trigger_time, 8.0)
+    amp_env: lv.Value = lv.ExponentialDecay(time, start_time, 8.0)
 
     #
     ### Pitch envelope: 150 * exp(-relative_time * 20) ###
     #
     pitch_env: lv.Value = lv.Product(
-        lv.c(150), lv.ExponentialDecay(time, trigger_time, 20.0)
+        lv.c(150), lv.ExponentialDecay(time, start_time, 20.0)
     )
 
     #
     ### Tone: sin(2 * pi * pitch * relative_time) ###
     #
-    relative_time: lv.Value = lv.BasicScaling(time, lv.c(1), lv.c(-trigger_time))
+    relative_time: lv.Value = lv.BasicScaling(time, lv.c(1), lv.c(-start_time))
     #
     tone: lv.Value = lv.Sin(
         relative_time, frequency=lv.Product(pitch_env, lv.c(2 * math.pi))
@@ -79,9 +87,7 @@ def KickDrum(time: lv.Value, trigger_time: float, amplitude: float = 0.6) -> lv.
     #
     ### Click: 0.3 * exp(-relative_time * 50) ###
     #
-    click: lv.Value = lv.Product(
-        lv.c(0.3), lv.ExponentialDecay(time, trigger_time, 50.0)
-    )
+    click: lv.Value = lv.Product(lv.c(0.3), lv.ExponentialDecay(time, start_time, 50.0))
 
     #
     ### Signal = (Tone + Click) ###
@@ -89,13 +95,19 @@ def KickDrum(time: lv.Value, trigger_time: float, amplitude: float = 0.6) -> lv.
     signal: lv.Value = lv.Sum(tone, click)
 
     #
-    ### Final = Amplitude * Gate * AmpEnv * Signal ###
+    ### Final = 0.6 * velocity * Gate * AmpEnv * Signal ###
     #
-    return lv.Product(lv.c(amplitude), gate_env, amp_env, signal)
+    return lv.Product(lv.c(0.6 * velocity), gate_env, amp_env, signal)
 
 
 #
-def KickDrum2(time: lv.Value, start_time: float) -> lv.Value:
+def KickDrum2(
+    time: lv.Value,
+    frequency: float,
+    start_time: float,
+    duration: float = 0.5,
+    velocity: float = 1.0,
+) -> lv.Value:
     """Creates an alternate, punchier synthesized kick drum.
 
     Features a steeper pitch drop and a noise-based "click" at the start for
@@ -154,13 +166,19 @@ def KickDrum2(time: lv.Value, start_time: float) -> lv.Value:
     signal: lv.Value = lv.Sum(tone, click)
 
     #
-    ### Final = 0.6 * Gate * AmpEnv * Signal ###
+    ### Final = 0.6 * velocity * Gate * AmpEnv * Signal ###
     #
-    return lv.Product(lv.c(0.6), gate_env, amp_env, signal)
+    return lv.Product(lv.c(0.6 * velocity), gate_env, amp_env, signal)
 
 
 #
-def Snare(time: lv.Value, trigger_time: float, amplitude: float = 0.4) -> lv.Value:
+def Snare(
+    time: lv.Value,
+    frequency: float,
+    start_time: float,
+    duration: float = 0.3,
+    velocity: float = 1.0,
+) -> lv.Value:
     """Creates a basic synthesized snare drum sound.
 
     Combines a fixed 200Hz sine "body" tone with a broad-spectrum white noise
@@ -168,8 +186,10 @@ def Snare(time: lv.Value, trigger_time: float, amplitude: float = 0.4) -> lv.Val
 
     Args:
         time (lv.Value): The global time value.
-        trigger_time (float): The time the snare is struck.
-        amplitude (float, optional): Overall volume scaling. Defaults to 0.4.
+        frequency (float): Unused (standard signature).
+        start_time (float): The time the snare is struck.
+        duration (float): Unused (standard signature).
+        velocity (float): Overall volume scaling. Defaults to 1.0.
 
     Returns:
         lv.Value: The audio value graph for the snare.
@@ -178,17 +198,17 @@ def Snare(time: lv.Value, trigger_time: float, amplitude: float = 0.4) -> lv.Val
     #
     ### Gate: 0.3s hard gate. ###
     #
-    gate_env: lv.Value = lv.ADSR2(time, trigger_time, 0.3, 0.001, 0.001, 1.0, 0.001)
+    gate_env: lv.Value = lv.ADSR2(time, start_time, 0.3, 0.001, 0.001, 1.0, 0.001)
 
     #
     ### Amplitude envelope: exp(-relative_time * 15) ###
     #
-    amp_env: lv.Value = lv.ExponentialDecay(time, trigger_time, 15.0)
+    amp_env: lv.Value = lv.ExponentialDecay(time, start_time, 15.0)
 
     #
     ### Tone: 0.4 * sin(2 * pi * 200 * relative_time) ###
     #
-    relative_time: lv.Value = lv.BasicScaling(time, lv.c(1), lv.c(-trigger_time))
+    relative_time: lv.Value = lv.BasicScaling(time, lv.c(1), lv.c(-start_time))
     #
     tone: lv.Value = lv.Sin(
         relative_time, frequency=lv.c(200 * 2 * math.pi), amplitude=lv.c(0.4)
@@ -208,13 +228,19 @@ def Snare(time: lv.Value, trigger_time: float, amplitude: float = 0.4) -> lv.Val
     signal: lv.Value = lv.Sum(tone, noise)
 
     #
-    ### Final = Amplitude * Gate * AmpEnv * Signal ###
+    ### Final = 0.4 * velocity * Gate * AmpEnv * Signal ###
     #
-    return lv.Product(lv.c(amplitude), gate_env, amp_env, signal)
+    return lv.Product(lv.c(0.4 * velocity), gate_env, amp_env, signal)
 
 
 #
-def SnareDrum(time: lv.Value, start_time: float) -> lv.Value:
+def SnareDrum(
+    time: lv.Value,
+    frequency: float,
+    start_time: float,
+    duration: float = 0.2,
+    velocity: float = 1.0,
+) -> lv.Value:
     """Creates a tighter, shorter synthesized snare drum.
 
     Args:
@@ -258,13 +284,20 @@ def SnareDrum(time: lv.Value, start_time: float) -> lv.Value:
     signal: lv.Value = lv.Sum(tone, noise)
 
     #
-    ### Final = 0.4 * Gate * AmpEnv * Signal ###
+    ### Final = 0.4 * velocity * Gate * AmpEnv * Signal ###
     #
-    return lv.Product(lv.c(0.4), gate_env, amp_env, signal)
+    return lv.Product(lv.c(0.4 * velocity), gate_env, amp_env, signal)
 
 
 #
-def HiHat(time: lv.Value, start_time: float, open: bool = False) -> lv.Value:
+def HiHat(
+    time: lv.Value,
+    frequency: float,
+    start_time: float,
+    duration: float = 0.1,
+    velocity: float = 1.0,
+    open: bool = False,
+) -> lv.Value:
     """Creates a synthesized hi-hat sound (closed or open).
 
     Synthesized using multiple high-frequency sine oscillators and a small
@@ -281,13 +314,15 @@ def HiHat(time: lv.Value, start_time: float, open: bool = False) -> lv.Value:
     """
 
     #
-    duration: float = 0.4 if open else 0.08
+    duration_hat: float = 0.4 if open else 0.08
     decay_rate: float = 8.0 if open else 50.0
 
     #
     ### Gate: hard gate at duration. ###
     #
-    gate_env: lv.Value = lv.ADSR2(time, start_time, duration, 0.001, 0.001, 1.0, 0.001)
+    gate_env: lv.Value = lv.ADSR2(
+        time, start_time, duration_hat, 0.001, 0.001, 1.0, 0.001
+    )
 
     #
     ### Amplitude envelope: exp(-relative_t * decay_rate) ###
@@ -321,13 +356,19 @@ def HiHat(time: lv.Value, start_time: float, open: bool = False) -> lv.Value:
     signal: lv.Value = lv.Sum(tone, noise)
 
     #
-    ### Final = 0.15 * Gate * AmpEnv * Signal ###
+    ### Final = 0.15 * velocity * Gate * AmpEnv * Signal ###
     #
-    return lv.Product(lv.c(0.15), gate_env, amp_env, signal)
+    return lv.Product(lv.c(0.15 * velocity), gate_env, amp_env, signal)
 
 
 #
-def CrashCymbal(time: lv.Value, start_time: float) -> lv.Value:
+def CrashCymbal(
+    time: lv.Value,
+    frequency: float,
+    start_time: float,
+    duration: float = 2.0,
+    velocity: float = 1.0,
+) -> lv.Value:
     """Creates a synthesized crash cymbal sound.
 
     Uses high-frequency additive synthesis with random phases to simulate
@@ -373,6 +414,6 @@ def CrashCymbal(time: lv.Value, start_time: float) -> lv.Value:
     tone: lv.Value = lv.Product(lv.Sum(tone_list), lv.c(1.0 / len(cymbal_freqs)))
 
     #
-    ### Final = 0.25 * Gate * AmpEnv * Tone ###
+    ### Final = 0.25 * velocity * Gate * AmpEnv * Tone ###
     #
-    return lv.Product(lv.c(0.25), gate_env, amp_env, tone)
+    return lv.Product(lv.c(0.25 * velocity), gate_env, amp_env, tone)
