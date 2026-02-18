@@ -228,9 +228,18 @@ class AlgoRaveApp(App):
     bpm = reactive(120.0)
     volume = reactive(0.8)
 
-    def __init__(self, device=None, sample_rate=44100, volume=0.8, initial_file=None):
+    def __init__(
+        self,
+        device=None,
+        sample_rate=44100,
+        volume=0.8,
+        initial_file=None,
+        block_size=2048,
+    ):
         super().__init__()
-        self.session = LiveSession(device=device, sample_rate=sample_rate)
+        self.session = LiveSession(
+            device=device, sample_rate=sample_rate, block_size=block_size
+        )
         self.session.set_volume(volume)
         self.volume = volume
         self.initial_file = initial_file
@@ -449,6 +458,13 @@ def main():
     )
     parser.add_argument("--device", type=int, default=None, help="Audio device index")
     parser.add_argument("--volume", type=float, default=0.8, help="Initial volume")
+    parser.add_argument(
+        "--block-size",
+        type=int,
+        default=2048,
+        help="Audio chunk size in samples (default: 2048). "
+        "Smaller = lower latency, larger = more stable.",
+    )
     args = parser.parse_args()
 
     device = args.device
@@ -461,6 +477,7 @@ def main():
         sample_rate=args.rate,
         volume=args.volume,
         initial_file=initial_script,
+        block_size=args.block_size,
     )
     app.run()
 

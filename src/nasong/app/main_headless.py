@@ -51,6 +51,13 @@ def main():
     parser.add_argument(
         "--rate", type=int, default=44100, help="Sample rate (try 48000 if silent)"
     )
+    parser.add_argument(
+        "--block-size",
+        type=int,
+        default=2048,
+        help="Audio chunk size in samples (default: 2048). "
+        "Smaller = lower latency, larger = more stable.",
+    )
     args = parser.parse_args()
 
     # Normalize device if it's a digit
@@ -58,7 +65,9 @@ def main():
     if device and device.isdigit():
         device = int(device)
 
-    session = LiveSession(device=device, sample_rate=args.rate)
+    session = LiveSession(
+        device=device, sample_rate=args.rate, block_size=args.block_size
+    )
     session.set_volume(args.volume)
 
     script_abs_path = os.path.abspath(args.script)
@@ -71,6 +80,7 @@ def main():
     print(f"Target Script: {script_abs_path}")
     print(f"Device: {device if device is not None else 'Default'}")
     print(f"Sample Rate: {args.rate} Hz")
+    print(f"Block Size: {args.block_size} samples")
     print(f"Volume: {args.volume}")
     print("----------------------------------")
 
