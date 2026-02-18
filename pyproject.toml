@@ -39,3 +39,12 @@ nasong-daw = "nasong.app.main_daw:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.ruff]
+exclude = ["tests"]
+
+[tool.mypy]
+exclude = ["tests"]
+
+[tool.pylint.master]
+ignore = ["tests"]
