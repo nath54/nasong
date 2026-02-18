@@ -27,7 +27,7 @@ for general-purpose sound matching.
 import nasong.core.all_values as lv
 
 
-def TrainableSawtoothSynth(
+def TrainableSawtoothSynth(  # pylint: disable=invalid-name
     time: lv.Value,
     frequency: lv.Value,
     start_time: float,
@@ -82,7 +82,7 @@ def TrainableSawtoothSynth(
     return lv.Product(osc, env)
 
 
-def TrainableSquareSynth(
+def TrainableSquareSynth(  # pylint: disable=invalid-name
     time: lv.Value,
     frequency: lv.Value,
     start_time: float,
@@ -134,7 +134,7 @@ def TrainableSquareSynth(
     return lv.Product(osc, env)
 
 
-def TrainableSineSynth(
+def TrainableSineSynth(  # pylint: disable=invalid-name
     time: lv.Value,
     frequency: lv.Value,
     start_time: float,

@@ -43,7 +43,7 @@ class Raga:
     # Bhairavi (Phrygian): 0 1 3 5 7 8 10
     # Todi: 0 1 3 6 7 8 11
 
-    PATTERNS = {
+    PATTERNS: dict[str, list[int]] = {
         "bilawal": [2, 2, 1, 2, 2, 2, 1],
         "kalyan": [2, 2, 2, 1, 2, 2, 1],
         "khamaj": [2, 2, 1, 2, 2, 1, 2],

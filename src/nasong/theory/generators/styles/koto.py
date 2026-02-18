@@ -26,6 +26,7 @@ specifically targeting the 'In' pentatonic scale and Koto-like motifs.
 from nasong.theory.core.time import QUARTER
 from nasong.theory.systems.east_asian import EastAsian
 from nasong.theory.structures.progression import Progression
+from nasong.theory.structures.chord import Chord
 
 
 class Koto:
@@ -38,7 +39,6 @@ class Koto:
 
         # Example pattern: Root -> 5th -> 4th -> Root
         # Indices: 0, 3, 2, 0
-        from nasong.theory.structures.chord import Chord
 
         if hasattr(scale, "notes"):
             # Indices modulo length

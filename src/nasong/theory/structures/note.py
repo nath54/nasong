@@ -67,13 +67,8 @@ class Note:
         """
         if isinstance(self.pitch, CoreNote):
             return Note(self.pitch.transpose(semitones), self.duration, self.velocity)
-        # If Hz, we could transpose frequencies?
-        # Pitch doesn't have transpose, Note does.
-        # But Hz can be transposed by multiplying frequency.
-        # Let's assume Pitch supports or logic to handle it.
-        # core.pitch.Hz doesn't have transpose yet but logic exists elsewhere?
-        # For now, only CoreNote transpose is safe.
-        # If pitch is Hz, we can implement transpose there or here.
+
+        #
         if isinstance(self.pitch, Hz):
             # 2^(semitones/12)
             ratio = 2 ** (semitones / 12.0)

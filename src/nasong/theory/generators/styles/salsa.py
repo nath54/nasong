@@ -40,9 +40,9 @@ class Salsa:
     @staticmethod
     def clave_rhythm(direction: str = "2-3") -> Rhythm:
         """Returns a pulse pattern for Son Clave (2-3 or 3-2)."""
-        """
-        Returns a Clave rhythm pattern.
-        """
         # 2-3 Son Clave: ..X.X... .X..X...
         # 3-2 Son Clave: X..X..X. ..X.X...
-        pass
+
+        # TODO
+
+        return None

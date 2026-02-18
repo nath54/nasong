@@ -27,6 +27,8 @@ parsing for quick pattern drafting.
 from typing import Iterator
 from dataclasses import dataclass
 
+import itertools
+
 #
 from nasong.theory.core.time import Duration, QUARTER, SIXTEENTH
 
@@ -64,8 +66,6 @@ class Rhythm:
 
     def __iter__(self) -> Iterator[RhythmEvent]:
         if self.loop:
-            import itertools
-
             return itertools.cycle(self.events)
         return iter(self.events)
 

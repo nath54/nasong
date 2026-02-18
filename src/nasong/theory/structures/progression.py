@@ -142,7 +142,15 @@ class Progression:
         #
         ### Mapping ###
         #
-        romans = {"i": 1, "ii": 2, "iii": 3, "iv": 4, "v": 5, "vi": 6, "vii": 7}
+        romans: dict[str, int] = {
+            "i": 1,
+            "ii": 2,
+            "iii": 3,
+            "iv": 4,
+            "v": 5,
+            "vi": 6,
+            "vii": 7,
+        }
 
         #
         ### Check start of string for roman numeral match ###

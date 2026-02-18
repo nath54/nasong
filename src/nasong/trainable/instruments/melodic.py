@@ -27,7 +27,7 @@ governed by trainable parameters.
 import nasong.core.all_values as lv
 
 
-def TrainablePlucked(
+def TrainablePlucked(  # pylint: disable=invalid-name
     time: lv.Value,
     frequency: lv.Value,
     start_time: float,
@@ -87,7 +87,7 @@ def TrainablePlucked(
     return lv.Product(osc, env, pluck_env)
 
 
-def TrainablePiano(
+def TrainablePiano(  # pylint: disable=invalid-name
     time: lv.Value,
     frequency: lv.Value,
     start_time: float,
@@ -154,7 +154,7 @@ def TrainablePiano(
     return lv.Product(osc, env, amplitude)
 
 
-def TrainableBowed(
+def TrainableBowed(  # pylint: disable=invalid-name
     time: lv.Value,
     frequency: lv.Value,
     start_time: float,

@@ -37,10 +37,10 @@ class WesternMeta(type):
     def __getattr__(cls, name):
         try:
             return Note(name)
-        except ValueError:
+        except ValueError as e:
             raise AttributeError(
                 f"type object '{cls.__name__}' has no attribute '{name}'"
-            )
+            ) from e
 
 
 class Western(metaclass=WesternMeta):
@@ -54,28 +54,35 @@ class Western(metaclass=WesternMeta):
 
     @staticmethod
     def minor(root: str) -> Scale:
+        """Returns a minor scale from the given root."""
         return Scale.from_name(root, "minor")
 
     @staticmethod
     def dorian(root: str) -> Scale:
+        """Returns a dorian scale from the given root."""
         return Scale.from_name(root, "dorian")
 
     @staticmethod
     def phrygian(root: str) -> Scale:
+        """Returns a phrygian scale from the given root."""
         return Scale.from_name(root, "phrygian")
 
     @staticmethod
     def lydian(root: str) -> Scale:
+        """Returns a lydian scale from the given root."""
         return Scale.from_name(root, "lydian")
 
     @staticmethod
     def mixolydian(root: str) -> Scale:
+        """Returns a mixolydian scale from the given root."""
         return Scale.from_name(root, "mixolydian")
 
     @staticmethod
     def locrian(root: str) -> Scale:
+        """Returns a locrian scale from the given root."""
         return Scale.from_name(root, "locrian")
 
     @staticmethod
     def mode(root: str, mode_name: str) -> Scale:
+        """Returns a mode scale from the given root and mode name."""
         return Scale.from_name(root, mode_name)

@@ -36,7 +36,7 @@ class Gamelan:
 
     # Pelog: Unequal 7 tones.
 
-    PATTERNS = {
+    PATTERNS: dict[str, list[int | float]] = {
         "slendro": [2.4, 2.4, 2.4, 2.4, 2.4],
         "pelog_bem": [1, 2, 4, 1, 4],
         "pelog_barang": [2, 3, 2, 3, 2],

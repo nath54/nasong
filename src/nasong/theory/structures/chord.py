@@ -129,7 +129,7 @@ class Chord:
 # So Major Triad = [4, 7] (Major 3rd, Perfect 5th)
 # The root is always index 0 of pitches list.
 
-_CHORD_QUALITY_INTERVALS = {
+_CHORD_QUALITY_INTERVALS: dict[str, list[int]] = {
     "major": [4, 7],
     "maj": [4, 7],
     "M": [4, 7],

@@ -26,7 +26,7 @@ and textures, with trainable envelopes and detuning parameters.
 import nasong.core.all_values as lv
 
 
-def TrainablePad(
+def TrainablePad(  # pylint: disable=invalid-name
     time: lv.Value,
     frequency: lv.Value,
     start_time: float,

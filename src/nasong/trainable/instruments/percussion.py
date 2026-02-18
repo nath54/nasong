@@ -27,7 +27,7 @@ and pitch envelopes.
 import nasong.core.all_values as lv
 
 
-def TrainableKick(
+def TrainableKick(  # pylint: disable=invalid-name
     time: lv.Value, start_time: float, name_prefix: str = "kick"
 ) -> lv.Value:
     """Generates a trainable kick drum node.
@@ -91,7 +91,7 @@ def TrainableKick(
     return lv.Product(mixed, env, amplitude)
 
 
-def TrainableSnare(
+def TrainableSnare(  # pylint: disable=invalid-name
     time: lv.Value, start_time: float, name_prefix: str = "snare"
 ) -> lv.Value:
     """Creates a trainable snare drum node.
@@ -135,7 +135,7 @@ def TrainableSnare(
     return lv.Product(mixed, env, amplitude)
 
 
-def TrainableHiHat(
+def TrainableHiHat(  # pylint: disable=invalid-name
     time: lv.Value, start_time: float, is_open: bool = False, name_prefix: str = "hihat"
 ) -> lv.Value:
     """Creates a trainable hi-hat node.

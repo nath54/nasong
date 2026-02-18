@@ -37,7 +37,7 @@ class Maqam:
     # 1 step = 2 semitones = 200 cents
     # 3/4 step = 1.5 semitones = 150 cents
 
-    PATTERNS = {
+    PATTERNS: dict[str, list[int | float]] = {
         "ajam": [2, 2, 1, 2, 2, 2, 1],  # Major
         "nahawand": [2, 1, 2, 2, 1, 2, 2],  # Minor
         "rast": [2, 1.5, 1.5, 2, 2, 1.5, 1.5],  # Approx

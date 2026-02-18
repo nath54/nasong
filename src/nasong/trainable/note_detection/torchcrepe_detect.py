@@ -84,7 +84,7 @@ class TorchCrepeDetector(NoteDetector):
         audio_tensor = torch.tensor(  # pylint: disable=no-member
             audio_data,
             dtype=torch.float32,
-            device=device,  # pylint: disable=no-member
+            device=device,
         ).unsqueeze(0)
 
         step_size_ms = self.config.get("crepe_step_size", 10)

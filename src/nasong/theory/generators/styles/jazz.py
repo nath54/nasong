@@ -32,7 +32,7 @@ class Jazz:
     """Generates Jazz-style chord progressions and melodic voicings."""
 
     @staticmethod
-    def ii_V_I(root: str = "C4", minor: bool = False) -> Progression:
+    def ii_V_I(root: str = "C4", minor: bool = False) -> Progression:  # pylint: disable=invalid-name
         """Generates a classic ii-V-I turnaround.
 
         Args:
@@ -69,5 +69,5 @@ class Jazz:
     @staticmethod
     def generate_random_standards_progression(length: int = 4) -> Progression:
         """Generates a random lead-sheet sequence using common jazz patterns."""
-        # Placeholder
+        # TODO: replace Placeholder
         return Jazz.ii_V_I()

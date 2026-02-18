@@ -26,7 +26,7 @@ controllable grit, suitable for learning rhythmic foundation sounds.
 import nasong.core.all_values as lv
 
 
-def TrainableBass(
+def TrainableBass(  # pylint: disable=invalid-name
     time: lv.Value,
     frequency: lv.Value,
     start_time: float,
