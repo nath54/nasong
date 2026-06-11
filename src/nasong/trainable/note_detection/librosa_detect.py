@@ -65,7 +65,33 @@ class LibrosaDetector(NoteDetector):
                 "Librosa is not installed. Please install it to use this detector."
             )
 
-        # Onset detection
+        fmin = self.config.get("librosa_fmin", 50.0)
+        fmax = self.config.get("librosa_fmax", 2000.0)
+        frame_len = self.config.get("librosa_frame_length", 2048)
+        hop_len = self.config.get("librosa_hop_length", 512)
+
+        # 1. Run pYIN on the whole audio to capture full temporal context
+        # Handle cases where the audio is shorter than the frame length
+        if len(audio_data) < frame_len:
+            audio_padded = np.pad(audio_data, (0, frame_len - len(audio_data)), mode="constant")
+        else:
+            audio_padded = audio_data
+
+        f0, voiced_flag, voiced_probs = librosa.pyin(
+            audio_padded,
+            sr=sample_rate,
+            fmin=fmin,
+            fmax=fmax,
+            frame_length=frame_len,
+            hop_length=hop_len,
+        )
+
+        # Precompute the times corresponding to each frame in the whole-audio pitch track
+        frame_times = librosa.frames_to_time(
+            np.arange(len(f0)), sr=sample_rate, hop_length=hop_len
+        )
+
+        # 2. Run Onset detection on the entire audio
         onset_frames = librosa.onset.onset_detect(
             y=audio_data, sr=sample_rate, backtrack=True, units="frames"
         )
@@ -76,60 +102,52 @@ class LibrosaDetector(NoteDetector):
             times = np.array([0.0])
         else:
             times = onset_times
-            # Ensure 0.0 is included if first onset is late?
-            # Usually onset detection finds the start.
-            # If the note starts at 0, onset_detect might find 0 or not.
-            pass  # pylint: disable=unnecessary-pass
 
         notes = []
         total_duration = len(audio_data) / sample_rate
 
-        fmin = self.config.get("librosa_fmin", 50.0)
-        fmax = self.config.get("librosa_fmax", 2000.0)
-        frame_len = self.config.get("librosa_frame_length", 2048)
-        hop_len = self.config.get("librosa_hop_length", 512)
-
+        # 3. Segment the precomputed pitches by onset intervals
         for i, start_t in enumerate(times):
             end_t = times[i + 1] if i < len(times) - 1 else total_duration
             duration = end_t - start_t
 
-            # Extract audio
-            start_sample = int(start_t * sample_rate)
-            end_sample = int(end_t * sample_rate)
-
-            # Simple check for very short segments
-            if end_sample - start_sample < frame_len:
+            if duration < 0.02:  # Skip extremely short transient glitches
                 continue
 
-            segment = audio_data[start_sample:end_sample]
+            # Find frames that fall within the current onset interval
+            in_segment = (frame_times >= start_t) & (frame_times < end_t)
+            segment_voiced_flag = voiced_flag[in_segment]
+            segment_f0 = f0[in_segment]
+            segment_probs = voiced_probs[in_segment]
 
-            # Run pYIN
-            f0, voiced_flag, voiced_probs = librosa.pyin(
-                segment,
-                sr=sample_rate,
-                fmin=fmin,
-                fmax=fmax,
-                frame_length=frame_len,
-                hop_length=hop_len,
-            )
-
-            # Filter unvoiced
-            voiced_f0 = f0[voiced_flag]
+            voiced_f0 = segment_f0[segment_voiced_flag]
 
             if len(voiced_f0) > 0:
-                # Use median pitch
                 pitch = np.median(voiced_f0)
+                confidence = float(np.mean(segment_probs[segment_voiced_flag]))
+            else:
+                # If no voiced pitch is found, skip this segment
+                continue
 
-                notes.append(
-                    {
-                        "start_time": float(start_t),
-                        "duration": float(duration),
-                        "frequencies": [float(pitch)],
-                        "confidence": float(np.mean(voiced_probs[voiced_flag])),
-                        "amplitude": float(np.sqrt(np.mean(segment**2)))
-                        if len(segment) > 0
-                        else 0.0,
-                    }
-                )
+            # Calculate actual RMS amplitude of the segment from original audio
+            start_sample = int(start_t * sample_rate)
+            end_sample = int(end_t * sample_rate)
+            segment_audio = audio_data[start_sample:end_sample]
+            amplitude = (
+                float(np.sqrt(np.mean(segment_audio**2)))
+                if len(segment_audio) > 0
+                else 0.0
+            )
+
+            notes.append(
+                {
+                    "start_time": float(start_t),
+                    "duration": float(duration),
+                    "frequencies": [float(pitch)],
+                    "confidence": confidence,
+                    "amplitude": amplitude,
+                }
+            )
 
         return notes
+

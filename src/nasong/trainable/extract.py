@@ -37,6 +37,8 @@ from nasong.trainable.instruments import (
     TrainableBowed,
     TrainablePad,
     TrainableBass,
+    TrainableElectricGuitar,
+    TrainableUniversalFF,
 )
 
 #
@@ -59,6 +61,8 @@ TRAINABLE_INSTRUMENTS: dict[str, Callable[..., Any]] = {
     "plucked": TrainablePlucked,
     "piano": TrainablePiano,
     "bowed": TrainableBowed,
+    "electric_guitar": TrainableElectricGuitar,
+    "universal_ff": TrainableUniversalFF,
     # Atmospheric
     "pad": TrainablePad,
     # Bass

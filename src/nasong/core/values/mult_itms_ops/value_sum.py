@@ -103,18 +103,18 @@ class Sum(Value):
         Returns:
             NDArray[np.float32]: Vectorized sum samples.
         """
+        if len(self.values) == 0:
+            return np.zeros_like(indexes_buffer, dtype=np.float32)
 
-        #
-        arrays = [
-            v.getitem_np(indexes_buffer=indexes_buffer, sample_rate=sample_rate)
-            for v in self.values
-        ]
+        total = self.values[0].getitem_np(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate
+        )
+        for v in self.values[1:]:
+            total = total + v.getitem_np(
+                indexes_buffer=indexes_buffer, sample_rate=sample_rate
+            )
+        return total
 
-        # Autograd fix: np.sum(list) is not supported, use stack.
-        stacked = np.stack(arrays, axis=0)
-        return np.sum(stacked, axis=0)
-
-    #
     def getitem_torch(
         self,
         indexes_buffer: Tensor,
@@ -131,31 +131,17 @@ class Sum(Value):
         Returns:
             Tensor: A tensor of sum samples.
         """
+        if len(self.values) == 0:
+            return torch.zeros_like(indexes_buffer, dtype=torch.float32, device=device)
 
-        #
-        ### Compute all values and stack them. ###
-        #
-        value_tensors: list[Tensor] = [
-            val.getitem_torch(
+        total = self.values[0].getitem_torch(
+            indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
+        )
+        for val in self.values[1:]:
+            total = total + val.getitem_torch(
                 indexes_buffer=indexes_buffer, sample_rate=sample_rate, device=device
             )
-            for val in self.values
-        ]
-
-        #
-        if len(value_tensors) == 0:
-            #
-            return torch.zeros_like(indexes_buffer, dtype=torch.float32, device=device)
-        #
-        elif len(value_tensors) == 1:
-            #
-            return value_tensors[0]
-        #
-        else:
-            #
-            stacked: Tensor = torch.stack(value_tensors, dim=0)
-            #
-            return torch.sum(stacked, dim=0)
+        return total
 
     #
     def backward(

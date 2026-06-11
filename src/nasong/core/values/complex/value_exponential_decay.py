@@ -183,14 +183,15 @@ class ExponentialDecay(Value):
         gate_mask: Tensor = (relative_time >= 0).to(dtype=torch.float32)
 
         #
-        if not torch.any(gate_mask):
+        if not torch.any(gate_mask > 0):
             #
             return torch.zeros_like(indexes_buffer, dtype=torch.float32, device=device)
 
         #
         ### Calculate decay for all samples using the safe time. ###
         #
-        decay_envelope: Tensor = torch.exp(-relative_time * self.decay_rate).to(
+        safe_relative_time = torch.clamp(relative_time, min=0.0)
+        decay_envelope: Tensor = torch.exp(-safe_relative_time * self.decay_rate).to(
             dtype=torch.float32
         )
 

@@ -114,15 +114,28 @@ class BasicPitchDetector(NoteDetector):
             # Convert MIDI pitch to Hz
             freq = 440.0 * (2.0 ** ((pitch_midi - 69.0) / 12.0))
 
+            # Calculate actual RMS amplitude from target audio data
+            start_sample = int(start * sample_rate)
+            end_sample = int(end * sample_rate)
+            start_sample = max(0, start_sample)
+            end_sample = min(len(audio_data), end_sample)
+
+            amplitude = float(amp)
+            if end_sample > start_sample:
+                segment = audio_data[start_sample:end_sample]
+                if len(segment) > 0:
+                    amplitude = float(np.sqrt(np.mean(segment**2)))
+
             notes.append(
                 {
                     "start_time": float(start),
                     "duration": float(end - start),
                     "frequencies": [float(freq)],
                     "confidence": float(amp),
-                    "amplitude": float(amp),
+                    "amplitude": amplitude,
                 }
             )
+
 
         # Basic Pitch might return overlapping notes (polyphony).
         # We process them individually.
